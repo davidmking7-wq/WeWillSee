@@ -117,9 +117,49 @@ to think about, not a bug.
 Caveats on the v3 evidence itself: the 2014-2017 panel's 38 windows overlap
 (each is 2 months), so the effective independent sample is roughly half;
 component selection used this same tape; prices were split- but not
-dividend-adjusted, ~505 stocks with survivorship. The 2016-2026 calibration
-at home (different pipeline, dividend-adjusted SIP data) is the test this
-panel couldn't have peeked at.
+dividend-adjusted, ~505 stocks with survivorship. The 2016-2026 validation
+below (different decade, dividend-adjusted SIP data, this exact codebase)
+is the test that panel couldn't have peeked at.
+
+### 2016-2026 out-of-sample validation (run 2026-08-07, scout/backtest.py)
+
+107 monthly entry dates 2017-07 .. 2026-05, 5 picks/date, exact HIT rule,
+equal-weight same-universe market benchmark over identical windows
+(full results in `scout/backtest_results.json`):
+
+| slice | engine | hit% | avg end% | med days to +5% | dip -5% first | beat mkt | mkt end% |
+|---|---|---|---|---|---|---|---|
+| all (107 dates) | v1 | 59.3 | +1.62 | 16.0 | 49.2% | 41/107 | +2.84 |
+| | **v3** | **61.5** | **+2.23** | **15.0** | **45.9%** | **50/105** | +2.73 |
+| non-overlapping (54) | v1 | 60.0 | +1.54 | 15.5 | 51.1% | 20/54 | +2.84 |
+| | **v3** | **60.8** | **+1.71** | **13.0** | **43.0%** | **23/53** | +2.73 |
+| bull only (88) | v1 | 60.0 | +1.40 | 16.0 | 48.6% | 32/88 | +2.53 |
+| | **v3** | **62.7** | **+2.63** | **15.0** | **45.0%** | **46/88** | +2.53 |
+| bear only (17-19) | v1 | 55.8 | +2.64 | 13.0 | 51.6% | 9/19 | +4.27 |
+| | v3 | 55.3 | +0.12 | 13.0 | 50.6% | 4/17 | +3.74 |
+
+**Verdict: the v3 switch holds out of sample.** v3 beats v1 on every
+OppScore dimension in the slices that matter — more hits, faster (13.0 vs
+15.5 median days in the independent subset), and a meaningfully safer path
+(43% vs 51% dipped -5% first). The gains concentrate in bull regimes,
+where the tool actually picks.
+
+**What did NOT replicate from the 2014-2017 census:** "beats the market
+~4 windows out of 5". On 2017-2026 both engines beat the equal-weight
+market average in fewer than half the windows, and both engines' average
+deadline return sits BELOW the market's (+2.2% vs +2.7% for v3). Two
+honest notes: (a) the survivorship universe inflates the "market"
+benchmark (today's constituents include the era's biggest winners), and
+(b) hitting +5% at some point ≠ ending above the market. This confirms
+the v2-era finding — the composite's edge is in first-passage odds, speed
+and path safety, NOT in end-of-window outperformance. Never sell it as
+market-beating.
+
+**Bear-regime warning:** v3's average end return in bear windows is ~0
+(v1: +2.6%), on a tiny sample (17 dates, ~3 episodes). The absolute-
+momentum gate thins bear picks without making them good. Combined with
+the crash rule, the honest posture in bear regimes is fewer or zero
+picks, not confidence in the numbers.
 
 ### Engine-version discipline (enforced in code)
 - `config.ENGINE` stamps `calibration.json`, `last_scan.json`, and every

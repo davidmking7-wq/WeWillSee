@@ -1,0 +1,141 @@
+{
+ "span": [
+  "2017-07-10",
+  "2026-05-18"
+ ],
+ "picks_per_date": 5,
+ "step_tdays": 21,
+ "horizon_tdays": 42,
+ "target": 0.05,
+ "label": "HIT = max close over next 42 trading days >= entry close * 1.05",
+ "universe": "today's S&P 500 applied historically (survivorship)",
+ "note": "monthly windows overlap (~2x); see non_overlapping for the independent subset; compare engines to each other and to avg_mkt_end_ret, not raw rates to the future",
+ "engines": {
+  "v1": {
+   "all": {
+    "dates": 107,
+    "picks": 535,
+    "hit_rate": 59.3,
+    "avg_end_ret": 1.62,
+    "med_max_gain": 6.52,
+    "med_days_to_hit": 16.0,
+    "dip_first_rate": 49.2,
+    "beat_market": "41/107",
+    "beat_market_pct": 38.3,
+    "avg_mkt_end_ret": 2.84
+   },
+   "non_crash": {
+    "dates": 93,
+    "picks": 465,
+    "hit_rate": 60.0,
+    "avg_end_ret": 1.42,
+    "med_max_gain": 6.64,
+    "med_days_to_hit": 16.0,
+    "dip_first_rate": 47.5,
+    "beat_market": "36/93",
+    "beat_market_pct": 38.7,
+    "avg_mkt_end_ret": 2.39
+   },
+   "bull": {
+    "dates": 88,
+    "picks": 440,
+    "hit_rate": 60.0,
+    "avg_end_ret": 1.4,
+    "med_max_gain": 6.7,
+    "med_days_to_hit": 16.0,
+    "dip_first_rate": 48.6,
+    "beat_market": "32/88",
+    "beat_market_pct": 36.4,
+    "avg_mkt_end_ret": 2.53
+   },
+   "bear": {
+    "dates": 19,
+    "picks": 95,
+    "hit_rate": 55.8,
+    "avg_end_ret": 2.64,
+    "med_max_gain": 5.92,
+    "med_days_to_hit": 13.0,
+    "dip_first_rate": 51.6,
+    "beat_market": "9/19",
+    "beat_market_pct": 47.4,
+    "avg_mkt_end_ret": 4.27
+   },
+   "non_overlapping": {
+    "dates": 54,
+    "picks": 270,
+    "hit_rate": 60.0,
+    "avg_end_ret": 1.54,
+    "med_max_gain": 7.22,
+    "med_days_to_hit": 15.5,
+    "dip_first_rate": 51.1,
+    "beat_market": "20/54",
+    "beat_market_pct": 37.0,
+    "avg_mkt_end_ret": 2.84
+   },
+   "crash_dates_skipped_by_rule": 14
+  },
+  "v3": {
+   "all": {
+    "dates": 105,
+    "picks": 525,
+    "hit_rate": 61.5,
+    "avg_end_ret": 2.23,
+    "med_max_gain": 6.96,
+    "med_days_to_hit": 15.0,
+    "dip_first_rate": 45.9,
+    "beat_market": "50/105",
+    "beat_market_pct": 47.6,
+    "avg_mkt_end_ret": 2.73
+   },
+   "non_crash": {
+    "dates": 93,
+    "picks": 465,
+    "hit_rate": 62.4,
+    "avg_end_ret": 2.52,
+    "med_max_gain": 7.15,
+    "med_days_to_hit": 15.0,
+    "dip_first_rate": 44.1,
+    "beat_market": "48/93",
+    "beat_market_pct": 51.6,
+    "avg_mkt_end_ret": 2.39
+   },
+   "bull": {
+    "dates": 88,
+    "picks": 440,
+    "hit_rate": 62.7,
+    "avg_end_ret": 2.63,
+    "med_max_gain": 7.23,
+    "med_days_to_hit": 15.0,
+    "dip_first_rate": 45.0,
+    "beat_market": "46/88",
+    "beat_market_pct": 52.3,
+    "avg_mkt_end_ret": 2.53
+   },
+   "bear": {
+    "dates": 17,
+    "picks": 85,
+    "hit_rate": 55.3,
+    "avg_end_ret": 0.12,
+    "med_max_gain": 5.51,
+    "med_days_to_hit": 13.0,
+    "dip_first_rate": 50.6,
+    "beat_market": "4/17",
+    "beat_market_pct": 23.5,
+    "avg_mkt_end_ret": 3.74
+   },
+   "non_overlapping": {
+    "dates": 53,
+    "picks": 265,
+    "hit_rate": 60.8,
+    "avg_end_ret": 1.71,
+    "med_max_gain": 7.2,
+    "med_days_to_hit": 13.0,
+    "dip_first_rate": 43.0,
+    "beat_market": "23/53",
+    "beat_market_pct": 43.4,
+    "avg_mkt_end_ret": 2.73
+   },
+   "crash_dates_skipped_by_rule": 12
+  }
+ }
+}
