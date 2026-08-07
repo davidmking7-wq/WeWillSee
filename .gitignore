@@ -11,3 +11,4 @@ __pycache__/
 scout/calibration.json
 scout/last_scan.json
 scout/final_picks.json
+scout/backtest_cache.pkl
