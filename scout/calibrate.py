@@ -65,6 +65,7 @@ def _cell_stats(bb: pd.DataFrame, base: float, rng) -> dict:
     return {
         "p5_raw": round(p5_raw, 4), "p5": round(p5, 4),
         "p10": round(float(bb["hit10"].mean()), 4),
+        "p15": round(float(bb["hit15"].mean()), 4),
         "pend5": round(float((bb["end_ret"] >= config.TARGET_GAIN).mean()), 4),
         "n": n, "n_eff": round(n_eff, 1), "n_dates": nd,
         "lo": round(lo, 4), "hi": round(hi, 4),
@@ -72,6 +73,9 @@ def _cell_stats(bb: pd.DataFrame, base: float, rng) -> dict:
         "p_drop_first": round(float(bb["drop_first"].mean()), 4),
         "med_end_ret": round(float(bb["end_ret"].median()), 4),
         "med_max_gain": round(float(bb["max_ret"].median()), 4),
+        # mean rewards fat right tails (5% is the minimum, not the goal);
+        # winsorized at +50% so one moonshot can't own a thin cell
+        "mean_max_gain": round(float(bb["max_ret"].clip(upper=0.50).mean()), 4),
         "p5_end_ret": round(float(bb["end_ret"].quantile(0.05)), 4),
         "med_days_to_hit": round(float(days.median()), 1) if len(days) else None,
     }
@@ -145,12 +149,13 @@ def run(force: bool = False) -> dict:
             records.append((date_i, regime, bucket_of(float(pct[sym])),
                             str(terc[sym]), hit,
                             bool((r >= 1.10).any()),
+                            bool((r >= 1.15).any()),
                             bool(dn.any() and first_dn < first_up),
                             float(r[-1] - 1), float(r.max() - 1),
                             first_up + 1 if hit else np.nan))
 
     df = pd.DataFrame(records, columns=["date_i", "regime", "bucket", "tercile",
-                                        "hit", "hit10", "drop_first",
+                                        "hit", "hit10", "hit15", "drop_first",
                                         "end_ret", "max_ret", "days_to_hit"])
     if df.empty:
         raise RuntimeError("calibration produced no samples — check data fetch")
@@ -180,9 +185,11 @@ def run(force: bool = False) -> dict:
            "universe_size": len(syms) - 1,
            "spy_vol_q80": round(spy_vol_q80, 4),
            "label": "HIT = max close over next 42 trading days >= entry close * 1.05",
-           "opp_score": "OppScore = 1000 * P(+5%) * median max gain * "
-                        "(42 / median days to +5%) * (1 - P(-5% first)) — "
-                        "assurance x profit x speed x safety, all empirical",
+           "opp_score": "OppScore = 1000 * P(+5%) * MEAN max gain (winsorized "
+                        "+50%) * (42 / median days to +5%) * (1 - P(-5% first)) "
+                        "— assurance x profit x speed x safety, all empirical; "
+                        "mean (not median) max gain because +5% is the minimum "
+                        "bar and fat right tails deserve rank",
            "caveats": [
                "Calibrated on 2016-2026: a single macro era; bear-regime numbers "
                "rest on a handful of episodes (2018Q4, 2020, 2022) — treat them "

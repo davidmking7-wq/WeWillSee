@@ -21,7 +21,7 @@ from openpyxl.utils import get_column_letter
 from . import config
 
 HEADERS = ["Date Picked", "Stock", "Company", "Industry", "List",
-           "Price Then", "Goal (+5%)", "Deadline",
+           "Price Then", "Min Goal (+5%)", "Deadline",
            # what history says about stocks that looked like this
            "Chance +5%", "Chance +10%", "Usual Gain %", "Usual Peak %",
            "Analysts' Guess % (corrected)",
@@ -32,16 +32,23 @@ HEADERS = ["Date Picked", "Stock", "Company", "Industry", "List",
            "Result", "Price Now", "Gain So Far %", "Best So Far %",
            "Hit Date", "Last Checked",
            # which version of the scanner made this pick
-           "Engine"]
+           "Engine",
+           # columns added later — kept at the end so old workbooks migrate
+           # by appending, never by shifting existing data
+           "Chance +15%", "Earnings Before Deadline"]
 COL = {h: i + 1 for i, h in enumerate(HEADERS)}
+
+# old header -> new header (renamed in place on migration; renames never
+# shift columns, so they're always safe)
+RENAMES = {"Goal (+5%)": "Min Goal (+5%)"}
 
 FILL_HEAD = PatternFill("solid", fgColor="1F3B57")
 FILL_PRED = PatternFill("solid", fgColor="2E4E6E")
 FILL_HIT = PatternFill("solid", fgColor="C6EFCE")
 FILL_MISS = PatternFill("solid", fgColor="FFC7CE")
 
-PRED_COLS = ("Chance +5%", "Chance +10%", "Usual Gain %", "Usual Peak %",
-             "Analysts' Guess % (corrected)",
+PRED_COLS = ("Chance +5%", "Chance +10%", "Chance +15%", "Usual Gain %",
+             "Usual Peak %", "Analysts' Guess % (corrected)",
              "Usual Days to +5%", "Chance of -5% Dip First",
              "Avg Stock Chance +5%", "Overall Score", "Gain Score")
 
@@ -50,8 +57,12 @@ ABOUT = """How to read this scorecard
 Every time the scout runs, it adds its picks here and re-checks the old ones.
 A pick is a HIT if the stock's closing price gained 5% or more at any point
 before the Deadline (about 2 months). After the Deadline, it's a MISS.
-5% is the minimum goal — the gain columns show how much further these
-stocks usually go.
+
+IMPORTANT: 5% is the MINIMUM bar, not the goal. The tool ranks picks by how
+far and how fast they usually run (see Usual Peak %, Chance +10%, Chance
++15%), and a pick that HITs keeps being re-priced until its Deadline — so
+"Best So Far %" shows how far the winner actually ran, not just that it
+cleared the bar.
 
 There are two lists:
 - "Best Overall": the best balance of chance, size of gain, speed and safety.
@@ -65,9 +76,12 @@ looked the same — same pattern, same energy level, same market mood):
 
 Chance +5%        How often such stocks gained at least 5% within 2 months.
 Chance +10%       How often they gained at least 10%.
+Chance +15%       How often they gained at least 15%.
 Usual Gain %      Where they typically ENDED after 2 months (often below 5 —
                   that's the honest truth, not a mistake).
-Usual Peak %      The best gain they typically reached at some point.
+Usual Peak %      The best gain they typically reached at some point (the
+                  ranking uses the AVERAGE peak, which gives extra credit to
+                  groups with big winners — because 5% is only the minimum).
 Analysts' Guess % (corrected)  What Wall Street analysts' price targets say
                   the stock will do over ONE YEAR — after correcting their
                   well-documented over-optimism. Analysts overshoot by about
@@ -92,6 +106,11 @@ Confidence        A = proven edge over the average stock. B = modest edge.
 Engine            Which version of the scanner chose the pick (v1, v3...).
                   Versions are scored separately in the Track Record so an
                   upgrade can't hide behind the old version's results.
+Earnings Before Deadline  The company's next quarterly report date, if it
+                  lands before the Deadline. Earnings are a coin-flip event
+                  that can wreck a good pattern overnight — picks with one
+                  inside the window get their Confidence downgraded a notch
+                  automatically.
 
 What-happened columns:
 Gain So Far %     Where the stock is now vs the pick price.
@@ -105,9 +124,15 @@ scorecard, NOT financial advice. Nothing is ever bought automatically.
 
 
 def _migrate(wb: Workbook) -> None:
-    """Append any headers added since the workbook was created. Rows written
-    before the Engine column existed are stamped 'v1'."""
+    """Rename retitled headers in place, then append any headers added since
+    the workbook was created (new columns only ever go at the END of HEADERS
+    so old data never shifts). Rows written before the Engine column existed
+    are stamped 'v1'."""
     ws = wb["Picks"]
+    for i in range(1, ws.max_column + 1):
+        old = ws.cell(row=1, column=i).value
+        if old in RENAMES:
+            ws.cell(row=1, column=i, value=RENAMES[old])
     existing = [ws.cell(row=1, column=i).value for i in range(1, ws.max_column + 1)]
     for h in HEADERS:
         if h in existing:
@@ -170,17 +195,31 @@ def append_picks(rows: list[dict]) -> int:
 
 
 def open_picks() -> list[dict]:
-    """Rows still OPEN, as dicts including their sheet row number."""
+    """Rows that still need re-pricing, as dicts including their sheet row
+    number: every OPEN pick, plus HIT picks whose Deadline hasn't passed —
+    +5% is the minimum bar, not the goal, so winners keep being tracked to
+    the deadline to show how far they actually ran."""
     if not config.EXCEL_PATH.exists():
         return []
     wb = _load()
     ws = wb["Picks"]
+    today = date.today()
     out = []
     for row in range(2, ws.max_row + 1):
-        if ws.cell(row=row, column=COL["Result"]).value == "OPEN":
-            d = {h: ws.cell(row=row, column=COL[h]).value for h in HEADERS}
-            d["_row"] = row
-            out.append(d)
+        result = ws.cell(row=row, column=COL["Result"]).value
+        if result == "HIT":
+            dl = ws.cell(row=row, column=COL["Deadline"]).value
+            try:
+                dl = dl.date() if hasattr(dl, "date") else date.fromisoformat(str(dl)[:10])
+            except ValueError:
+                dl = None
+            if dl is None or today > dl:
+                continue
+        elif result != "OPEN":
+            continue
+        d = {h: ws.cell(row=row, column=COL[h]).value for h in HEADERS}
+        d["_row"] = row
+        out.append(d)
     return out
 
 

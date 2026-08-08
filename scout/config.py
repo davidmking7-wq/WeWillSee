@@ -25,7 +25,7 @@ EXCEL_PATH = ROOT / "picks.xlsx"
 # every picks.xlsx row so probabilities and the track record never silently
 # mix engines. Changing signals.py MUST bump this — calibrate.run() refuses
 # a cached calibration whose engine tag doesn't match.
-ENGINE = "v3"
+ENGINE = "v4"
 
 # Label definition (state verbatim in every report):
 # HIT = max CLOSE over the next 42 trading days >= entry close * 1.05
@@ -40,17 +40,19 @@ CALIB_STALE_DAYS = 30
 UNIVERSE_STALE_DAYS = 60
 TOP_CANDIDATES = 15
 
-# Composite weights — v3 engine (sum 1.00). Tested on the 2014-2017 monthly
-# panel: v1 56.3% hit / +4.01% avg vs v3 61.1% / +4.63% (see SCOUT-DESIGN.md).
+# Composite weights — v4 engine (sum 1.00). v4 = v3 minus the gap/volume
+# PEAD proxy (its weight moved to 6-1 momentum), selected by train/holdout
+# on 2016-2026 SIP data — see SCOUT-DESIGN.md for the full protocol record.
 W_MOM12 = 0.20     # 12-1 momentum, cross-sectional percentile
-W_MOM6 = 0.15      # 6-1 momentum percentile                [MSCI standard]
+W_MOM6 = 0.20      # 6-1 momentum percentile                [MSCI standard]
 W_HIGH = 0.25      # 52-week-high proximity percentile — biggest factor
-W_GAP = 0.05       # up-gap >=3% on >=2x 20d-median volume, last 20 sessions
 W_SMOOTH = 0.10    # share of up-days over the year          [Da-Gurun-Warachka]
 W_BRK20 = 0.07     # closeness to 20-day high (speed)        [George-Hwang family]
 W_VOL = 0.10       # 20-40% annualized vol band preferred
 W_GUARD = 0.05     # penalize top-quintile 1-month runners
 W_SMA50 = 0.03     # close > SMA50 tiebreaker only (double-counts momentum)
+# The up-gap+volume-surge feature is still computed for research context
+# (it appears in the scan's signals text) but earns no score weight.
 
 # Hard gates / vetoes (literature-frozen)
 VETO_RET1M_HI = 0.25        # 1-month return above +25% -> excluded (reversal)

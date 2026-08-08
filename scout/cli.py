@@ -22,7 +22,7 @@ from datetime import date, datetime
 
 import pandas as pd
 
-from . import calibrate, config, data, excel_book, signals, universe
+from . import calibrate, config, data, earnings, excel_book, signals, universe
 
 POOL = 30   # composite-score pool that the rankings then re-order
 
@@ -46,17 +46,24 @@ def _grade(stats: dict | None, base: float | None) -> str:
 
 
 def _opp_score(s: dict) -> float | None:
+    """Assurance x profit x speed x safety. Profit = MEAN max gain (not
+    median): 5% is the minimum bar, so cells whose winners run further get
+    ranked higher — 'if I can, I want more'."""
     if not s or s.get("p5") is None or not s.get("med_days_to_hit"):
         return None
-    return round(1000 * s["p5"] * max(s["med_max_gain"], 0)
+    gain = s.get("mean_max_gain", s.get("med_max_gain"))
+    return round(1000 * s["p5"] * max(gain, 0)
                  * (config.HORIZON_TDAYS / s["med_days_to_hit"])
                  * (1 - s["p_drop_first"]), 1)
 
 
 def _gain_score(s: dict) -> float | None:
-    if not s or s.get("p10") is None or s.get("med_max_gain") is None:
+    if not s or s.get("p10") is None:
         return None
-    return round(1000 * max(s["med_max_gain"], 0) * s["p10"], 1)
+    gain = s.get("mean_max_gain", s.get("med_max_gain"))
+    if gain is None:
+        return None
+    return round(1000 * max(gain, 0) * s["p10"], 1)
 
 
 def cmd_scan(args) -> None:
@@ -85,8 +92,16 @@ def cmd_scan(args) -> None:
     base = reg.get("base_rate")
     horizon_end = (ts + pd.tseries.offsets.BDay(config.HORIZON_TDAYS)).date()
 
+    pool_syms = list(snap.index[:POOL])
+    print("checking earnings calendars (best-effort)...")
+    ecal = earnings.next_earnings(pool_syms)
+    n_edates = sum(1 for v in ecal.values() if v)
+    if n_edates == 0:
+        print("  no earnings source reachable — the research phase must "
+              "check earnings dates by web search instead")
+
     candidates = []
-    for sym in snap.index[:POOL]:
+    for sym in pool_syms:
         row = snap.loc[sym]
         bucket = calibrate.bucket_of(float(pct[sym]))
         bstats = (reg.get("buckets") or {}).get(bucket) or {}
@@ -94,12 +109,18 @@ def cmd_scan(args) -> None:
         stats = cell if cell and cell.get("n_eff", 0) >= config.MIN_NEFF else bstats
         quotable = bool(stats and stats.get("n_eff", 0) >= config.MIN_NEFF)
         price = float(c[sym].dropna().iloc[-1])
+        edate = ecal.get(sym)
+        e_inside = bool(edate and str(edate) <= str(horizon_end))
+        grade = _grade(stats, base)
+        if e_inside and grade in ("A", "B"):
+            grade = {"A": "B", "B": "C"}[grade]   # binary event inside window
         sig_text = (f"12-1 mom {row['mom']:+.0%} (p{row['mom_pct']:.0%}); "
                     f"6-1 mom {row['mom6']:+.0%}; "
                     f"{row['high']:.0%} of 52w high; "
                     f"{row['brk20']:.0%} of 20d high; "
                     f"1m {row['ret1m']:+.1%}; vol {row['vol']:.0%} ({terc[sym]})"
-                    + ("; recent up-gap+volume surge" if row["gap"] > 0 else ""))
+                    + ("; recent up-gap+volume surge" if row["gap"] > 0 else "")
+                    + (f"; EARNINGS {edate} inside window" if e_inside else ""))
         p5 = stats.get("p5") if quotable else None
         candidates.append({
             "symbol": sym, "name": info.get(sym, {}).get("name", ""),
@@ -117,6 +138,8 @@ def cmd_scan(args) -> None:
                                   and p5 >= config.GAIN_MIN_P5),
             "p5": p5,
             "p10": stats.get("p10") if quotable else None,
+            "p15": stats.get("p15") if quotable else None,
+            "mean_max_gain": stats.get("mean_max_gain") if quotable else None,
             "pend5": stats.get("pend5") if quotable else None,
             "ci": [stats["lo"], stats["hi"]] if quotable else None,
             "lift": stats.get("lift") if quotable else None,
@@ -126,7 +149,9 @@ def cmd_scan(args) -> None:
             "med_days_to_hit": stats.get("med_days_to_hit") if quotable else None,
             "p5_end_ret": stats.get("p5_end_ret") if quotable else None,
             "n_eff": stats.get("n_eff") if stats else None,
-            "grade_quant": _grade(stats, base),
+            "grade_quant": grade,
+            "earnings_date": edate,
+            "earnings_in_window": e_inside,
             "signals_text": sig_text,
         })
     candidates.sort(key=lambda cd: (cd["opp_score"] is None,
@@ -137,6 +162,7 @@ def cmd_scan(args) -> None:
         key=lambda cd: (-(cd["gain_score"] or 0), -cd["vol"], -cd["score"]))
 
     out = {"asof": str(ts.date()), "engine": config.ENGINE,
+           "earnings_checked": n_edates > 0,
            "regime": regime, "crash_risk": crash_risk,
            "spy_vol21": round(spy_vol21, 4), "base_rate": base,
            "market_base_rate": reg.get("market_base_rate"),
@@ -206,7 +232,10 @@ def cmd_update(args) -> None:
         u = {"_row": p["_row"], "Price Now": round(latest, 2),
              "Gain So Far %": round(100 * (latest / basis - 1), 1),
              "Best So Far %": round(100 * (maxc / basis - 1), 1)}
-        if maxc / basis - 1 >= config.TARGET_GAIN:
+        if p["Result"] == "HIT":
+            # already resolved — keep tracking the run-up until the deadline
+            u["Result"] = "HIT"
+        elif maxc / basis - 1 >= config.TARGET_GAIN:
             first_hit = within[within / basis - 1 >= config.TARGET_GAIN].index[0]
             u["Result"], u["Hit Date"] = "HIT", str(first_hit.date())
             resolved.append(f"{sym} HIT on {u['Hit Date']} "
@@ -249,10 +278,13 @@ def cmd_record(args) -> None:
             "Date Picked": scan["asof"], "Stock": cd["symbol"],
             "Company": cd["name"], "Industry": cd["sector"],
             "List": LIST_NAMES.get(fp.get("list", "overall"), "Best Overall"),
-            "Price Then": cd["price"], "Goal (+5%)": cd["target_price"],
+            "Price Then": cd["price"], "Min Goal (+5%)": cd["target_price"],
             "Deadline": scan["horizon_end"],
             "Chance +5%": pc(cd.get("p5")) or "no number",
             "Chance +10%": pc(cd.get("p10")),
+            "Chance +15%": pc(cd.get("p15")),
+            "Earnings Before Deadline": ((cd.get("earnings_date") or "")
+                                         if cd.get("earnings_in_window") else ""),
             "Usual Gain %": pc(cd.get("med_end_ret")),
             "Usual Peak %": pc(cd.get("med_max_gain")),
             "Analysts' Guess % (corrected)": fp.get("analyst_guess_corrected", ""),

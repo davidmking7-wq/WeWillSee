@@ -1,24 +1,31 @@
-"""Per-stock features for a ~2-month horizon (engine v3), built as full
+"""Per-stock features for a ~2-month horizon (engine v4), built as full
 time-series frames so one computation serves both today's scan and historical
 calibration (bit-identical pipelines — a calibration on a different pipeline
 is worthless).
 
-v3 lineage, tested on the full 2014-2017 monthly panel (38 non-crash entry
-dates, every stock's outcome checked vs the exact HIT rule):
+Lineage. 2014-2017 monthly panel (38 non-crash entry dates, exact HIT rule):
   v1 (original):                         hit 56.3% | avg 42td +4.01% | beat mkt 31/38
   v2 (+ 6m mom, smooth tilt, abs-mom gate): 61.1% | +4.42% | 29/38
   v3 (+ near-breakout, lottery-spike gate): 61.1% | +4.63% | 30/38 | med 16d to +5%
+v4 (2026-08): drop the gap/volume-surge signal from the score, weight to 6-1
+momentum. Chosen by train/holdout protocol on 2016-2026 SIP data (train
+2017-2021: hit 66.0 vs 64.9, gain/speed/safety all better; holdout 2022-2026:
+hit ~equal, gain and speed better). See SCOUT-DESIGN.md for the full record.
+The gap feature is still computed as research context — it just earns no
+score weight.
 
 Ablation notes — tried and REJECTED, do not re-add:
   - MSCI risk-adjusted momentum (mom/vol): hit rate DOWN 1.6pp. Dividing by
     vol tilts to calm names, but touching +5% inside 42 trading days NEEDS
     movement (that's why VOL_BAND exists). Objective mismatch.
   - Monthly-consistency score (Grinblatt-Moskowitz): hit rate DOWN 3.7pp.
+  - Sector-relative momentum blend, 20d-high hard gate: no train edge (2026-08 lab).
+  - 5-day pullback veto: hurt gain and speed (2026-08 lab).
 
 Core ranks: 12-1 and 6-1 momentum, 52-week-high proximity, smooth-path tilt,
-near-breakout, and an up-gap+volume-surge PEAD proxy. Hard gates: SMA200,
-positive 6-month return (absolute momentum). Vetoes: 1-month extremes,
-top vol decile, top-decile single-day spike (lottery stocks).
+near-breakout. Hard gates: SMA200, positive 6-month return (absolute
+momentum). Vetoes: 1-month extremes, top vol decile, top-decile single-day
+spike (lottery stocks).
 """
 import numpy as np
 import pandas as pd
@@ -90,7 +97,6 @@ def composite_at(frames: dict[str, pd.DataFrame], ts) -> pd.DataFrame:
     df["score"] = 100 * (config.W_MOM12 * mom_pct
                          + config.W_MOM6 * mom6_pct
                          + config.W_HIGH * high_pct
-                         + config.W_GAP * df["gap"]
                          + config.W_SMOOTH * smooth_pct
                          + config.W_BRK20 * brk_pct
                          + config.W_VOL * vol_band

@@ -121,45 +121,81 @@ dividend-adjusted, ~505 stocks with survivorship. The 2016-2026 validation
 below (different decade, dividend-adjusted SIP data, this exact codebase)
 is the test that panel couldn't have peeked at.
 
-### 2016-2026 out-of-sample validation (run 2026-08-07, scout/backtest.py)
+### 2016-2026 out-of-sample validation
 
-107 monthly entry dates 2017-07 .. 2026-05, 5 picks/date, exact HIT rule,
-equal-weight same-universe market benchmark over identical windows
-(full results in `scout/backtest_results.json`):
+The definitive engine comparison (v1/v3/v4, vs both the equal-weight
+universe AND the S&P 500 itself, with compounded growth) lives in
+**BACKTEST-REPORT.md**, regenerated from `python -m scout.backtest`
+(machine-readable: `scout/backtest_results.json`).
 
-| slice | engine | hit% | avg end% | med days to +5% | dip -5% first | beat mkt | mkt end% |
-|---|---|---|---|---|---|---|---|
-| all (107 dates) | v1 | 59.3 | +1.62 | 16.0 | 49.2% | 41/107 | +2.84 |
-| | **v3** | **61.5** | **+2.23** | **15.0** | **45.9%** | **50/105** | +2.73 |
-| non-overlapping (54) | v1 | 60.0 | +1.54 | 15.5 | 51.1% | 20/54 | +2.84 |
-| | **v3** | **60.8** | **+1.71** | **13.0** | **43.0%** | **23/53** | +2.73 |
-| bull only (88) | v1 | 60.0 | +1.40 | 16.0 | 48.6% | 32/88 | +2.53 |
-| | **v3** | **62.7** | **+2.63** | **15.0** | **45.0%** | **46/88** | +2.53 |
-| bear only (17-19) | v1 | 55.8 | +2.64 | 13.0 | 51.6% | 9/19 | +4.27 |
-| | v3 | 55.3 | +0.12 | 13.0 | 50.6% | 4/17 | +3.74 |
+The findings that shape how this tool must be presented:
+- **The v3 and v4 switches hold out of sample**: more hits, faster to +5%,
+  fewer -5%-first dips than v1, with gains concentrated in bull regimes.
+- **What did NOT replicate from the 2014-2017 census:** "beats the market
+  ~4 windows out of 5". On 2017-2026 every engine beats the benchmarks in
+  fewer than half the windows and compounds BELOW buy-and-hold SPY.
+  The composite's edge is in first-passage odds, speed and path safety —
+  NOT end-of-window outperformance. Never sell it as market-beating.
+- **Bear-regime warning:** post-v1 engines' average end return in bear
+  windows is ~0 on a tiny sample (~3 episodes). The honest posture in bear
+  regimes is fewer or zero picks, not confidence in the numbers.
 
-**Verdict: the v3 switch holds out of sample.** v3 beats v1 on every
-OppScore dimension in the slices that matter — more hits, faster (13.0 vs
-15.5 median days in the independent subset), and a meaningfully safer path
-(43% vs 51% dipped -5% first). The gains concentrate in bull regimes,
-where the tool actually picks.
+### v4 (adopted 2026-08-07): gain-forward objective + leaner engine + earnings flag
 
-**What did NOT replicate from the 2014-2017 census:** "beats the market
-~4 windows out of 5". On 2017-2026 both engines beat the equal-weight
-market average in fewer than half the windows, and both engines' average
-deadline return sits BELOW the market's (+2.2% vs +2.7% for v3). Two
-honest notes: (a) the survivorship universe inflates the "market"
-benchmark (today's constituents include the era's biggest winners), and
-(b) hitting +5% at some point ≠ ending above the market. This confirms
-the v2-era finding — the composite's edge is in first-passage odds, speed
-and path safety, NOT in end-of-window outperformance. Never sell it as
-market-beating.
+The user's directive: +5% must behave as a MINIMUM, not a goal — optimize
+high gain × low risk × low wait, and account for earnings inside the window.
 
-**Bear-regime warning:** v3's average end return in bear windows is ~0
-(v1: +2.6%), on a tiny sample (17 dates, ~3 episodes). The absolute-
-momentum gate thins bear picks without making them good. Combined with
-the crash rule, the honest posture in bear regimes is fewer or zero
-picks, not confidence in the numbers.
+**Objective changes (definitional, not fitted):**
+- OppScore's profit term switched from MEDIAN max gain to MEAN max gain
+  (winsorized at +50%): cells whose winners run far now outrank cells that
+  merely clear the bar. GainScore likewise.
+- New cell stats: P(+15%), mean max gain.
+- picks.xlsx: HIT picks keep being re-priced until the Deadline (previously
+  tracking froze at +5%), "Goal (+5%)" renamed "Min Goal (+5%)", new
+  "Chance +15%" and "Earnings Before Deadline" columns.
+
+**Signal change (selected by train/holdout protocol on 2016-2026 SIP data):**
+Candidates, each one literature-grounded change on v3: SECREL
+(sector-relative momentum), NOGAP (drop gap/volume PEAD proxy → weight to
+6-1 momentum), PULLBACK (veto 5d micro-spikes), TIGHTHIGH (52w-high ≥0.80
+gate). Train 2017-07..2021-12 (53 monthly dates, 5 picks):
+
+| variant | hit% | P+10% | avg end% | mean peak% | med days | dip% |
+|---|---|---|---|---|---|---|
+| v3 control | 64.9 | 32.8 | 2.01 | 8.70 | 17 | 44.9 |
+| **NOGAP** | **66.0** | **35.5** | **2.41** | **9.11** | **16** | **43.8** |
+| SECREL | 64.9 | 33.6 | 1.95 | 8.63 | 16 | 45.3 |
+| PULLBACK | 63.9 | 30.2 | 1.61 | 7.93 | 18 | 44.3 |
+| TIGHTHIGH | 64.5 | 32.8 | 2.03 | 8.69 | 17 | 45.3 |
+
+Only NOGAP improved the full objective → single-shot holdout
+2022-01..2026-05 (52 dates): hit 57.7 vs 58.1 (equal at 60.0 in the
+non-overlapping subset), avg end +2.57 vs +2.44, P+10% 38.8 vs 37.7,
+P+15% 23.1 vs 21.9, median 12 vs 13 days, dip 47.3 vs 46.9. Gain and speed
+better, hit and safety within noise → **shipped. v4 = v3 minus the gap
+signal (weight to 6-1 momentum).** The gap feature is still computed as
+research context; it earns no score weight. Honesty note: the ship decision
+conditions on the holdout, and both eras share the survivorship universe —
+the protocol reduces snooping, it does not eliminate it.
+
+**Earnings inside the window (pipeline, not just research):** scan now
+fetches each candidate's next earnings date (Yahoo calendar with yfinance /
+NASDAQ fallbacks, cached, strictly best-effort — a blocked source degrades
+to the old web-research behavior). A date on or before the deadline flags
+the candidate, auto-downgrades its grade one notch (A→B→C), and lands in
+the "Earnings Before Deadline" column. Research confirms rather than
+discovers.
+
+**Backtest harness fixes (from adversarial review, before the holdout ran):**
+crash-flag volatility threshold now an expanding quantile (was full-sample —
+lookahead); non-overlapping stride uses ceil (round() could overlap);
+strategy-vs-benchmark averaging made weight-consistent (per-date); NaN
+guards on regime/vol. Plus: SPY benchmark columns (beat-SPY per window,
+avg SPY window return) and sequential compounding of the non-overlapping
+windows. Known remaining limits (documented, accepted): symbols delisted
+mid-window drop out of picks AND benchmarks; SPY sits in the cross-sectional
+rank pool (1/500 distortion, consistent across scan/calibration/backtest);
+labtest's SECREL rank is post-gate.
 
 ### Engine-version discipline (enforced in code)
 - `config.ENGINE` stamps `calibration.json`, `last_scan.json`, and every
