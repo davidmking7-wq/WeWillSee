@@ -226,6 +226,17 @@ trails at J×σ42 (J = 0.4–0.8). Results:
   (be_hit: holdout +2.11%/window, best of every post-hit variant; the
   fixed 8%-peak-trail sold ongoing runners and lost ~0.2pp to it).
 
+**Re-confirmed on the current v5 / S&P 1500 pipeline** (full period,
+cash-exit accounting): the per-stock disaster stop remains the best exit
+rule and its edge over the wide rule GROWS on the wider universe — fixed
+−15% stop: +1.65%/window, 22.8% tail, +155% compounded; per-stock 2×σ42
+stop: +2.02%/window, 17.9% tail, +228% compounded (hold: +2.26%/+243%).
+Small caps move more, so a one-size stop whipsaws them harder — exactly
+why the level must come from each stock's own volatility. The post-hit
+breakeven floor costs more here (~0.45pp/window cash; big small-cap
+winners re-run after round-trips) — it stays loss-minimizing guidance
+with its price stated, not a return enhancer.
+
 **What ships** — the pipeline prints a per-pick "Sell Signal" with live
 PER-STOCK dollar levels, refreshed on every update:
 1. **Disaster stop at 2× the stock's own expected 2-month move** below

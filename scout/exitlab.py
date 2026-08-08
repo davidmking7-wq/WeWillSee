@@ -153,9 +153,9 @@ RULES = ("none", "stop8", "stop10", "stop12", "stop15", "stop18",
          "vprot40", "vprot60", "vprot80")
 
 
-def collect_windows(picks: int, step: int, start, end):
-    """One engine pass -> [(paths, below_sma_paths, spy_end)] per window."""
-    bars = backtest.load_bars()
+def collect_windows(picks: int, step: int, start, end, mode="sp500"):
+    """One engine pass -> [(paths, smas, sigmas, spy_end)] per window."""
+    bars = backtest.load_bars(mode=mode)
     c = bars["close"]
     idx = c.index
     h = config.HORIZON_TDAYS
@@ -196,9 +196,12 @@ def main() -> None:
     ap.add_argument("--step", type=int, default=21)
     ap.add_argument("--start", default=None)
     ap.add_argument("--end", default=None)
+    ap.add_argument("--universe", default="sp500",
+                    choices=["sp500", "pit500", "sp1500"])
     args = ap.parse_args()
 
-    windows, span = collect_windows(args.picks, args.step, args.start, args.end)
+    windows, span = collect_windows(args.picks, args.step, args.start,
+                                    args.end, args.universe)
     n_picks = sum(len(p) for p, _, _, _ in windows)
     print(f"{len(windows)} windows, {n_picks} picks, {span[0]} .. {span[1]}")
     stride = max(1, math.ceil(config.HORIZON_TDAYS / args.step))
