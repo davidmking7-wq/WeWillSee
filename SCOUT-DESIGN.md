@@ -310,6 +310,25 @@ more +3% weeks (21.8% vs SPY's 8.3%) and an equal helping of -3% weeks,
 with -65% to -84% drawdowns and no gain in mean. Volatility moves the tails
 symmetrically; it is not a source of return.
 
+**Forensics (scout/weekly_forensics.py) — why, in four causes.**
+(1) Variance drag: geo ~= arith - sigma^2/2, so drag scales with the SQUARE
+of book vol. Pool sd 2.10%/wk -> drag 0.022; top1 sd 5.06% -> drag 0.128,
+about 6.6%/yr of compounding destroyed by volatility alone and ~44% of
+top1's weekly bleed. (2) The ranking does not sort forward returns at
+either horizon: decile 1 (best-ranked) returns 0.126%/wk and 2.03%/42td
+against decile 10's 0.225% and 2.28% — top-minus-bottom -0.099% (5 td) and
+-0.257% (42 td), flat-to-mildly-inverted, deciles 1-2 lowest of the ten.
+**This is the v2 "composite rank shows ~no lift over the gated base rate"
+finding, confirmed on ten years and the S&P 1500**: the value is in the
+GATES (eligible pool alpha -1.5%/yr, market-like), not the ranking.
+(3) The objective was never mean return — a 63.6% hit rate is a
+first-passage statistic, driven by volatility rather than drift, so
+selecting for it raises drag without raising the mean. (4) Costs: 5.2%/yr
+at 52 rebalances vs ~0.6%/yr monthly — real but smallest, and break-even
+stays negative at zero cost. Beta 0.73-1.03 throughout: top1 takes 2.4x
+SPY's volatility for 73% of its moves, so the risk is not even compensated
+by market exposure.
+
 **Not shipped.** `scout/weekly_trader.py` (plan/open/close/scoreboard
 against an Alpaca PAPER account, paper-verified at both key and account
 level, protected-symbol isolation, journal written before orders go out)

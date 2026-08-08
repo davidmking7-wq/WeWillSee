@@ -16,3 +16,7 @@ scout/earnings_cache.json
 scout/backtest_cache_pit.pkl
 scout/backtest_cache_1500.pkl
 scout/form4_cache/
+scout/weekly_plan.json
+scout/weekly_ranks_*.pkl
+# NOT ignored: scout/weekly_journal.jsonl — that is the live track record
+# (same role as picks.xlsx), and it only means anything if it persists.

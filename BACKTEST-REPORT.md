@@ -621,6 +621,85 @@ putting money — even paper money — behind a weekly rotation of these
 rankings in preference to holding SPY. If it is run, it should be run as a
 recorded live experiment with this table in view, not as a strategy.
 
+### Weekly loss forensics — where the money actually goes
+
+"How can it lose this badly when the engine uses validated metrics?"
+`scout/weekly_forensics.py` decomposes it. 472 weeks, sp1500, entry=open,
+10 bps. All figures per week unless marked.
+
+| strategy | arith | geo | drag | sd | beta | alpha | t(a) | ann. alpha |
+|---|---|---|---|---|---|---|---|---|
+| top1 | -0.166 | **-0.294** | **0.128** | 5.06 | 0.73 | -0.367 | -1.66 | **-19.1%** |
+| top2 | 0.036 | -0.042 | 0.078 | 3.93 | 0.89 | -0.208 | -1.31 | -10.8% |
+| top3 | 0.059 | -0.008 | 0.067 | 3.63 | 0.91 | -0.191 | -1.35 | -9.9% |
+| top5 | 0.130 | 0.075 | 0.055 | 3.32 | 0.90 | -0.118 | -0.95 | -6.1% |
+| top10 | 0.161 | 0.116 | 0.044 | 2.97 | 0.90 | -0.086 | -0.83 | -4.5% |
+| voltilt3 | 0.061 | -0.029 | 0.090 | 4.26 | 1.03 | -0.220 | -1.31 | -11.4% |
+| random3 | 0.030 | -0.015 | 0.046 | 3.02 | 0.87 | -0.208 | -1.90 | -10.8% |
+| eqw eligible | 0.199 | 0.177 | **0.022** | 2.10 | 0.84 | -0.030 | -0.58 | -1.5% |
+| SPY | 0.274 | 0.252 | 0.023 | 2.14 | 1.00 | 0.0 | 2.72 | 0.0 |
+
+**Cause 1 — variance drag, and it is not small.** Geometric return is
+roughly arithmetic minus sigma^2/2, so the drag scales with the SQUARE of
+book volatility. Concentrating from the ~500-name eligible pool (sd 2.10%,
+drag 0.022%/wk) into one name (sd 5.06%, drag 0.128%/wk) multiplies weekly
+volatility by 2.4x and the drag by ~5.8x. For top1 that is **0.128%/wk of
+pure compounding loss — about 6.6%/yr destroyed by volatility alone, none
+of it attributable to bad picks.** It is the difference between top1's
+arithmetic -0.166% and its geometric -0.294%, and it is roughly 44% of the
+weekly bleed that produces the -75% headline.
+
+**Cause 2 — the ranking does not sort forward returns, at EITHER horizon.**
+Forward return by composite decile from the same entry bar (decile 1 = the
+engine's best-ranked tenth of the surviving pool):
+
+| decile | 5 td fwd % | 42 td fwd % | 5td/day bp | 42td/day bp |
+|---|---|---|---|---|
+| 1 (best-ranked) | **0.126** | **2.025** | 2.52 | 4.82 |
+| 2 | 0.121 | 1.653 | 2.41 | 3.93 |
+| 3 | 0.185 | 1.970 | 3.70 | 4.69 |
+| 5 | 0.242 | 2.020 | 4.83 | 4.81 |
+| 8 | 0.255 | 2.137 | 5.10 | 5.09 |
+| 10 (worst-ranked) | **0.225** | **2.282** | 4.50 | 5.43 |
+
+Top-minus-bottom spread: **5 td -0.099%, 42 td -0.257%.** There is no
+positive sorting. Deciles 1-2 are the *lowest* of the ten at both horizons,
+and the structure is otherwise flat and noisy (42 td range 1.65-2.28%). The
+spread is small relative to week-to-week noise, so this is "no sorting
+power", not a confident claim of inversion — but it is emphatically not the
+positive monotone spread a return-predictive ranking produces.
+
+This is not a new discovery; it is the **v2 finding, confirmed on ten years
+and a wider universe**. SCOUT-DESIGN already states: "composite rank shows
+~no lift over the gated base rate in bull regimes; the honest edge = the
+gates' quality/asymmetry, crash-regime avoidance, the event-research
+overlay". The decile table is that sentence, measured. The value in this
+pipeline lives in the GATES — the eligible pool carries an alpha of only
+-1.5%/yr, i.e. roughly market-like — and the ranking inside the pool adds
+nothing to mean return.
+
+**Cause 3 — the objective was never mean return.** The engine's validated
+number is a *first-passage* statistic: 63.6% hit rate = "the close touched
++5% at some point inside 42 td". Touching a threshold is driven mostly by
+volatility, not by drift. Selecting hard for "likely to touch +5%" is
+therefore selecting for volatility — which raises drag (Cause 1) without
+raising the mean (Cause 2). BACKTEST-REPORT has said from the start that
+the engine "compounds BELOW buy-and-hold SPY"; the weekly test simply
+removes the two-month runway that let first-passage look like performance.
+
+**Cause 4 — costs, the only one that is purely mechanical.** 10 bps
+round-trip at 52 rebalances/yr is 5.2%/yr, against ~0.6%/yr at the
+pipeline's monthly cadence. Real, but the smallest of the four: even at
+zero cost the break-even-vs-SPY figures stay negative.
+
+**And beta explains why none of this is compensated.** Every variant runs
+beta 0.73-1.03 — top1 is beta **0.73** with sd 5.06% against SPY's 2.14%.
+That is 2.4x the volatility for 73% of the market's moves: single-stock
+risk taken without even full market exposure to pay for it. The gates
+(SMA200, positive 6-month momentum, vol band 20-40%, liquidity floor)
+select steady trending names rather than high-beta ones, so concentration
+buys idiosyncratic variance, not leverage.
+
 ## Caveats (all apply, none are optional reading)
 
 1. **Survivorship**: now QUANTIFIED by the point-in-time section above —
