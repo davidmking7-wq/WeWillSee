@@ -58,10 +58,14 @@ May take a few minutes when it (re)builds the calibration — first run after
 an engine change always rebuilds from scratch (10 years of data); tell the
 user if so. Then read `scout/last_scan.json`.
 
-**If `crash_risk` is true** (bear market + high volatility — the regime where
-momentum historically inverts): report that, recommend zero picks this cycle,
-and skip to Phase 5 unless the user explicitly wants picks anyway (then all
-grades are C and the report must say why).
+**If `crash_risk` is true** (bear market + high volatility): report it and
+set expectations DOWN — crash-flagged windows historically averaged +0.5%
+per window against +5.6% otherwise, and only 29% of them reached +5%. Do
+NOT recommend sitting the cycle out: that was tested directly
+(hypotheses.md H5a) and cost return, because those windows are dull, not
+dangerous — their worst was −8.3%, and none of the portfolio's five worst
+windows was crash-flagged. Grades cap at B while the flag is on, and the
+report must say plainly that the odds are near the base rate this cycle.
 
 The engine's extra gates (positive 6-month return, no lottery spikes)
 thin the candidate pool in rough markets — a short candidate list is honest,
@@ -121,12 +125,16 @@ Select TWO lists (a stock may appear in both — mark it "both"):
 
 1. **Best Overall — top 3**: the first 3 research-cleared symbols in the
    scan's `overall_order` (balanced chance × gain × speed × safety).
-   **The first 2-3 of these ARE the recommended portfolio** — the
-   portfolio lab (BACKTEST-REPORT.md) tested every concentration level
-   against the user's +5%-per-window goal, and a 2-3 pick book from this
-   exact ordering was the best stable configuration (avg +2.5 to +4.5%
-   per window). More names dilutes toward +2.6%; fewer is lottery-ticket
-   territory. Say this plainly in the report.
+   **These are the candidates, not a prescribed portfolio size.** The
+   claim that a 2-3 name book was the best configuration came from a
+   backtest that sampled one entry schedule; pooled across all six
+   schedules (BACKTEST-REPORT.md, Round 2), every book size from 1 to 8
+   returns the same ~+2% per window, and concentration changes only the
+   dispersion — top-1 swings 5.4pp between schedules and draws down 48%,
+   top-8 swings 1.7pp and draws down 30%. So: report the ordering, say
+   that a smaller book means a wider range of outcomes rather than a
+   higher expected return, and let the user choose. Never tell them
+   concentration earns more.
 2. **Biggest Gain — top 3**: the first 3 research-cleared symbols in
    `big_gain_order` (gain-weighted ranking; only stocks with Chance +5%
    ≥ 62% qualify). If fewer than 3 qualify — or none — say so honestly in
@@ -181,24 +189,36 @@ Show, in plain language (the user prefers no jargon):
    WORSE — what survived ten years of testing is (1) a disaster stop sized
    to the stock: a close below 2x that stock's own normal 2-month move
    under the buy price → sell, the pattern is broken (calm stocks get
-   tight levels, lively ones get room; caps catastrophes, doesn't add
-   return), (2) otherwise sell at the deadline, and (3) once a pick
-   touches +5%, never let it become a loss — sell on any close back
-   at/below the buy price. Every `update` run refreshes the live levels
-   and flags any pick whose signal says SELL — surface those prominently.
+   tight levels, lively ones get room). Be honest about what it is: at
+   portfolio level it fired on 3 of 108 positions in ten years — real
+   catastrophe insurance, not a return booster. And (2) otherwise sell at
+   the deadline. Every `update` run refreshes the live levels and flags
+   any pick whose signal says SELL — surface those prominently.
+   **The old rule "once a pick touches +5%, never let it become a loss"
+   is NO LONGER a rule** — tested at portfolio level it cut compounded
+   return by about a third (hypotheses.md H6c), because momentum names
+   routinely dip back through the entry price and then run. Offer it only
+   if the user asks for a calmer ride, and say what it costs.
 3. **Mandatory context line** (never omit): the regime base rate — e.g.
    "Right now X% of eligible S&P stocks touch +5% in 2 months anyway; these
    picks historically did it Y% of the time (lift Z)." A 65% P(hit) in a bull
    market is mostly base rate, and the user must see that.
    Then the **portfolio goal tracker** (the user's stated goal is +5%+ per
-   1-2 months on the whole portfolio): per BACKTEST-REPORT.md's portfolio
-   lab, a concentrated book of the top 2-3 overall picks historically
-   averaged +2.5 to +4.5% per window with ≥+5% landing in ~40-50% of
-   windows (never all of them — nothing documented achieves that), worst
-   windows of -15% to -25%, and multi-window losing streaks. State this
-   expectation every run so the goal is scored against reality, and never
-   suggest profit targets, static leverage, or 1-stock concentration to
-   force the number (each is documented to destroy the edge).
+   1-2 months on the whole portfolio). Use the CORRECTED numbers from
+   BACKTEST-REPORT.md Round 2 — pooled across every entry schedule, not
+   the old single-schedule headline: expect roughly **+2% per 42-day
+   window**, with ≥+5% landing in **40-47%** of windows (never all of
+   them — nothing documented achieves that), a worst window around
+   **−18% to −25%**, multi-window losing streaks, and **no reliable edge
+   over simply holding SPY** (+2.5%/window on the same decade). The
+   defensible value is reaching +5% sooner and more often than the index
+   with calibrated odds, not compounding faster. If the user is starting
+   a new book, mention the ladder: splitting capital across two entry
+   dates a month apart doesn't raise the average but roughly halves how
+   much the outcome depends on which day they happened to start.
+   Never suggest profit targets, static leverage, or 1-stock
+   concentration to force the number (each is documented to destroy the
+   edge or add only dispersion).
 4. The caveats from `last_scan.json`, briefly, plus: research scorecard, not
    financial advice; nothing was bought; and (from BACKTEST-REPORT.md) the
    tool historically does NOT beat buy-and-hold SPY — its value is finding

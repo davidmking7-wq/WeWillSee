@@ -103,6 +103,47 @@ are worse.
 Score: 1 shipped signal, 1 shipped discipline, 3 honest rejections, 1
 flagged for more data. That ratio is what real research looks like.
 
+## Round 2 results (2026-08-08) — nothing shipped, one number retracted
+
+Asked: where do the losses come from, can bear markets be predicted
+better, can the +733% run be improved? 23 pre-registered variants across
+three new labs (`regime_lab`, `tail_lab`, `phase_lab`). Zero improved it.
+Full numbers in BACKTEST-REPORT.md "Round 2"; the method lessons:
+
+1. **The intuition was wrong, and the data said so immediately.** Bear
+   and crash windows average +0.5% with a −8.3% worst; the portfolio's
+   five worst windows carried NO market-state flag. High volatility is
+   the *best* entry state (+6.8%/window). Every regime-based exposure
+   rule therefore lost money. Checking the forensics BEFORE building the
+   protection is what stopped a plausible, expensive rule from shipping.
+2. **A shipped rule failed its first honest test.** The breakeven-after-
+   +5% exit was adopted on single-stock statistics and never run at
+   portfolio level; there it costs about a third of the compounded
+   return. Rule 8 for the house: *every* rule must be tested at the level
+   it is applied, not the level it was discovered.
+3. **The biggest failure was a sampling choice nobody had questioned.**
+   Holds are 42 td and scans are 21 td apart, so the non-overlapping
+   backtest silently picked one of six possible entry schedules — and it
+   was the best one. The other five return +0.4% to +3.5% per window
+   against its +4.6%. Walk-forward, train/holdout, both-halves
+   consistency and engine versioning all passed; none of them could see
+   this, because every one of them shared the same entry dates.
+   **Rule 9: any portfolio-level claim must be pooled across entry
+   phases before it is quoted** (`phase_lab --sweep`).
+4. **What survived is smaller and truer**: pooled, the engine returns
+   ~+2%/window at every book size from 1 to 8, versus SPY's +2.5%.
+   Concentration buys dispersion, not return. The tool's real, still-
+   defensible claim is the calibrated one — these names reach +5% sooner
+   and more often (47% of windows vs SPY's 38%) — not that they compound
+   faster.
+5. **The only adoption is a de-risking, not an edge**: ladder the
+   capital across entry dates so the outcome stops depending on which
+   day the account started.
+
+Score: 0 shipped signals, 1 retracted headline, 1 demoted rule, 1 new
+protocol rule. A round that deletes a false number is worth more than a
+round that adds a true-looking one.
+
 ## The honest bottom line
 
 Faster is not available: the profit physically accrues in weeks 4–8 and

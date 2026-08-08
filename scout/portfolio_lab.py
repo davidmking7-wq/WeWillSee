@@ -1,6 +1,16 @@
 """Portfolio lab: measures the user's ACTUAL goal — does the PORTFOLIO
 make >= +5% per 42-trading-day window, and how consistently?
 
+!! READ THIS BEFORE QUOTING ANY NUMBER FROM HERE !!
+Holds are 42 td and scans are 21 td apart, so the non-overlapping run
+below samples ONE of six possible entry schedules — and it happens to be
+the luckiest one (+4.6%/window here vs +0.4% to +3.5% for the others; see
+scout/phase_lab.py and BACKTEST-REPORT.md "Round 2"). Pooled across all
+phases the honest figure is ~+2%/window at every book size. This lab is
+still the right place to compare strategies against each other on a fixed
+schedule, but any number that leaves this file must be pooled first:
+    python -m scout.phase_lab --step 7 --sweep 1,2,3,5,8
+
 Two strategy families over the v5 engine's rankings:
 
 A. WINDOW: classic top-N equal-weight, held to the deadline, one window
@@ -30,7 +40,7 @@ from . import backtest, config, signals
 H = config.HORIZON_TDAYS
 
 
-def collect(mode, start, end, top=15):
+def collect(mode, start, end, top=15, step=21):
     """Monthly rankings + regime flags + close panel. In pit500 mode each
     date ranks ONLY that day's actual S&P 500 members (same one-row-slice
     technique as backtest.run_engine)."""
@@ -41,7 +51,7 @@ def collect(mode, start, end, top=15):
     frames = signals.feature_frames(bars["open"], c, bars["volume"])
     spy = c["SPY"].dropna()
     bull = (spy > spy.rolling(200).mean()).reindex(idx)
-    positions = backtest.positions_for(idx, start, end, 21)
+    positions = backtest.positions_for(idx, start, end, step)
     scans = []
     for pos in positions:
         ts = idx[pos]
@@ -61,7 +71,11 @@ def collect(mode, start, end, top=15):
                       "ranked": list(snap.index[:top]),
                       "sigma42": {s: float(snap.loc[s, "vol"]) * math.sqrt(H / 252)
                                   for s in snap.index[:top]},
-                      "bull": bool(b) if not pd.isna(b) else True})
+                      "bull": bool(b) if not pd.isna(b) else True,
+                      # extra ex-ante state used by regime_lab (H5e/H5f/H5g)
+                      "pool": int(len(snap)),
+                      "top_score": float(snap["score"].iloc[0]),
+                      "date": str(ts.date())})
     return c, idx, scans
 
 

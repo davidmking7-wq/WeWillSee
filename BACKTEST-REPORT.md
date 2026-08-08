@@ -351,9 +351,18 @@ name). 54 non-overlapping windows, 2017-2026:
 | roll-5 (sell at +5%, redeploy) | +3.29% | 48% | −20.9% | +357% |
 | SPY | +2.50% | 37% | −16.0% | +251% |
 
-- **Stability:** top-2 is the one configuration that led BOTH halves
-  (+4.28%/window 2017-21, +4.90% 2022-26). The velocity strategy is
-  regime-dependent (weak in trending years, best in choppy ones).
+> **⚠️ READ THE NEXT SECTION BEFORE USING THIS TABLE.** Every row above
+> samples ONE entry schedule out of six. Re-run on the other five, the
+> top-2 row falls to about **+2.1%/window** and the ordering between rows
+> disappears. The table is kept for the audit trail, not as an
+> expectation.
+
+- **Stability:** top-2 led BOTH halves of this schedule (+4.28%/window
+  2017-21, +4.90% 2022-26) — which is why it survived review for as long
+  as it did. Both-halves consistency does not protect against the
+  entry-date problem below: both halves share the same entry dates.
+  The velocity strategy is regime-dependent (weak in trending years,
+  best in choppy ones).
 - **The honest floor:** on the point-in-time S&P 500, concentration
   collapses (top-1: +0.34%/window; top-2: +1.89%) — a large share of the
   concentrated edge lives in the mid/small segment, whose survivorship
@@ -371,15 +380,133 @@ name). 54 non-overlapping windows, 2017-2026:
 
 **The verdict, stated plainly:** "+5% or more EVERY window" is not a
 target any evidence supports — not for this tool, not for anything
-documented short of Medallion. The closest achievable, measured
-formulation: a concentrated 2-3 pick book from the top of the scan's
-overall order, stops-not-targets, crash rule respected — expect roughly
-**+2.5 to +4.5% per window** (depending on how much of the small-cap
-edge survives survivorship), with **≥+5% landing in roughly 40-50% of
-windows**, a worst window of −15% to −25% every couple of years, and
-losing streaks that WILL span multiple windows. Success should be scored
-the way this scorecard already scores it: predicted vs realized, window
-by window — not by demanding the impossible window-after-window.
+documented short of Medallion. For the rest of the expectation, see the
+correction below: the "+2.5 to +4.5% per window" this report used to
+promise was measured on one entry schedule and does not survive.
+
+## Round 2 — the loss forensics, and the correction they forced
+
+The question asked was: where do the losses in the +733% run come from,
+can bear markets be predicted better, and can the result be improved?
+Three labs were built (`scout/regime_lab.py`, `scout/tail_lab.py`,
+`scout/phase_lab.py`); 23 variants were pre-registered in
+`scout/hypotheses.md` and tested. Not one improved the baseline, and the
+third lab showed why: the baseline was not what it looked like.
+
+### 1. The losses are not bear-market losses
+
+Every one of the 54 windows was dumped with the market state known AT
+ENTRY. The result contradicts the intuition (mine and the user's):
+
+| entry state | n | avg/window | worst | ≥+5% |
+|---|---|---|---|---|
+| bear (SPY < 200d SMA) | 11 | **+0.49%** | −8.3% | 27% |
+| crash flag (bear AND high vol) | 7 | **+0.52%** | −8.3% | 29% |
+| high vol only | 15 | **+6.84%** | −8.3% | 53% |
+| calm / no flag | 30 | +3.73% | **−22.7%** | 43% |
+
+Bear and crash windows are *dull, not dangerous* — low returns, but
+positive, and their worst is −8.3%. **Zero of the five worst windows
+carried any market-state flag.** The real damage is single-name
+collapses in calm bull markets: 2020-01 (BLDR −27%), 2024-11 (FICO
+−17%), 2019-07 (OKTA −22%), 2018-05 (IBKR −21%). 18 losing windows sum
+to −135pp; the worst 5 are half of that.
+
+High volatility is the strategy's *best* state, not its worst — long-only
+momentum in a high-vol tape is buying the rebound. Every exposure rule
+built on market state therefore lost money: crash→cash +716%, bear→half
++723%, high-vol→half **+437%**, breadth→half +668%, engine-pool→half
++610%, vol-targeting +602% — all against +733%. (Vol-targeting was the
+one with a real defense: in 2022-2026 alone it improved worst and maxDD
+at no cost. It fails 2017-2021 by de-levering the 2020-21 rally, so it is
+not shipped.)
+
+### 2. Stop rules cannot reach that tail either
+
+The portfolio backtest had always held to the deadline, so the tool's own
+per-stock exits were tested inside it for the first time:
+
+| rule | avg/window | worst | maxDD | compounded | fired |
+|---|---|---|---|---|---|
+| hold to deadline (baseline) | +4.59% | −22.7% | −29.1% | +733% | — |
+| disaster stop 2.0σ (shipped) | +4.56% | −22.4% | −29.4% | +719% | 3 / 108 legs |
+| disaster + replace next-ranked | +4.66% | −22.1% | −28.5% | +768% | 3 |
+| **breakeven after +5% (shipped)** | **+3.76%** | −14.6% | −23.1% | **+471%** | 29 |
+| trailing 1.5σ | +4.01% | −15.0% | −27.2% | +516% | 19 |
+| inverse-vol weights | +4.47% | −22.0% | −28.6% | +692% | — |
+
+Two things worth acting on. The **disaster stop is nearly inert** — 2σ is
+~26% below entry, it fired 3 times in ten years; keep it as catastrophe
+insurance, but it is not a return lever and it did not prevent a single
+worst window. The **breakeven rule costs real money**: it fires 29 times,
+saves 2020-01 (−22.7% → −4.1%), and loses far more selling winners that
+dip through entry and then run. It was adopted on single-stock stats and
+never checked at portfolio level. **Corrected: it is no longer a rule,
+only an option for someone who wants a smoother ride and accepts ~35%
+less compounded return.**
+
+### 3. The finding that matters: +733% was the luckiest of six schedules
+
+Scans exist every 21 trading days and holds last 42, so the
+non-overlapping backtest takes every *other* scan — one of two possible
+entry schedules, and nobody had ever run the other. Sampling every 7
+trading days gives six equally valid schedules, each with 53
+non-overlapping windows over the same decade and the same engine:
+
+| entry offset | +0 td | +7 td | +14 td | +21 td | +28 td | +35 td |
+|---|---|---|---|---|---|---|
+| avg/window | **+4.56%** | +0.78% | +0.43% | +3.48% | +0.66% | +2.63% |
+| compounded | **+685%** | −14% | −4% | +304% | −6% | +215% |
+
+The shipped number is the maximum of six draws. Pooled, the honest
+estimate is **+2.09% per window / +197% compounded, against SPY's +2.53%
+/ +248%** on the identical span. The spread is not evidence of a "good
+phase": its SD (1.7pp) is exactly the sampling noise of 53 windows
+(SE ≈ 1.5pp). Six noisy estimates of one mean — and the report had been
+quoting the largest.
+
+Pooling also dissolves the concentration result that drove the whole
+recommendation:
+
+| book | pooled avg/window | phase spread | ladder compounded | worst | maxDD | ≥+5% |
+|---|---|---|---|---|---|---|
+| top-1 | +1.97% | 5.43pp | +178% | −24.8% | −48.3% | 45% |
+| top-2 | +2.09% | 4.13pp | +197% | −20.1% | −46.1% | 47% |
+| top-3 | +2.02% | 3.62pp | +165% | −19.5% | −41.7% | 40% |
+| top-5 | +2.01% | 1.91pp | +144% | −19.8% | −37.9% | 32% |
+| top-8 | +2.21% | 1.68pp | +177% | −17.8% | −29.9% | 38% |
+| SPY | +2.53% | — | +248% | −16.0% | −17.9% | 38% |
+
+**Concentration buys no return — only dispersion.** Every book size lands
+within 0.25pp of the same ~+2% per window; what changes monotonically is
+how much the answer depends on when you started (5.43pp → 1.68pp) and how
+deep the drawdown gets (−48% → −30%). The one thing concentration does
+deliver is the tool's actual claim: a top-2 book reaches +5% in 47% of
+windows vs SPY's 38% — it gets there more often, and gives it back on the
+misses, which is why the averages match.
+
+### 4. What ships from Round 2
+
+- **The ladder** (`H7b`): split capital across entry dates instead of
+  betting the account on one. It cannot raise the mean — it *is* the
+  mean — but a 6-sleeve ladder's worst window is −20.1% and maxDD −46.1%
+  against single-schedule worsts of −30.7% and −82.8%. Two sleeves a
+  month apart already gets most of it (−18.4% / −29.6%).
+- **The corrected expectation**, replacing "+2.5 to +4.5% per window":
+  roughly **+2% per 42-day window, ≥+5% in 40-47% of windows, worst
+  window −18% to −25%, and no reliable edge over holding SPY.** The
+  tool's defensible value is unchanged and narrower than the old
+  headline: it finds names that reach +5% *sooner and more often* than
+  the index, with calibrated odds — not names that compound faster.
+- **Breakeven-after-+5% demoted** from rule to option (see above).
+- Nothing else. 23 pre-registered variants, zero winners.
+
+The failure this round exposes is a process failure worth naming: every
+prior guard (walk-forward calibration, train/holdout split, both-halves
+consistency, engine versioning) was defeated by a single unexamined
+choice — the entry-date grid, which both halves shared. **Any future
+portfolio claim in this report must be pooled across entry phases
+(`python -m scout.phase_lab --sweep ...`) before it is quoted.**
 
 ## The ML Check as a selector — tested, rejected (information only)
 
