@@ -147,6 +147,16 @@ Show, in plain language (the user prefers no jargon):
    the minimum bar — the overall list balances chance × gain size × speed ×
    safety; the gain list chases the biggest average peaks among stocks
    still clearing the 62% chance bar.
+   Then the selling rules, once, plainly (they are per-pick in the "Sell
+   Signal" column and each candidate's `sell_if`): ordinary stop-losses
+   tested WORSE — the three rules that survived ten years of testing are
+   (1) a -15% disaster stop (close 15% below the buy price → sell, the
+   pattern is broken; exists to cap catastrophes, not add return),
+   (2) otherwise sell at the deadline, and (3) once a pick touches +5%,
+   protect it — sell if it closes back at breakeven or 8% below its best
+   close (whichever is higher). Every `update` run refreshes the live
+   levels and flags any pick whose signal says SELL — surface those
+   prominently.
 3. **Mandatory context line** (never omit): the regime base rate — e.g.
    "Right now X% of eligible S&P stocks touch +5% in 2 months anyway; these
    picks historically did it Y% of the time (lift Z)." A 65% P(hit) in a bull

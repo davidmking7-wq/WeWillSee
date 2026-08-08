@@ -197,6 +197,26 @@ mid-window drop out of picks AND benchmarks; SPY sits in the cross-sectional
 rank pool (1/500 distortion, consistent across scan/calibration/backtest);
 labtest's SECREL rank is post-gate.
 
+### Sell rules (2026-08-08, scout/exitlab.py)
+
+User directive: "if stock x does y you should sell, so losses are minimal —
+and account for it in testing." 19 close-based exit rules tested train
+(2017-2021) / holdout (2022-2026) over the v4 engine's picks, under BOTH
+cash-exit and redeploy-into-SPY accounting; simulation adversarially
+verified (no bugs); conclusions cross-checked against Kaminski-Lo 2014,
+Lei-Li 2009, Han-Zhou-Zhu. Full record in BACKTEST-REPORT.md. Verdict:
+ordinary stops/time/trend exits reduce returns (whipsaw + gap-through;
+daily single-stock autocorrelation has the wrong sign for stops). Shipped
+as per-pick "Sell Signal" guidance (config.SELL_DISASTER_STOP,
+SELL_TRAIL_AFTER_HIT): (1) −15% disaster stop — tail-capping at ~zero mean
+cost with redeployment; (2) otherwise the deadline is the exit; (3) after
+a +5% touch, protect at max(breakeven, peak−8%) — return-neutral with
+redeployment, cuts the average loser −7.9%→−6.0%. scan emits `sell_if`,
+update refreshes live levels and flags "SELL" states in the Excel "Sell
+Signal" column. HIT/MISS labels are never altered by the guidance. Real
+loss prevention lives at entry: earnings gate, lottery-spike veto, crash
+rule.
+
 ### Engine-version discipline (enforced in code)
 - `config.ENGINE` stamps `calibration.json`, `last_scan.json`, and every
   `picks.xlsx` row. `calibrate.run()` discards a cached calibration whose

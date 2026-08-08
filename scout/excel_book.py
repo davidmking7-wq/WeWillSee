@@ -35,7 +35,7 @@ HEADERS = ["Date Picked", "Stock", "Company", "Industry", "List",
            "Engine",
            # columns added later — kept at the end so old workbooks migrate
            # by appending, never by shifting existing data
-           "Chance +15%", "Earnings Before Deadline"]
+           "Chance +15%", "Earnings Before Deadline", "Sell Signal"]
 COL = {h: i + 1 for i, h in enumerate(HEADERS)}
 
 # old header -> new header (renamed in place on migration; renames never
@@ -111,6 +111,20 @@ Earnings Before Deadline  The company's next quarterly report date, if it
                   that can wreck a good pattern overnight — picks with one
                   inside the window get their Confidence downgraded a notch
                   automatically.
+Sell Signal       When to sell, updated every run. Ten years of testing say
+                  ordinary stop-losses make results WORSE (stocks dip and
+                  recover too often, and crashes gap right through stops).
+                  The three rules that survived testing:
+                  1) Disaster stop: if it closes 15% below your buy price,
+                     sell — the pattern is broken. Rarely fires; exists to
+                     cap catastrophes, not to add returns.
+                  2) Otherwise no stop — sell at the Deadline.
+                  3) Once it has touched +5%, protect it: sell if it closes
+                     back at your buy price or 8% below its best close,
+                     whichever is higher.
+                  This column shows the live instruction with exact price
+                  levels. Protection buys smaller losses, not bigger gains
+                  (roughly free if you re-invest the freed cash).
 
 What-happened columns:
 Gain So Far %     Where the stock is now vs the pick price.
@@ -230,7 +244,8 @@ def resolve(updates: list[dict]) -> None:
     today = str(date.today())
     for u in updates:
         row = u["_row"]
-        for h in ("Price Now", "Gain So Far %", "Best So Far %", "Result", "Hit Date"):
+        for h in ("Price Now", "Gain So Far %", "Best So Far %", "Result",
+                  "Hit Date", "Sell Signal"):
             if h in u and u[h] is not None:
                 ws.cell(row=row, column=COL[h], value=u[h])
         ws.cell(row=row, column=COL["Last Checked"], value=today)

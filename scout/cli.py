@@ -152,6 +152,15 @@ def cmd_scan(args) -> None:
             "grade_quant": grade,
             "earnings_date": edate,
             "earnings_in_window": e_inside,
+            "sell_if": (f"sell on a close at/below "
+                        f"{round(price * (1 - config.SELL_DISASTER_STOP), 2)} "
+                        f"(-15% disaster stop; ordinary stops tested worse); "
+                        f"once it touches "
+                        f"{round(price * (1 + config.TARGET_GAIN), 2)}, protect "
+                        f"— sell on a close at/below breakeven "
+                        f"({round(price, 2)}) or 8% below its best close, "
+                        f"whichever is higher; otherwise sell at the deadline "
+                        f"{horizon_end}"),
             "signals_text": sig_text,
         })
     candidates.sort(key=lambda cd: (cd["opp_score"] is None,
@@ -202,6 +211,30 @@ def cmd_scan(args) -> None:
     print(f"wrote {config.LAST_SCAN_JSON}")
 
 
+def _sell_signal(result: str, basis: float, latest: float, peak: float,
+                 hz_end: date) -> str:
+    """Plain-language sell instruction (see the sell-guidance block in
+    config). Guidance only — never changes the HIT/MISS labels the
+    scoreboard is graded on."""
+    if result == "MISS":
+        return "SELL — deadline passed"
+    if result == "HIT":
+        level = max(basis, peak * (1 - config.SELL_TRAIL_AFTER_HIT))
+        if latest <= level:
+            return (f"SELL — hit +5%, then closed back at/below the protect "
+                    f"level (${level:.2f})")
+        return (f"hold — protect: sell on a close at/below ${level:.2f} "
+                f"(breakeven or 8% off the best close, whichever is higher); "
+                f"otherwise sell at the deadline {hz_end}")
+    disaster = basis * (1 - config.SELL_DISASTER_STOP)
+    if latest <= disaster:
+        return (f"SELL — closed at/below the -15% disaster level "
+                f"(${disaster:.2f}); the pattern is broken")
+    return (f"hold — ordinary stops tested worse; sell only on a close "
+            f"at/below ${disaster:.2f} (-15% disaster stop), else at the "
+            f"deadline {hz_end}")
+
+
 def cmd_update(args) -> None:
     picks = excel_book.open_picks()
     if not picks:
@@ -245,6 +278,9 @@ def cmd_update(args) -> None:
             resolved.append(f"{sym} MISS (best reached {u['Best So Far %']:+.1f}%)")
         else:
             u["Result"] = "OPEN"
+        u["Sell Signal"] = _sell_signal(u["Result"], basis, latest, maxc, hz_end)
+        if u["Sell Signal"].startswith("SELL"):
+            resolved.append(f"{sym} sell signal: {u['Sell Signal']}")
         updates.append(u)
 
     excel_book.resolve(updates)
@@ -297,6 +333,7 @@ def cmd_record(args) -> None:
             "Why (short)": fp.get("thesis", ""),
             "Result": "OPEN", "Last Checked": str(date.today()),
             "Engine": scan.get("engine", config.ENGINE),
+            "Sell Signal": cd.get("sell_if", ""),
         })
     n = excel_book.append_picks(rows)
     print(f"recorded {n} picks -> {config.EXCEL_PATH}")

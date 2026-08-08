@@ -69,6 +69,21 @@ VOL_BAND = (0.20, 0.40)     # preferred annualized 63d vol
 # honest, not a bug.
 GAIN_MIN_P5 = 0.62
 
+# Sell guidance (exit-rule lab, scout/exitlab.py — full record in
+# BACKTEST-REPORT.md; corroborated by Kaminski-Lo 2014, Lei-Li 2009).
+# Tested 2017-2026: ordinary stops/time/trend exits before the deadline
+# reduce returns (whipsaw + gap-through — daily single-stock returns lean
+# toward reversal, so stops sell dips right before the expected bounce).
+# What ships, all three guidance-only (HIT/MISS labels never altered):
+#  1. DISASTER stop: close <= -15% from entry -> sell. Almost never fires;
+#     truncates catastrophes (worst pick -32.5% -> -24%) at ~zero mean cost
+#     when proceeds are redeployed. Tail-capping, not return enhancement.
+#  2. No other stop before the deadline; the deadline is the exit.
+#  3. After a +5% touch: protect at max(breakeven, peak - 8%) — cuts the
+#     average loser from -7.9% to -6.0%, return-neutral with redeployment.
+SELL_TRAIL_AFTER_HIT = 0.08
+SELL_DISASTER_STOP = 0.15
+
 # Calibration statistics
 SHRINK_K = 20               # shrink bucket P toward regime base rate
 MIN_NEFF = 20               # refuse to quote P below this effective sample size

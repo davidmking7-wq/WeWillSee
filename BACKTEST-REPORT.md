@@ -92,6 +92,82 @@ The backtest harness itself was adversarially reviewed before the holdout
 ran; a lookahead bug in the crash-regime flag (full-sample volatility
 quantile) and a non-overlap stride bug were fixed first.
 
+## Sell rules — tested, and mostly rejected
+
+Motivated by the miss anatomy (misses average −6.6% because broken momentum
+has no floor: 23% of misses end below −10%, and ~19% contain a >7%
+single-day crash), 18 close-based sell rules were tested over the v4
+engine's picks via `python -m scout.exitlab` — hard stops (−8/−10/−12/−15/
+−18%), time stops (day 21/30 at several levels), trend breaks (close below
+50d SMA), crash exits (>7% one-day drop), trailing and breakeven exits.
+Rules were designed on TRAIN 2017-2021 and the survivors judged once on
+HOLDOUT 2022-2026. All exits execute at the breaching CLOSE (no pretending
+you got out at the stop level through a gap).
+
+**Finding 1 — no rule that can act BEFORE the deadline survived.** Every
+hard stop, time stop and trend stop reduced the average window return in
+BOTH periods (e.g. −10% stop: +1.09%/window on train vs +2.41% holding).
+Two mechanisms, both visible in the data: 20% of eventual winners close
+≤−5% before hitting (stops sell recoveries), and crashes gap through stop
+levels (a −10% stop's realized exits averaged below −10%, so the loss tail
+actually got WORSE). The deadline itself is the only pre-hit sell rule the
+data supports.
+
+**Finding 2 — protection AFTER a pick touches +5% is the only family worth
+shipping, and the accounting matters.** "Once +5% is touched, sell on a
+close at/below max(breakeven, peak−8%)":
+- If exit proceeds sit in CASH for the rest of the window, the rule costs
+  ~0.3pp per window (~2%/yr) — protection is not free.
+- If exit proceeds are REDEPLOYED (modeled: into SPY for the window's
+  remainder — the adversarial review of this harness flagged the cash
+  assumption, and this check answers it), the rule is roughly
+  return-neutral: full period +2.47%/window vs +2.49% holding, with BETTER
+  compounded growth (+169% vs +150%); train favored protection (+95% vs
+  +65% compounded), holdout favored holding (+102% vs +117%) — era noise
+  around zero.
+- Under both accountings it reliably buys a smaller average loser (−6.0%
+  vs −7.9%) and a smaller tail (11% vs 14% of picks below −10%).
+That combination — ~zero expected cost with redeployment, consistently
+smaller losses — is why it ships. (Hard stops occasionally look good under
+redeployment in crisis windows — e.g. stopped out into the 2020 SPY
+rebound — but that is timing luck concentrated in 2-3 windows, they still
+fail train AND holdout averages, and they whipsaw. Still rejected.)
+
+| rule (full period) | avg/window | compounded | picks < −10% | avg loser |
+|---|---|---|---|---|
+| hold to deadline | **+2.49%** | **+150%** | 13.5% | −7.9% |
+| protect after +5% (shipped as guidance) | +2.13% | +111% | 11.2% | −6.0% |
+| −15% hard stop | +2.11% | +113% | 16.4% | −8.6% |
+| sell if below entry at day 21 | +1.69% | +74% | 10.5% | −6.3% |
+| close < 50d SMA | +0.96% | +37% | 5.0% | −5.3% |
+
+**What ships** — the pipeline prints a per-pick "Sell Signal" with live
+dollar levels, refreshed on every update:
+1. **Disaster stop:** a close ≤ −15% from entry → sell. Rarely fires;
+   truncates catastrophes (worst pick −32.5% → −24.2%) at ~zero mean cost
+   under redeployment (+2.43 vs +2.49 per window). Tail-capping only.
+2. **No other stop before the deadline; the deadline is the exit.**
+3. **After a +5% touch:** protect at max(breakeven, peak−8%).
+The guidance never alters the scoreboard's HIT/MISS labels. The
+loss-prevention that actually works for free is at ENTRY: the earnings
+gate (binary-event days cause the worst single-day wrecks), the lottery-
+spike veto, and the crash-regime rule.
+
+**The literature says the same thing** (checked independently):
+Kaminski & Lo 2014 prove a stop only raises expected return when serial
+correlation at the stop's trigger frequency exceeds the per-period Sharpe
+ratio — daily single-stock returns lean toward REVERSAL, so tight stops
+sell noise dips right before the expected bounce. Lei & Li 2009 (individual
+US stocks, 3-12 month holds) find stops "neither reduce nor increase
+losses" in expectation — their value is risk reduction, and only WIDE
+volatility-scaled thresholds dominate. Han-Zhou-Zhu's famous pro-stop
+result lives in monthly-re-formed decile portfolios with re-entry and
+optimistic fills — on the long-winners side alone their 10% stop left mean
+returns flat, and a −23% gap month still got through. The designs the
+literature actually supports for this horizon — time-based exit,
+deep disaster stop, wide post-gain trailing — are exactly the three that
+survived here.
+
 ## Caveats (all apply, none are optional reading)
 
 1. **Survivorship**: today's S&P 500 applied historically. This inflates
