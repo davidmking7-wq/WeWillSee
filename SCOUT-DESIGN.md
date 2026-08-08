@@ -277,6 +277,45 @@ should account for each date's ACTUAL S&P candidates, not only today's."
   **by engine** so an upgrade can't hide behind the old version's results.
 - Pre-switch open picks (2026-08-05: FTNT, URI, DAL) remain v1 picks.
 
+### Weekly holds (2026-08-08, scout/weekly_lab.py) — TESTED, REJECTED
+
+User directive: "do a test for every week at the weekend — choose what to
+invest in at the start of the new week and sell at the end"; relaxed to
+"we can buy Friday and hold till next Friday, whatever works best."
+
+Both schedules tested on 472 consecutive weeks (2017-2026, S&P 1500, v5,
+10 bps round-trip). Weekly holds tile the calendar exactly, so this is the
+one lab in the repo with **no entry-schedule phase problem** — every week
+is used and the results are already pooled.
+
+**Result: no edge at a 5-day horizon.** SPY compounds +227% over the span;
+the best variant reaches +141% with double the drawdown. Every variant
+beats SPY in fewer than half of weeks. Decisively: top3 (+0.059%/wk)
+against a `random3` control drawn from the same gated pool (+0.030%/wk),
+t=0.35 — **the ranking is statistically indistinguishable from random
+selection within its own eligible universe at this horizon.** Break-even
+cost vs SPY is negative for nearly every variant, so there is no edge even
+at zero cost. top1 compounds to -75%: concentration, which *led* at 42 td,
+is destructive at 5 td. And the sign flips across halves (2017-2021
+negative, 2022-2026 positive) — noise, not effect.
+
+Why this is consistent with the rest of the repo rather than surprising:
+the documented v3/v4/v5 edge is *first-passage odds, speed and path safety
+over 42 td*. A 5-day hold keeps none of that — no time for first passage,
+and the deadline-exit discipline that the sell-rule lab found essential is
+replaced by a hard Friday exit. The `voltilt` variants (highest-vol names
+inside the top 15) tested the "reaching a % bar NEEDS movement" reasoning
+that justified rejecting risk-adjusted momentum at 42 td. At 5 td it buys
+more +3% weeks (21.8% vs SPY's 8.3%) and an equal helping of -3% weeks,
+with -65% to -84% drawdowns and no gain in mean. Volatility moves the tails
+symmetrically; it is not a source of return.
+
+**Not shipped.** `scout/weekly_trader.py` (plan/open/close/scoreboard
+against an Alpaca PAPER account, paper-verified at both key and account
+level, protected-symbol isolation, journal written before orders go out)
+is complete and dry-run by default, but nothing schedules it. Full tables
+in BACKTEST-REPORT.md.
+
 ## Future work (noted, not built)
 - `backtest.py` harness to replay v-next candidates on 2016-2026 SIP data
   before any future engine bump.

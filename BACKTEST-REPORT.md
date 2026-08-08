@@ -531,6 +531,96 @@ research-scrutiny flag only; it never skips or reorders picks. (Insider
 buys, the other Round-1 candidate, remain display-only: 13 events in ten
 years — 69% hit, +6.9% avg, zero tail — cannot move a backtest.)
 
+## Weekly holds — tested, REJECTED (scout/weekly_lab.py)
+
+User directive (2026-08-08): "do a test for every week at the weekend —
+choose what to invest in at the start of the new week and sell at the end",
+later relaxed to "we can buy Friday and hold till next Friday, whatever
+works best". Both schedules were tested.
+
+The engine was fitted for a 42-td first-passage objective. Cutting the hold
+to 5 td is a different game, and it does not survive.
+
+**Setup.** S&P 1500, engine v5, 472 consecutive weeks 2017-07-14 ..
+2026-07-31, 10 bps round-trip cost. scan = last session of week W-1;
+exit = last session of week W at the close. Two entries: `open` = first
+session of week W at the OPEN (a weekend scan cannot capture the weekend
+gap, so this is the executable one) and `close` = the prior Friday's close
+(needs market-on-close orders; the signal would come from ~15:55 prices).
+
+Weekly holds tile the calendar exactly — consecutive, non-overlapping,
+every week used — so unlike the portfolio-lab tables there is **no entry
+schedule to sample and no phase luck to pool away**. These numbers are
+already pooled over everything available.
+
+### Entry = Monday open (the executable schedule)
+
+| strategy | avg%/wk | >=+3% | pos% | maxDD% | compounded% | t | >SPY% |
+|---|---|---|---|---|---|---|---|
+| top1 | -0.166 | 21.4 | 50.0 | -83.5 | **-75.1** | -0.71 | 43.9 |
+| top2 | 0.036 | 18.2 | 50.4 | -57.7 | -18.1 | 0.20 | 46.0 |
+| top3 | 0.059 | 18.9 | 50.4 | -54.5 | -3.6 | 0.35 | 45.1 |
+| top5 | 0.130 | 15.5 | 53.2 | -41.8 | 42.5 | 0.85 | 48.7 |
+| top10 | 0.161 | 14.2 | 53.8 | -37.1 | 73.0 | 1.17 | 47.0 |
+| voltilt3 | 0.061 | 20.6 | 49.8 | -68.8 | -12.8 | 0.31 | 44.7 |
+| **random3** (control) | **0.030** | 14.0 | 50.0 | -47.4 | -7.0 | 0.22 | 43.6 |
+| eqw eligible | 0.199 | 7.2 | 57.4 | -21.3 | 130.6 | 2.06 | 49.4 |
+| **SPY** | **0.274** | 8.3 | 58.9 | **-19.9** | **227.3** | 2.79 | — |
+
+### Entry = Friday close (buy Friday, hold to next Friday)
+
+| strategy | avg%/wk | >=+3% | pos% | maxDD% | compounded% | t | >SPY% |
+|---|---|---|---|---|---|---|---|
+| top1 | -0.092 | 21.8 | 50.4 | -81.6 | -65.8 | -0.39 | 43.9 |
+| top3 | 0.126 | 20.1 | 50.8 | -57.9 | 28.9 | 0.73 | 46.8 |
+| top5 | 0.205 | 17.2 | 52.5 | -50.5 | 97.6 | 1.28 | 47.7 |
+| top10 | 0.237 | 14.2 | 56.6 | -45.6 | 140.8 | 1.63 | 49.8 |
+| voltilt3 | 0.171 | 21.8 | 51.5 | -65.2 | 40.9 | 0.84 | 47.0 |
+| random3 (control) | 0.047 | 15.0 | 51.3 | -48.8 | -3.6 | 0.31 | 45.3 |
+| **SPY** | **0.280** | 8.3 | 58.3 | -33.3 | **225.8** | 2.52 | — |
+
+### What these say
+
+1. **Nothing beats SPY.** Not one variant, on either schedule, at any book
+   size. SPY compounds +227% over the span; the best strategy variant
+   (top10, Friday-close) reaches +141% while carrying more than double the
+   drawdown. Every variant's beat-SPY rate is **below 50%** (43.6-49.8%).
+2. **The ranking has no discriminating power at 5 days.** top3 returns
+   +0.059%/wk against the `random3` control's +0.030% — three basis points a
+   week, t=0.35. The engine's top three names are statistically
+   indistinguishable from three names drawn at random *from its own gated
+   pool*. At 42 td the ranking carries real information; at 5 td it does not.
+3. **Break-even round-trip cost vs SPY is NEGATIVE** — Monday-open: top2
+   -13.9 bps, top3 -11.5, top5 -4.4, voltilt3 -11.3. Friday-close: top2
+   -7.1, top3 -5.4, voltilt3 -1.0, top5 +2.5. Negative means there is no
+   edge to protect *even at zero transaction cost*. The one marginally
+   positive figure (top5, +2.5 bps) is erased by any realistic cost.
+4. **Concentration is actively destructive here.** top1 compounds to
+   **-75%** with an -83.5% drawdown. The exact opposite of the 42-td
+   finding, where top-2/3 concentration led. Short horizon, thin book, no
+   signal — the variance has nothing to average against.
+5. **Era-unstable.** top3 (Monday-open) is *negative* in 2017-2021
+   (-0.113%/wk) and positive in 2022-2026 (+0.226%/wk). A signal that flips
+   sign across halves is noise, not an effect. (Both eras are also
+   in-sample: SCOUT-DESIGN records the 2022-2026 holdout as RETIRED.)
+6. **The +3% bar is reached more often — and it means nothing.** Strategy
+   variants clear +3% in 18-22% of weeks against SPY's 8.3%, and `voltilt3`
+   tops the table at 21.8%. That is entirely volatility, and it is
+   symmetric: the same variants have the worst drawdowns (-65% to -84%) and
+   sub-50% positive-week rates. Selecting for "chance of a big up week"
+   buys the matching down weeks at the same price. It does not add return.
+7. **The weekend gap is real but small.** Friday-close entry beats
+   Monday-open across every variant (top3 +0.126 vs +0.059%/wk) — worth
+   roughly +0.07%/wk, i.e. the gap does carry some of the momentum drift.
+   It is not nearly enough to close the distance to SPY, and capturing it
+   requires market-on-close execution off a pre-close signal.
+
+**Verdict: not shipped.** `scout/weekly_trader.py` exists and works, but
+defaults to a dry run and is not scheduled. The evidence does not support
+putting money — even paper money — behind a weekly rotation of these
+rankings in preference to holding SPY. If it is run, it should be run as a
+recorded live experiment with this table in view, not as a strategy.
+
 ## Caveats (all apply, none are optional reading)
 
 1. **Survivorship**: now QUANTIFIED by the point-in-time section above —

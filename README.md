@@ -67,7 +67,15 @@ python -m scout.cli record scout/final_picks.json
 python -m scout.cli calibrate   # force recalibration
 python -m scout.backtest        # regenerate the engine-vs-SPY validation
 python -m scout.labtest --variant ...   # research harness for future engine ideas
+python -m scout.weekly_lab              # weekly-hold test (result: no edge — see report)
 ```
+
+**A weekly buy-Monday-sell-Friday rotation was tested and rejected**
+(`scout/weekly_lab.py`, 472 weeks): the ranking is statistically
+indistinguishable from random picks out of its own eligible pool at a
+5-day horizon, and SPY beats every variant. Details in BACKTEST-REPORT.md
+("Weekly holds"). `scout/weekly_trader.py` can execute the cycle against a
+**paper** account but is dry-run by default and deliberately unscheduled.
 
 (Use `.venv/bin/python` / `.venv\Scripts\python` if you set up a venv.)
 
