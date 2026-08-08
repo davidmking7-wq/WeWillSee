@@ -114,6 +114,8 @@ def cmd_scan(args) -> None:
         grade = _grade(stats, base)
         if e_inside and grade in ("A", "B"):
             grade = {"A": "B", "B": "C"}[grade]   # binary event inside window
+        sigma42 = float(row["vol"]) * math.sqrt(config.HORIZON_TDAYS / 252)
+        disaster_price = round(price * (1 - config.SELL_DISASTER_SIGMA * sigma42), 2)
         sig_text = (f"12-1 mom {row['mom']:+.0%} (p{row['mom_pct']:.0%}); "
                     f"6-1 mom {row['mom6']:+.0%}; "
                     f"{row['high']:.0%} of 52w high; "
@@ -152,23 +154,29 @@ def cmd_scan(args) -> None:
             "grade_quant": grade,
             "earnings_date": edate,
             "earnings_in_window": e_inside,
-            "sell_if": (f"sell on a close at/below "
-                        f"{round(price * (1 - config.SELL_DISASTER_STOP), 2)} "
-                        f"(-15% disaster stop; ordinary stops tested worse); "
-                        f"once it touches "
-                        f"{round(price * (1 + config.TARGET_GAIN), 2)}, protect "
-                        f"— sell on a close at/below breakeven "
-                        f"({round(price, 2)}) or 8% below its best close, "
-                        f"whichever is higher; otherwise sell at the deadline "
-                        f"{horizon_end}"),
+            "sigma42": round(sigma42, 4),
+            "disaster_price": disaster_price,
+            "sell_if": (f"this stock's normal 2-month move is about "
+                        f"±{sigma42:.0%}; sell on a close at/below "
+                        f"${disaster_price} (2x that move — its own disaster "
+                        f"level; ordinary stops tested worse); once it "
+                        f"touches ${round(price * (1 + config.TARGET_GAIN), 2)}, "
+                        f"never let it become a loss — sell on any close "
+                        f"at/below breakeven (${round(price, 2)}); otherwise "
+                        f"sell at the deadline {horizon_end}"),
             "signals_text": sig_text,
         })
+    # earnings-clean candidates rank ahead of earnings-in-window ones:
+    # windows containing an event day carry a 30% (vs 7%) chance of ending
+    # below -10%, and skipping them tested better on train AND holdout
     candidates.sort(key=lambda cd: (cd["opp_score"] is None,
+                                    bool(cd["earnings_in_window"]),
                                     -(cd["opp_score"] or 0), -cd["score"]))
     candidates = candidates[:config.TOP_CANDIDATES]
     big_gain_order = sorted(
         [cd for cd in candidates if cd["gain_eligible"]],
-        key=lambda cd: (-(cd["gain_score"] or 0), -cd["vol"], -cd["score"]))
+        key=lambda cd: (bool(cd["earnings_in_window"]),
+                        -(cd["gain_score"] or 0), -cd["vol"], -cd["score"]))
 
     out = {"asof": str(ts.date()), "engine": config.ENGINE,
            "earnings_checked": n_edates > 0,
@@ -212,27 +220,29 @@ def cmd_scan(args) -> None:
 
 
 def _sell_signal(result: str, basis: float, latest: float, peak: float,
-                 hz_end: date) -> str:
+                 hz_end: date, disaster: float, per_stock: bool = True) -> str:
     """Plain-language sell instruction (see the sell-guidance block in
-    config). Guidance only — never changes the HIT/MISS labels the
-    scoreboard is graded on."""
+    config). `disaster` is this stock's own level (2x its expected 2-month
+    move below entry, computed at pick time). Guidance only — never changes
+    the HIT/MISS labels the scoreboard is graded on."""
     if result == "MISS":
         return "SELL — deadline passed"
     if result == "HIT":
-        level = max(basis, peak * (1 - config.SELL_TRAIL_AFTER_HIT))
-        if latest <= level:
-            return (f"SELL — hit +5%, then closed back at/below the protect "
-                    f"level (${level:.2f})")
-        return (f"hold — protect: sell on a close at/below ${level:.2f} "
-                f"(breakeven or 8% off the best close, whichever is higher); "
-                f"otherwise sell at the deadline {hz_end}")
-    disaster = basis * (1 - config.SELL_DISASTER_STOP)
+        if latest <= basis:
+            return (f"SELL — hit +5%, then closed back at/below breakeven "
+                    f"(${basis:.2f}); never let a winner become a loss")
+        return (f"hold — it already hit +5%: sell on any close at/below "
+                f"breakeven (${basis:.2f}), otherwise sell at the deadline "
+                f"{hz_end}")
+    kind = ("this stock's own disaster level, 2x its normal 2-month move"
+            if per_stock else "-15% fallback level; per-stock levels start "
+            "with newly recorded picks")
     if latest <= disaster:
-        return (f"SELL — closed at/below the -15% disaster level "
-                f"(${disaster:.2f}); the pattern is broken")
+        return (f"SELL — closed at/below ${disaster:.2f} ({kind}); the "
+                f"pattern is broken")
     return (f"hold — ordinary stops tested worse; sell only on a close "
-            f"at/below ${disaster:.2f} (-15% disaster stop), else at the "
-            f"deadline {hz_end}")
+            f"at/below ${disaster:.2f} ({kind}), else at the deadline "
+            f"{hz_end}")
 
 
 def cmd_update(args) -> None:
@@ -278,7 +288,12 @@ def cmd_update(args) -> None:
             resolved.append(f"{sym} MISS (best reached {u['Best So Far %']:+.1f}%)")
         else:
             u["Result"] = "OPEN"
-        u["Sell Signal"] = _sell_signal(u["Result"], basis, latest, maxc, hz_end)
+        stored = p.get("Sell Below (Disaster)")
+        per_stock = isinstance(stored, (int, float))
+        disaster = (float(stored) if per_stock
+                    else basis * (1 - config.SELL_DISASTER_FALLBACK))
+        u["Sell Signal"] = _sell_signal(u["Result"], basis, latest, maxc,
+                                        hz_end, disaster, per_stock)
         if u["Sell Signal"].startswith("SELL"):
             resolved.append(f"{sym} sell signal: {u['Sell Signal']}")
         updates.append(u)
@@ -334,6 +349,7 @@ def cmd_record(args) -> None:
             "Result": "OPEN", "Last Checked": str(date.today()),
             "Engine": scan.get("engine", config.ENGINE),
             "Sell Signal": cd.get("sell_if", ""),
+            "Sell Below (Disaster)": cd.get("disaster_price", ""),
         })
     n = excel_book.append_picks(rows)
     print(f"recorded {n} picks -> {config.EXCEL_PATH}")

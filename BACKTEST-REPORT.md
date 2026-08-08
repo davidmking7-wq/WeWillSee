@@ -92,6 +92,25 @@ The backtest harness itself was adversarially reviewed before the holdout
 ran; a lookahead bug in the crash-regime flag (full-sample volatility
 quantile) and a non-overlap stride bug were fixed first.
 
+## Where the losses actually come from (forensics, 525 v4 picks)
+
+- **The tail is event-driven.** Only 20% of misses contain a down
+  "event day" (|1-day move| ≥ 6% on ≥2.5× volume — the earnings/news
+  signature), but those misses average −11.8% vs −5.3% without, and **44%
+  of all picks ending below −10% contain one**. Windows containing any
+  event day have a 30% (vs 7%) chance of ending below −10% — earnings are
+  the catastrophes, not the everyday losses.
+- **Half of all misses are pure stock failures in rising markets**
+  (avg −5.2%): the pattern just stops working, slowly. 57% of misses are
+  still falling at the deadline — there is no recovery to wait for inside
+  the horizon.
+- **A quarter of misses are market-driven** (SPY down >2% over the same
+  window; avg −8.9%) — the crash-regime rule's territory.
+- Sector spread is large (full-period diagnostic): Info Tech picks hit 80%
+  with +5.7% avg end; Consumer Staples 44%/−0.6%, Energy 53%/−0.2%. A
+  train-selected "exclude weak sectors" rule was tested and did NOT survive
+  holdout (below) — treat sector as research color, not a mechanical rule.
+
 ## Sell rules — tested, and mostly rejected
 
 Motivated by the miss anatomy (misses average −6.6% because broken momentum
@@ -141,17 +160,57 @@ fail train AND holdout averages, and they whipsaw. Still rejected.)
 | sell if below entry at day 21 | +1.69% | +74% | 10.5% | −6.3% |
 | close < 50d SMA | +0.96% | +37% | 5.0% | −5.3% |
 
+**Finding 3 — per-stock levels beat one-size-fits-all.** A second
+train/holdout round tested levels scaled to each stock's own expected
+42-day move (σ42): disaster stops at K×σ42 (K = 1.0–2.0) and post-hit
+trails at J×σ42 (J = 0.4–0.8). Results:
+- **vstop200 (2×σ42 disaster stop) beat the fixed −15% stop in BOTH
+  periods** (holdout +2.35%/window vs +2.20, compounded 103.6% vs 100.1%,
+  and it kills no extra winners: 6.9% = same as holding). A calm stock
+  gets a ~16% stop, a lively one ~25% — noise stays inside the level.
+- Tighter vol-scaled stops (1–1.5×σ42) still hurt — scaling doesn't fix
+  the whipsaw problem, only widening does.
+- Vol-scaled post-hit trails did NOT beat the simple **breakeven floor**
+  (be_hit: holdout +2.11%/window, best of every post-hit variant; the
+  fixed 8%-peak-trail sold ongoing runners and lost ~0.2pp to it).
+
 **What ships** — the pipeline prints a per-pick "Sell Signal" with live
-dollar levels, refreshed on every update:
-1. **Disaster stop:** a close ≤ −15% from entry → sell. Rarely fires;
-   truncates catastrophes (worst pick −32.5% → −24.2%) at ~zero mean cost
-   under redeployment (+2.43 vs +2.49 per window). Tail-capping only.
+PER-STOCK dollar levels, refreshed on every update:
+1. **Disaster stop at 2× the stock's own expected 2-month move** below
+   entry (stored per pick as "Sell Below (Disaster)"). Rarely fires;
+   truncates catastrophes. Tail-capping only.
 2. **No other stop before the deadline; the deadline is the exit.**
-3. **After a +5% touch:** protect at max(breakeven, peak−8%).
+3. **After a +5% touch: breakeven floor** — sell on any close back
+   at/below entry; a winner is never allowed to become a loss.
 The guidance never alters the scoreboard's HIT/MISS labels. The
 loss-prevention that actually works for free is at ENTRY: the earnings
 gate (binary-event days cause the worst single-day wrecks), the lottery-
 spike veto, and the crash-regime rule.
+
+## Entry-side rules tested against the loss forensics
+
+- **Earnings avoidance (shipped, strengthened):** skipping candidates with
+  a projected earnings report inside the window — tested with a quarterly
+  event-day projection proxy — improved compounded growth on train (+71.8%
+  vs +65.4%) AND holdout (+150.6% vs +116.9%) and cut the holdout tail
+  (13.5% vs 15.4%), at ~neutral hit rate. The live pipeline uses REAL
+  fetched earnings dates (better than the proxy), so the scan now ranks
+  earnings-clean candidates AHEAD of earnings-in-window ones in both
+  lists, on top of the existing grade downgrade. Selling right before a
+  known event tested unreliable (saved on train, cost on holdout) — the
+  fix is at entry, not exit.
+- **Weak-sector exclusion (tested, NOT shipped):** excluding the train
+  period's weak sectors (rule selected Consumer Staples) helped train
+  (+2.61 vs +2.41) but was a wash on holdout (+2.53 vs +2.57, same tail) —
+  documented so nobody re-adds it; sector stays research color.
+
+Verification meta-caveats (from the adversarial review): today's GICS
+labels applied historically make the sector table anachronistic;
+survivorship differs by sector; the event-day projection has limited
+recall (precision 0.2–0.36) so the live real-date version should do
+better than the proxy numbers; and every lab confirms on the same
+2022–2026 holdout — each use erodes its independence, so this holdout is
+now retired for future rule changes.
 
 **The literature says the same thing** (checked independently):
 Kaminski & Lo 2014 prove a stop only raises expected return when serial

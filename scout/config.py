@@ -71,18 +71,21 @@ GAIN_MIN_P5 = 0.62
 
 # Sell guidance (exit-rule lab, scout/exitlab.py — full record in
 # BACKTEST-REPORT.md; corroborated by Kaminski-Lo 2014, Lei-Li 2009).
-# Tested 2017-2026: ordinary stops/time/trend exits before the deadline
-# reduce returns (whipsaw + gap-through — daily single-stock returns lean
-# toward reversal, so stops sell dips right before the expected bounce).
-# What ships, all three guidance-only (HIT/MISS labels never altered):
-#  1. DISASTER stop: close <= -15% from entry -> sell. Almost never fires;
-#     truncates catastrophes (worst pick -32.5% -> -24%) at ~zero mean cost
-#     when proceeds are redeployed. Tail-capping, not return enhancement.
+# Tested 2017-2026 train/holdout: ordinary stops/time/trend exits before
+# the deadline reduce returns (whipsaw + gap-through — daily single-stock
+# returns lean toward reversal, so stops sell dips right before the
+# expected bounce). What ships is PER-STOCK, guidance-only (HIT/MISS
+# labels never altered):
+#  1. DISASTER stop at SELL_DISASTER_SIGMA x the stock's own expected
+#     42-day move (sigma42 = annualized 63d vol * sqrt(42/252)) below
+#     entry. Beat the fixed -15% stop on BOTH train and holdout
+#     (vstop200 vs stop15). Tail-capping, not return enhancement.
 #  2. No other stop before the deadline; the deadline is the exit.
-#  3. After a +5% touch: protect at max(breakeven, peak - 8%) — cuts the
-#     average loser from -7.9% to -6.0%, return-neutral with redeployment.
-SELL_TRAIL_AFTER_HIT = 0.08
-SELL_DISASTER_STOP = 0.15
+#  3. After a +5% touch: breakeven floor — never let a winner become a
+#     loss (be_hit; the peak-trailing variant sold ongoing runners and
+#     lost to this on holdout).
+SELL_DISASTER_SIGMA = 2.0
+SELL_DISASTER_FALLBACK = 0.15   # rows recorded before per-stock levels
 
 # Calibration statistics
 SHRINK_K = 20               # shrink bucket P toward regime base rate

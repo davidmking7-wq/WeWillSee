@@ -35,7 +35,8 @@ HEADERS = ["Date Picked", "Stock", "Company", "Industry", "List",
            "Engine",
            # columns added later — kept at the end so old workbooks migrate
            # by appending, never by shifting existing data
-           "Chance +15%", "Earnings Before Deadline", "Sell Signal"]
+           "Chance +15%", "Earnings Before Deadline", "Sell Signal",
+           "Sell Below (Disaster)"]
 COL = {h: i + 1 for i, h in enumerate(HEADERS)}
 
 # old header -> new header (renamed in place on migration; renames never
@@ -111,20 +112,26 @@ Earnings Before Deadline  The company's next quarterly report date, if it
                   that can wreck a good pattern overnight — picks with one
                   inside the window get their Confidence downgraded a notch
                   automatically.
-Sell Signal       When to sell, updated every run. Ten years of testing say
+Sell Signal       When to sell, updated every run — and specific to EACH
+                  stock, not one wide rule. Ten years of testing say
                   ordinary stop-losses make results WORSE (stocks dip and
                   recover too often, and crashes gap right through stops).
-                  The three rules that survived testing:
-                  1) Disaster stop: if it closes 15% below your buy price,
-                     sell — the pattern is broken. Rarely fires; exists to
-                     cap catastrophes, not to add returns.
+                  The rules that survived testing:
+                  1) Disaster stop, sized to the stock: if it closes below
+                     "Sell Below (Disaster)" — 2x that stock's own normal
+                     2-month move under the buy price — sell; the pattern
+                     is broken. A calm stock gets a tighter level, a lively
+                     one gets more room. Rarely fires; caps catastrophes.
                   2) Otherwise no stop — sell at the Deadline.
-                  3) Once it has touched +5%, protect it: sell if it closes
-                     back at your buy price or 8% below its best close,
-                     whichever is higher.
+                  3) Once it has touched +5%, never let it become a loss:
+                     sell on any close back at/below your buy price.
+                     (A tighter "8% below its peak" version was tested and
+                     sold winners that kept running — rejected.)
                   This column shows the live instruction with exact price
                   levels. Protection buys smaller losses, not bigger gains
                   (roughly free if you re-invest the freed cash).
+Sell Below (Disaster)  This stock's own disaster price, computed on the day
+                  it was picked from how much it normally moves.
 
 What-happened columns:
 Gain So Far %     Where the stock is now vs the pick price.

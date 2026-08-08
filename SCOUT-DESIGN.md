@@ -200,22 +200,34 @@ labtest's SECREL rank is post-gate.
 ### Sell rules (2026-08-08, scout/exitlab.py)
 
 User directive: "if stock x does y you should sell, so losses are minimal —
-and account for it in testing." 19 close-based exit rules tested train
-(2017-2021) / holdout (2022-2026) over the v4 engine's picks, under BOTH
-cash-exit and redeploy-into-SPY accounting; simulation adversarially
-verified (no bugs); conclusions cross-checked against Kaminski-Lo 2014,
-Lei-Li 2009, Han-Zhou-Zhu. Full record in BACKTEST-REPORT.md. Verdict:
-ordinary stops/time/trend exits reduce returns (whipsaw + gap-through;
-daily single-stock autocorrelation has the wrong sign for stops). Shipped
-as per-pick "Sell Signal" guidance (config.SELL_DISASTER_STOP,
-SELL_TRAIL_AFTER_HIT): (1) −15% disaster stop — tail-capping at ~zero mean
-cost with redeployment; (2) otherwise the deadline is the exit; (3) after
-a +5% touch, protect at max(breakeven, peak−8%) — return-neutral with
-redeployment, cuts the average loser −7.9%→−6.0%. scan emits `sell_if`,
-update refreshes live levels and flags "SELL" states in the Excel "Sell
-Signal" column. HIT/MISS labels are never altered by the guidance. Real
-loss prevention lives at entry: earnings gate, lottery-spike veto, crash
-rule.
+and account for it in testing"; later sharpened to "specific per stock,
+not a wide rule." 25+ close-based exit rules tested train (2017-2021) /
+holdout (2022-2026) over the v4 engine's picks, under BOTH cash-exit and
+redeploy-into-SPY accounting; simulations adversarially verified (no
+bugs); conclusions cross-checked against Kaminski-Lo 2014, Lei-Li 2009,
+Han-Zhou-Zhu. Full record in BACKTEST-REPORT.md. Verdict: ordinary
+stops/time/trend exits reduce returns (whipsaw + gap-through; daily
+single-stock autocorrelation has the wrong sign for stops). Shipped as
+PER-STOCK "Sell Signal" guidance (config.SELL_DISASTER_SIGMA):
+(1) disaster stop at 2× the stock's own expected 42-day move (vstop200 —
+beat the fixed −15% on both train and holdout; level stored per pick in
+"Sell Below (Disaster)"); (2) otherwise the deadline is the exit;
+(3) after a +5% touch, breakeven floor (be_hit — beat the peak-trailing
+variant on holdout; a winner is never allowed to become a loss). scan
+emits per-stock `sell_if` with dollar levels, update refreshes them and
+flags "SELL" states. HIT/MISS labels are never altered by the guidance.
+
+Loss forensics (what causes losses): the tail is event-driven (44% of
+<−10% enders contain an earnings-signature day; such windows have a 30%
+vs 7% tail rate); half of misses are slow stock-specific grinds in rising
+markets with no in-horizon recovery (57% still falling at deadline); a
+quarter are market-driven (crash-rule territory). Entry-side responses
+tested train/holdout: earnings avoidance SHIPPED (skip-projected improved
+compounding and tail in both periods → scan now ranks earnings-clean
+candidates first, on top of the grade downgrade; live pipeline uses real
+fetched dates); weak-sector exclusion NOT shipped (train win, holdout
+wash — documented as rejected). The 2022-2026 holdout has now been
+consulted by several labs and is retired for future rule selection.
 
 ### Engine-version discipline (enforced in code)
 - `config.ENGINE` stamps `calibration.json`, `last_scan.json`, and every
