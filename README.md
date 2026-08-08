@@ -27,7 +27,11 @@ Run the **/stock-scout** skill in Claude Code (it lives in
    and P(the stock drops -5% first).
 4. Web-researches the finalists (earnings dates inside the window, pending
    binary events, news) and only ever *downgrades* grades based on findings.
-5. Appends the final 3-5 picks to `picks.xlsx`.
+5. Appends the final picks to `picks.xlsx`. **The recommended portfolio
+   is the top 2-3 of the Best Overall list** — the concentration level
+   the portfolio lab found best for the +5%-per-window goal (avg +2.5 to
+   +4.5% per window historically; see BACKTEST-REPORT.md); the Biggest
+   Gain list is context and alternatives, not extra positions.
 
 It never buys anything. It is a research scorecard, not financial advice.
 

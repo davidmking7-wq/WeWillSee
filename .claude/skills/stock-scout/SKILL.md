@@ -115,10 +115,18 @@ Select TWO lists (a stock may appear in both — mark it "both"):
 
 1. **Best Overall — top 3**: the first 3 research-cleared symbols in the
    scan's `overall_order` (balanced chance × gain × speed × safety).
+   **The first 2-3 of these ARE the recommended portfolio** — the
+   portfolio lab (BACKTEST-REPORT.md) tested every concentration level
+   against the user's +5%-per-window goal, and a 2-3 pick book from this
+   exact ordering was the best stable configuration (avg +2.5 to +4.5%
+   per window). More names dilutes toward +2.6%; fewer is lottery-ticket
+   territory. Say this plainly in the report.
 2. **Biggest Gain — top 3**: the first 3 research-cleared symbols in
    `big_gain_order` (gain-weighted ranking; only stocks with Chance +5%
    ≥ 62% qualify). If fewer than 3 qualify — or none — say so honestly in
-   the report; never pad the list with ineligible stocks.
+   the report; never pad the list with ineligible stocks. This list is
+   CONTEXT and alternatives — not extra positions on top of the
+   recommended 2-3.
 
 "Research-cleared" = no unresearchable red flag; dropped stocks are replaced
 by the next in that same order. Write `scout/final_picks.json`:
