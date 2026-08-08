@@ -92,7 +92,13 @@ work well — one per 3-4 tickers). For each, find:
 2. **Pending binary events**: M&A involvement, FDA/court decisions, guidance
    withdrawals, investigations. Any found → downgrade, or drop the ticker.
 3. **News tone last 2-4 weeks** and **direction of analyst revisions**
-   (upgrades/target raises vs cuts).
+   (upgrades/target raises vs cuts). While checking news, note any recent
+   INSIDER BUYING (open-market purchases by officers/directors — rare on
+   momentum names and historically excellent when present: 69% hit,
+   +6.9% avg, zero tail in our sample, though n is small). Mention it in
+   the thesis as a plus. Do NOT penalize insider selling — heavy selling
+   into strength tested as profit-taking noise, not a warning
+   (sell-cluster picks actually performed BETTER; see scout/hypotheses.md).
 4. **Corrected analyst target** (12-month view, context + tie-break only —
    never the primary ranking; raw target levels are a documented trap: the
    highest-claimed-upside stocks historically perform WORST). For each

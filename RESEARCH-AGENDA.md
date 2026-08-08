@@ -80,6 +80,29 @@ of a delisting-inclusive dataset to re-run the S&P 1500 headline once —
 our own PIT test proved ~1pp/window of mirage in large caps; small caps
 are worse.
 
+## Round 1 results (2026-08-08, all four tested — see scout/hypotheses.md)
+
+1. **Insider buying: promising, unproven.** Right sign in both halves
+   (69% hit, +6.9% avg, zero tail losses) but only 13 occurrences in ten
+   years — insiders almost never buy into momentum strength. Not shipped.
+   The surprise: heavy insider SELLING marked BETTER picks (74% vs 60%
+   hit, both halves, n=93) — selling into strength is profit-taking, not
+   information. Sign-flipped ⇒ new hypothesis, not tradeable; the one
+   actionable takeaway is to never penalize insider selling.
+2. **Earnings extensions: both rejected.** Timing entries to 5-15 td
+   before the report loses more ranking quality than the catalyst adds;
+   announcement-reaction drift is dead even in mid/small caps (positive
+   and negative reactors end identically, n≈6k).
+3. **Meta-labeling: validated and shipped** (the round's winner). ML
+   Check column: walk-forward AUC 0.60 vs 0.45, strong-bucket 73%/+4.4%
+   vs weak-bucket 55%/−0.1%. Fits during calibration, scores during
+   scans — user-invoked only.
+4. **Buy-at-the-close rule: shipped** — bold banner in the workbook +
+   skill report line.
+
+Score: 1 shipped signal, 1 shipped discipline, 3 honest rejections, 1
+flagged for more data. That ratio is what real research looks like.
+
 ## The honest bottom line
 
 Faster is not available: the profit physically accrues in weeks 4–8 and
