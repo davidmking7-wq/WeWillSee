@@ -99,6 +99,7 @@ def cmd_scan(args) -> None:
     if n_edates == 0:
         print("  no earnings source reachable — the research phase must "
               "check earnings dates by web search instead")
+    recent = earnings.recent_earnings(pool_syms, str(ts.date()))
 
     candidates = []
     for sym in pool_syms:
@@ -111,9 +112,12 @@ def cmd_scan(args) -> None:
         price = float(c[sym].dropna().iloc[-1])
         edate = ecal.get(sym)
         e_inside = bool(edate and str(edate) <= str(horizon_end))
+        jr_date = recent.get(sym)
         grade = _grade(stats, base)
-        if e_inside and grade in ("A", "B"):
-            grade = {"A": "B", "B": "C"}[grade]   # binary event inside window
+        if jr_date and grade in ("A", "B"):
+            # freshly-reported names are the engine's weakest cohort
+            # (real-dates lab: ~40-47% hit vs ~62%; catalyst already spent)
+            grade = {"A": "B", "B": "C"}[grade]
         sigma42 = float(row["vol"]) * math.sqrt(config.HORIZON_TDAYS / 252)
         disaster_price = round(price * (1 - config.SELL_DISASTER_SIGMA * sigma42), 2)
         sig_text = (f"12-1 mom {row['mom']:+.0%} (p{row['mom_pct']:.0%}); "
@@ -122,7 +126,10 @@ def cmd_scan(args) -> None:
                     f"{row['brk20']:.0%} of 20d high; "
                     f"1m {row['ret1m']:+.1%}; vol {row['vol']:.0%} ({terc[sym]})"
                     + ("; recent up-gap+volume surge" if row["gap"] > 0 else "")
-                    + (f"; EARNINGS {edate} inside window" if e_inside else ""))
+                    + (f"; earnings {edate} inside window (historically the "
+                       f"BETTER cohort — the catalyst ahead)" if e_inside else "")
+                    + (f"; JUST REPORTED {jr_date} — catalyst spent, weakest "
+                       f"cohort" if jr_date else ""))
         p5 = stats.get("p5") if quotable else None
         candidates.append({
             "symbol": sym, "name": info.get(sym, {}).get("name", ""),
@@ -154,6 +161,7 @@ def cmd_scan(args) -> None:
             "grade_quant": grade,
             "earnings_date": edate,
             "earnings_in_window": e_inside,
+            "just_reported": jr_date,
             "sigma42": round(sigma42, 4),
             "disaster_price": disaster_price,
             "sell_if": (f"this stock's normal 2-month move is about "
@@ -166,16 +174,18 @@ def cmd_scan(args) -> None:
                         f"sell at the deadline {horizon_end}"),
             "signals_text": sig_text,
         })
-    # earnings-clean candidates rank ahead of earnings-in-window ones:
-    # windows containing an event day carry a 30% (vs 7%) chance of ending
-    # below -10%, and skipping them tested better on train AND holdout
+    # Real-dates finding (SEC EDGAR, train AND holdout): picks with the
+    # earnings CATALYST AHEAD in their window are the engine's BEST cohort
+    # (holdout 64% hit / +4.1% vs 43% / +0.4% without) — never penalized.
+    # Picks that JUST reported (<=10 td before entry) are its WEAKEST
+    # cohort (~40-47% hit) — pushed to the bottom of both lists.
     candidates.sort(key=lambda cd: (cd["opp_score"] is None,
-                                    bool(cd["earnings_in_window"]),
+                                    bool(cd["just_reported"]),
                                     -(cd["opp_score"] or 0), -cd["score"]))
     candidates = candidates[:config.TOP_CANDIDATES]
     big_gain_order = sorted(
         [cd for cd in candidates if cd["gain_eligible"]],
-        key=lambda cd: (bool(cd["earnings_in_window"]),
+        key=lambda cd: (bool(cd["just_reported"]),
                         -(cd["gain_score"] or 0), -cd["vol"], -cd["score"]))
 
     out = {"asof": str(ts.date()), "engine": config.ENGINE,

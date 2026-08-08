@@ -221,13 +221,26 @@ Loss forensics (what causes losses): the tail is event-driven (44% of
 <−10% enders contain an earnings-signature day; such windows have a 30%
 vs 7% tail rate); half of misses are slow stock-specific grinds in rising
 markets with no in-horizon recovery (57% still falling at deadline); a
-quarter are market-driven (crash-rule territory). Entry-side responses
-tested train/holdout: earnings avoidance SHIPPED (skip-projected improved
-compounding and tail in both periods → scan now ranks earnings-clean
-candidates first, on top of the grade downgrade; live pipeline uses real
-fetched dates); weak-sector exclusion NOT shipped (train win, holdout
-wash — documented as rejected). The 2022-2026 holdout has now been
-consulted by several labs and is retired for future rule selection.
+quarter are market-driven (crash-rule territory).
+
+Earnings, settled with REAL SEC EDGAR dates (8-K Item 2.02;
+scout/earnings_history.json, 21k dates; supersedes the proxy labs which
+were accidentally measuring volatility-avoidance): picks with the report
+AHEAD in the window are the engine's BEST cohort (holdout 64% hit /
++4.1%); picks that JUST reported (≤10 td) are its WORST (~40-47% hit) —
+the catalyst is spent. SHIPPED: scan flags just-reported names via a live
+EDGAR check (earnings.recent_earnings), pushes them down both lists and
+downgrades their grade; earnings-in-window carries no penalty (date stays
+visible for research + the per-stock disaster level).
+
+Expectation-based exits (time budgets at M x expected days-to-hit,
+take-profit / protect at the cell's expected peak; scout/expectlab.py,
+train-frozen expectations, adversarially verified): ALL lost on holdout —
+losers rarely recover in-horizon and winners outrun their expected peaks.
+Rejected; the surviving per-stock personalization is the vol-scaled
+disaster level + breakeven floor + deadline. Weak-sector exclusion NOT
+shipped (train win, holdout wash). The 2022-2026 holdout is RETIRED —
+future rule changes need fresh out-of-sample evidence (live track record).
 
 ### Engine-version discipline (enforced in code)
 - `config.ENGINE` stamps `calibration.json`, `last_scan.json`, and every

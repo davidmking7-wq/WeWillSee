@@ -108,10 +108,14 @@ Engine            Which version of the scanner chose the pick (v1, v3...).
                   Versions are scored separately in the Track Record so an
                   upgrade can't hide behind the old version's results.
 Earnings Before Deadline  The company's next quarterly report date, if it
-                  lands before the Deadline. Earnings are a coin-flip event
-                  that can wreck a good pattern overnight — picks with one
-                  inside the window get their Confidence downgraded a notch
-                  automatically.
+                  lands before the Deadline. Know the date — a report can
+                  wreck a single pick overnight — but on real SEC data,
+                  picks WITH a report ahead in their window were the
+                  BETTER group (the report is the fuel for the +5% move).
+                  What the tool avoids instead is stocks that JUST
+                  reported: with the report behind them they reached +5%
+                  only ~40-47% of the time vs ~62% normally, so they get
+                  pushed down the lists automatically.
 Sell Signal       When to sell, updated every run — and specific to EACH
                   stock, not one wide rule. Ten years of testing say
                   ordinary stop-losses make results WORSE (stocks dip and

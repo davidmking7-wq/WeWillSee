@@ -9,24 +9,32 @@ blocked or flaky in a given environment. Failure NEVER breaks the scan —
 symbols just come back with no date and the skill's web-research phase
 covers them (as it always did). Results are cached a few days.
 
-Sources:
+Sources for the NEXT date:
 1. Yahoo Finance quoteSummary calendarEvents (plain requests with the
    fc.yahoo.com cookie + getcrumb handshake) — one session for all symbols.
 2. yfinance's Ticker.calendar, per symbol (works on most home networks).
 3. NASDAQ's public API with a browser User-Agent, per symbol.
+
+Historical/most-recent dates come from SEC EDGAR (8-K Item 2.02 filing
+dates — the day companies announce results), kept in
+scout/earnings_history.json and refreshed per symbol when stale. The
+real-dates lab (BACKTEST-REPORT.md) found freshly-reported stocks are the
+engine's weakest cohort, so the scan needs "did it JUST report?".
 """
 import json
 import time
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 import requests
 
 from . import config
 
 CACHE_PATH = config.SCOUT_DIR / "earnings_cache.json"
+HISTORY_PATH = config.SCOUT_DIR / "earnings_history.json"
 CACHE_DAYS = 3
 _UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
        "(KHTML, like Gecko) Chrome/124.0 Safari/537.36")
+_SEC_HEADERS = {"User-Agent": "stock-scout research (contact: repo owner)"}
 
 
 def _parse_date(v) -> str | None:
@@ -104,6 +112,62 @@ def _from_nasdaq(sym: str) -> str | None:
 
 
 _FALLBACKS = (("yfinance", _from_yfinance), ("nasdaq", _from_nasdaq))
+
+
+def _edgar_dates(sym: str, cik: int) -> list[str] | None:
+    """All 8-K Item 2.02 filing dates for one company from EDGAR's recent
+    block (~last 1000 filings — plenty to refresh the newest quarters)."""
+    r = requests.get(f"https://data.sec.gov/submissions/CIK{cik:010d}.json",
+                     headers=_SEC_HEADERS, timeout=20)
+    r.raise_for_status()
+    rec = r.json()["filings"]["recent"]
+    out = [rec["filingDate"][i] for i in range(len(rec["form"]))
+           if rec["form"][i] in ("8-K", "8-K/A")
+           and rec["items"][i] and "2.02" in rec["items"][i].split(",")]
+    time.sleep(0.15)
+    return sorted(set(out))
+
+
+def recent_earnings(symbols: list[str], asof: str,
+                    within_days: int = 15) -> dict[str, str | None]:
+    """{sym: last earnings ISO date within `within_days` calendar days
+    (~10 trading days) before `asof`, else None}. Backed by the EDGAR
+    history file; symbols whose stored history looks stale (last date
+    >120d before asof) are refreshed live. Never raises."""
+    try:
+        hist = json.loads(HISTORY_PATH.read_text(encoding="utf-8")) \
+            if HISTORY_PATH.exists() else {}
+    except (json.JSONDecodeError, OSError):
+        hist = {}
+    asof_d = date.fromisoformat(asof[:10])
+    stale = [s for s in symbols
+             if not hist.get(s)
+             or date.fromisoformat(max(hist[s])) < asof_d - timedelta(days=120)]
+    if stale:
+        try:
+            r = requests.get("https://www.sec.gov/files/company_tickers.json",
+                             headers=_SEC_HEADERS, timeout=20)
+            r.raise_for_status()
+            ciks = {v["ticker"]: v["cik_str"] for v in r.json().values()}
+            for s in stale:
+                cik = ciks.get(s.replace(".", "-"))
+                if not cik:
+                    continue
+                try:
+                    ds = _edgar_dates(s, cik)
+                    hist[s] = sorted(set(hist.get(s, [])) | set(ds))
+                except Exception:
+                    continue
+            HISTORY_PATH.write_text(json.dumps(hist, indent=0),
+                                    encoding="utf-8")
+        except Exception:
+            pass
+    lo = str(asof_d - timedelta(days=within_days))
+    out = {}
+    for s in symbols:
+        past = [d for d in hist.get(s, []) if lo <= d <= asof]
+        out[s] = max(past) if past else None
+    return out
 
 
 def _load_cache() -> dict:

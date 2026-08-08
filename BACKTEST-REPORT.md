@@ -187,30 +187,76 @@ loss-prevention that actually works for free is at ENTRY: the earnings
 gate (binary-event days cause the worst single-day wrecks), the lottery-
 spike veto, and the crash-regime rule.
 
-## Entry-side rules tested against the loss forensics
+## Earnings: what REAL dates say (supersedes every proxy result)
 
-- **Earnings avoidance (shipped, strengthened):** skipping candidates with
-  a projected earnings report inside the window — tested with a quarterly
-  event-day projection proxy — improved compounded growth on train (+71.8%
-  vs +65.4%) AND holdout (+150.6% vs +116.9%) and cut the holdout tail
-  (13.5% vs 15.4%), at ~neutral hit rate. The live pipeline uses REAL
-  fetched earnings dates (better than the proxy), so the scan now ranks
-  earnings-clean candidates AHEAD of earnings-in-window ones in both
-  lists, on top of the existing grade downgrade. Selling right before a
-  known event tested unreliable (saved on train, cost on holdout) — the
-  fix is at entry, not exit.
+A complete map of real earnings-announcement dates was built from SEC
+EDGAR (8-K Item 2.02 filings — 21,457 dates, 483/502 symbols, 2016-2026,
+`scout/earnings_history.json`) and the tests re-run. **The real dates
+overturn the proxy conclusion:**
+
+| cohort (real dates) | train hit / avg end | holdout hit / avg end |
+|---|---|---|
+| earnings AHEAD, inside the window (~69% of picks) | **70.9% / +2.26%** | **64.2% / +4.13%** |
+| no earnings in window | 55.4% / +2.80% | 43.2% / +0.35% |
+| JUST reported (≤10 td before entry) | **46.9% / −0.90%** | **40.4% / +1.49%** |
+
+- **The scheduled report ahead is the CATALYST, not the enemy** — picks
+  holding into earnings are the engine's best cohort in both periods.
+  The earlier proxy labs were accidentally measuring recent-volatility
+  avoidance, not earnings avoidance (their detectors fired on any big
+  move). The proxy-based "rank earnings-clean first" ordering was
+  therefore reverted.
+- **The genuinely weak cohort is freshly-reported stocks** — the catalyst
+  is spent ("no earnings in window" is nearly the same set). Both periods
+  agree, decisively. SHIPPED: the scan now flags just-reported candidates
+  (live EDGAR check), pushes them to the bottom of both lists and
+  downgrades their grade; earnings-inside-window carries no penalty (the
+  date stays visible — a report can still wreck a single pick overnight,
+  which is what the per-stock disaster level and research phase are for).
+- Selling right before a known event tested unreliable in both proxy
+  labs — entry policy, not exits, is where earnings are handled.
+
+## Exits based on each pick's own expectations — tested, rejected
+
+Per the "specific to the stock" directive, exit rules driven by each
+pick's cell expectations (typical days-to-+5%, typical peak gain; built
+from train picks only, applied frozen to holdout; adversarially verified)
+were stacked on the shipped discipline:
+
+| stack (holdout, expectations frozen) | avg/window | compounded |
+|---|---|---|
+| hold to deadline | +2.57% | +116.9% |
+| shipped guidance (per-stock disaster + breakeven) | +1.91% | +95.4% |
+| + time budget (sell if not +5% by 2× its expected days) | +1.70% | +64.8% |
+| + take-profit at 1.25× its expected peak | +1.64% | +78.0% |
+| + protect once above its expected peak | +1.35% | +79.3% |
+
+Every expectation-based exit LOST out of sample. The reasons are already
+in the forensics: losers rarely recover in-horizon (so early time-exits
+only lock smaller losses while killing the late bloomers), and winners
+run past their cell's expected peak often enough that capping or
+tight-protecting at the expectation costs more than it saves. The
+per-stock personalization that survives testing remains: the disaster
+level from the stock's own volatility, the breakeven floor after +5%,
+and the deadline. (Caveat: take-profit results carry an optimistic
+execution bias — gaps book above the level — making the rejection
+conservative.)
+
+## Other entry-side rules
+
 - **Weak-sector exclusion (tested, NOT shipped):** excluding the train
   period's weak sectors (rule selected Consumer Staples) helped train
   (+2.61 vs +2.41) but was a wash on holdout (+2.53 vs +2.57, same tail) —
   documented so nobody re-adds it; sector stays research color.
 
-Verification meta-caveats (from the adversarial review): today's GICS
-labels applied historically make the sector table anachronistic;
-survivorship differs by sector; the event-day projection has limited
-recall (precision 0.2–0.36) so the live real-date version should do
-better than the proxy numbers; and every lab confirms on the same
-2022–2026 holdout — each use erodes its independence, so this holdout is
-now retired for future rule changes.
+Verification meta-caveats (from the adversarial reviews, all labs): today's
+GICS labels applied historically make the sector table anachronistic;
+survivorship differs by sector; the proxy earnings detectors had limited
+precision (0.2–0.59), which is exactly why the SEC EDGAR real-dates run
+above supersedes them; and every lab has confirmed on the same 2022–2026
+holdout — each use erodes its independence. **The holdout is now retired:
+any future rule change needs fresh out-of-sample data (i.e., live track
+record) before it ships.**
 
 **The literature says the same thing** (checked independently):
 Kaminski & Lo 2014 prove a stop only raises expected return when serial

@@ -61,15 +61,17 @@ grades are C and the report must say why).
 
 The engine's extra gates (positive 6-month return, no lottery spikes)
 thin the candidate pool in rough markets — a short candidate list is honest,
-not a failure. The scan ranks earnings-clean candidates ahead of
-earnings-in-window ones in BOTH lists (event windows carry a 30% vs 7%
-chance of ending below -10%; skipping them tested better on train and
-holdout) — keep that ordering, don't "rescue" a flagged name into the top 3
-unless the clean list runs short. Also give defensive-sector picks
-(Consumer Staples especially) extra research scrutiny: the engine's
-pattern historically performs worst there (documented in
-BACKTEST-REPORT.md; a mechanical exclusion tested as a wash, so it's
-research color, not a rule).
+not a failure. Earnings policy (from REAL SEC EDGAR dates, train AND
+holdout — see BACKTEST-REPORT.md): an earnings date INSIDE the window is
+historically the BETTER cohort (the catalyst ahead drives the +5% move) —
+never treat it as a reason to skip; note the date and size the risk in
+research. The genuinely weak cohort is stocks that JUST reported (within
+~2 weeks before the scan) — their catalyst is spent, they hit ~40-47% vs
+~62%; the scan pushes them to the bottom of both lists and downgrades
+their grade. Don't rescue one into the top 3. Also give defensive-sector
+picks (Consumer Staples especially) extra research scrutiny: the engine's
+pattern historically performs worst there (a mechanical exclusion tested
+as a wash, so it's research color, not a rule).
 
 ## Phase 3 — Research the candidates
 
