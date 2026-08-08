@@ -53,6 +53,22 @@ and no honest reading of this data supports using the tool as an
 traded 2 windows — deep 2020/2022 stress dates — that v3/v4's stricter
 gates sat out; within any engine's row the comparison is apples-to-apples.)
 
+### Why a 62% hit rate does not mean "+5% banked every window"
+
+Intuition says 5% × 6 windows a year should compound to several hundred
+percent. It doesn't, for two reasons, both measured (v4, 525 picks):
+
+- **The 38% of picks that never touch +5% average −6.6% at day 42.**
+  Misses cost real money; they are not just absent wins.
+- **Selling the instant a pick touches +5% is the WORST strategy tested:**
+  0.62 × (+5%) + 0.38 × (−6.6%) ≈ **+0.57% per window → only +20%
+  compounded 2017-2026**. Capping winners at +5% while eating losses in
+  full destroys the edge.
+- The +150% exists because winners RUN: picks that touched +5% ended at
+  **+8.1% on average**. The ride beyond +5% is most of the profit — the
+  quantitative reason +5% must be treated as a minimum bar, never a sell
+  trigger.
+
 What the tool IS measurably good at — its actual stated purpose:
 - finding stocks that **touch +5% within 2 months** more often than its own
   gated base rate, **faster** (median 13-15 days vs the 42-day budget), with
