@@ -73,6 +73,9 @@ def fetch_form4(cik, accession, primary):
     cached = CACHE_DIR / f"{key}.json"
     if cached.exists():
         return json.loads(cached.read_text())
+    # primaryDocument often points at the XSL-RENDERED view
+    # ("xslF345X06/form4.xml"); the raw XML is the bare filename
+    primary = primary.split("/")[-1]
     url = (f"https://www.sec.gov/Archives/edgar/data/{cik}/{key}/{primary}")
     try:
         xml = _get(url, is_json=False)
