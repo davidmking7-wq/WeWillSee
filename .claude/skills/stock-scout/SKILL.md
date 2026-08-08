@@ -18,11 +18,15 @@ probabilities with honest uncertainty and keeps a running scorecard in
 `picks.xlsx` (predicted growth % AND realized growth % per pick).
 It never buys anything.
 
-The signal engine is **v4** (`config.ENGINE`); every scan, calibration and
-recorded pick is engine-stamped. See `SCOUT-DESIGN.md` for lineage and
-`BACKTEST-REPORT.md` for validation — including its honest limit: the tool
-does NOT beat buy-and-hold SPY; its edge is chance × speed × path-safety
-for 2-month ideas. Never present it as market-beating.
+The signal engine is **v5** (`config.ENGINE`) over the **S&P 1500** —
+large caps plus mid/small caps, where under-the-radar candidates live;
+each candidate carries a `segment` (large/mid/small — mention it for
+non-large picks, users like knowing a name is off the beaten path). Every
+scan, calibration and recorded pick is engine-stamped. See
+`SCOUT-DESIGN.md` for lineage and `BACKTEST-REPORT.md` for validation —
+including the point-in-time survivorship correction and its honest limit:
+the tool does NOT beat buy-and-hold SPY; its edge is chance × speed ×
+path-safety for 2-month ideas. Never present it as market-beating.
 
 Run commands from the repo root. Use the project venv's python if present
 (`.venv/bin/python`, on Windows `.venv\Scripts\python`), else `python3`.

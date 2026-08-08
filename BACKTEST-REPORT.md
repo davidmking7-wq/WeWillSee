@@ -1,8 +1,10 @@
-# Stock Scout — Final Backtest Report (engines v1 / v3 / v4)
+# Stock Scout — Final Backtest Report (engines v1 / v3 / v4 / v5)
 
 Run 2026-08-08 on 10 years of dividend-adjusted Alpaca SIP daily bars,
-via `python -m scout.backtest` (full machine-readable results in
-`scout/backtest_results.json`).
+via `python -m scout.backtest` (machine-readable results:
+`scout/backtest_results.json` for the current-S&P-500 universe,
+`backtest_results_pit500.json` for point-in-time, and
+`backtest_results_sp1500.json` for the expanded universe).
 
 ## What was tested
 
@@ -13,9 +15,59 @@ via `python -m scout.backtest` (full machine-readable results in
   peak-gain columns measure how far picks actually run.
 - **Benchmarks over the identical 42-day windows:**
   - **SPY** — the actual S&P 500 ETF (what "just buy the index" earns);
-  - **eq-w market** — equal-weight average of the whole universe.
-- **Engines:** v1 (original), v3 (2026-08 upgrade), v4 (current: v3 minus
-  the gap/volume signal, gain-forward objective).
+  - **eq-w market** — equal-weight average of the same universe.
+- **Engines:** v1 (original), v3, v4 (gain-forward), v5 (current: v4 +
+  tradeable-liquidity gate, S&P 1500 universe).
+- **Three universes:** today's S&P 500 (the original test, survivorship-
+  biased), the **POINT-IN-TIME S&P 500** (each date's ACTUAL members from
+  the fja05680 dataset, later-delisted stocks included and held to their
+  final print — SIVB's collapse books −57%), and today's **S&P 1500**
+  (the live universe: large + mid + small caps).
+
+## The honest headline — point-in-time S&P 500 (each date's real members)
+
+| engine (PIT universe) | hit +5% | hit +10% | avg end % | med days | beat eq-w mkt | eq-w mkt avg % | SPY avg % |
+|---|---|---|---|---|---|---|---|
+| v1 | 57.9 | 30.9 | +0.87 | 16 | 49/107 | +2.04 | +2.51 |
+| v3 | 58.5 | 31.8 | +1.34 | 15 | 50/105 | +1.94 | +2.39 |
+| **v5** | **58.9** | **34.1** | **+1.47** | **14** | **54/105** | +1.94 | +2.39 |
+
+What the survivorship correction reveals:
+- **~1 point per window of the old numbers was mirage** (+2.49 → +1.47
+  avg end for the live engine; hit rate 61.9 → 58.9). Every earlier table
+  in this report overstates by roughly that much.
+- **The benchmark was equally inflated** (+2.73 → +1.94), so the engine's
+  RELATIVE standing improves: v5 beats the honest equal-weight market in
+  a majority of windows (54/105) — the first majority in this project.
+- **The engine ordering (v5 > v3 > v1) survives the correction** on every
+  dimension — the upgrades were real, not survivorship artifacts.
+- Residual imperfections (verified): 20/742 member-tickers (2.7%) have no
+  Alpaca bars (mostly early-2016 renames/acquisitions); a handful of
+  reused tickers splice two companies' histories, mostly outside their
+  membership windows; positions still open AT a delisting halt exit at
+  the final print (understates true losses only in that rare case).
+
+## The expanded universe — S&P 1500 (the live engine's home)
+
+Under-the-radar mid/small caps are where the bigger movers live. Same
+test, today's S&P 1500 (survivorship caveat applies MORE strongly here —
+no free point-in-time source exists for mid/small; the eq-w market's
++3.78%/window shows the bias direction):
+
+| engine (S&P 1500) | hit +5% | hit +10% | hit +15% | avg end % | mean peak % | med days | beat SPY |
+|---|---|---|---|---|---|---|---|
+| v1 | 63.4 | 39.3 | 22.1 | +1.80 | 9.80 | 13 | 44/107 |
+| v3 | 62.6 | 40.6 | 25.6 | +2.06 | 10.50 | 12 | 49/107 |
+| **v5** | **63.6** | **42.1** | **25.8** | **+2.26** | **10.65** | **12** | **54/107** |
+
+Versus the same engine confined to the S&P 500: more hits (63.6 vs 61.9),
+substantially more big winners (+15% reached 25.8% vs 19.2% of the time),
+bigger average peaks (10.65% vs 9.22%), faster (12 vs 15 days), and
+compounded +243% vs +150% — pulling even with SPY buy-and-hold (+251%)
+for the first time. The liquidity gate (20d median dollar volume ≥ $10M)
+keeps the small-cap picks tradeable. Discount these raw levels for
+small-cap survivorship; the cross-universe IMPROVEMENT is the robust part
+(it appears identically for all three engines).
 
 ## Headline table — all 107 monthly entries
 
@@ -275,9 +327,11 @@ survived here.
 
 ## Caveats (all apply, none are optional reading)
 
-1. **Survivorship**: today's S&P 500 applied historically. This inflates
-   the eq-w benchmark MORE than the picks (the benchmark holds every
-   eventual winner), but raw hit rates also run a few points optimistic.
+1. **Survivorship**: now QUANTIFIED by the point-in-time section above —
+   roughly +3pp of hit rate and +1pp of window return in the
+   current-members tables. The S&P 1500 tables retain the bias (no free
+   point-in-time source for mid/small); discount their raw levels and
+   trust cross-engine/cross-universe comparisons instead.
 2. **Overlap**: monthly entries overlap 2-month windows (~2× effective
    sample); the non-overlapping subset is the honest one.
 3. **No costs, slippage, or taxes** in any number above.

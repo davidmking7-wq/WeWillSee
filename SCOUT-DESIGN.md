@@ -242,6 +242,31 @@ disaster level + breakeven floor + deadline. Weak-sector exclusion NOT
 shipped (train win, holdout wash). The 2022-2026 holdout is RETIRED —
 future rule changes need fresh out-of-sample evidence (live track record).
 
+### v5 (2026-08-08): S&P 1500 universe + liquidity gate + point-in-time tests
+
+User directives: "find also great under-the-radar stocks" and "the test
+should account for each date's ACTUAL S&P candidates, not only today's."
+- Universe expanded to the **S&P 1500** (503 large / 400 mid / 603 small,
+  Wikipedia-sourced, segment-tagged in universe.csv and every pick row).
+  A tradeable-liquidity hard gate (20d median dollar volume ≥ $10M) joined
+  the composite — bit-identical across scan/calibration/backtest — hence
+  ENGINE v5. Calibration thickened to 29,422 outcomes; first A-grade cells.
+- **Point-in-time backtest** (`--universe pit500`): scout/pit.py loads the
+  fja05680 historical-membership dataset (committed as sp500_pit.csv);
+  each backtest date ranks ONLY that day's actual members, delisted names
+  included (Alpaca serves them to their final print — verified incl.
+  SIVB/FRC; partial windows exit at the last bar). Survivorship bias
+  quantified: ~+3pp hit rate / +1pp window return in current-members
+  tests; engine ordering v5>v3>v1 survives the correction; v5 beats the
+  honest eq-w market in a majority of windows. Residuals disclosed:
+  20/742 union tickers lack bars (early-2016 renames), a few reused
+  tickers splice histories outside their membership windows.
+- **S&P 1500 backtest** (`--universe sp1500`): hit 63.6%, P+15 25.8%,
+  mean peak 10.65%, 12 days median, compounded +243% ≈ SPY's +251% —
+  the improvement over the 500-only universe is identical across all
+  engines (robust); raw levels still carry mid/small survivorship (no
+  free point-in-time source; documented).
+
 ### Engine-version discipline (enforced in code)
 - `config.ENGINE` stamps `calibration.json`, `last_scan.json`, and every
   `picks.xlsx` row. `calibrate.run()` discards a cached calibration whose

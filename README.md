@@ -31,18 +31,22 @@ Run the **/stock-scout** skill in Claude Code (it lives in
 
 It never buys anything. It is a research scorecard, not financial advice.
 
-## Signal engine: v4
+## Signal engine: v5, universe: S&P 1500
 
-The scanner runs the v4 engine, selected by a train/holdout protocol on
-2016-2026 data (see `SCOUT-DESIGN.md` for lineage and `BACKTEST-REPORT.md`
-for the full validation, including the S&P 500 comparison). On 107 monthly
-entries 2017-2026: v4 hits +5% on 61.9% of picks (v1: 59.3%), reaches +10%
-on 37.1% (v1: 33.1%), median 15 days to +5%, with fewer -5%-first dips.
+The scanner runs the v5 engine (v4 signals + a tradeable-liquidity gate)
+over the **S&P 1500** — large caps plus the MidCap 400 and SmallCap 600,
+where under-the-radar candidates live; every pick is segment-labeled.
+See `SCOUT-DESIGN.md` for lineage and `BACKTEST-REPORT.md` for the full
+validation, including a **point-in-time S&P 500 test** (each date's actual
+members, delisted stocks included) that quantifies survivorship bias, and
+the S&P 1500 test where the engine reaches 63.6% hit rate with far more
++10%/+15% runners and compounds even with SPY buy-and-hold.
 
-**Honesty headline from the backtest:** the scout does NOT beat buy-and-hold
-SPY on compounded returns — its edge is first-passage odds, speed and path
-safety for 2-month swing ideas, not index outperformance. The report says
-this plainly; so should you.
+**Honesty headline:** on the survivorship-corrected test the scout still
+does not beat buy-and-hold SPY on compounded returns — its edge is
+first-passage odds, speed and path safety for 2-month swing ideas, and it
+now beats the honest equal-weight market in a majority of windows. The
+report says this plainly; so should you.
 
 Every pick row, scan and calibration is stamped with its engine version so
 track records never mix engines: pre-switch picks stay scored as `v1`.
