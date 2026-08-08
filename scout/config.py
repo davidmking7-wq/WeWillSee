@@ -25,7 +25,10 @@ EXCEL_PATH = ROOT / "picks.xlsx"
 # every picks.xlsx row so probabilities and the track record never silently
 # mix engines. Changing signals.py MUST bump this — calibrate.run() refuses
 # a cached calibration whose engine tag doesn't match.
-ENGINE = "v4"
+# v5 = v4 signals over the S&P 1500 universe (large+mid+small segments)
+# with a tradeable-liquidity gate. The universe is part of the engine:
+# cross-sectional ranks change with it, so probabilities must rebuild.
+ENGINE = "v5"
 
 # Label definition (state verbatim in every report):
 # HIT = max CLOSE over the next 42 trading days >= entry close * 1.05
@@ -39,6 +42,11 @@ CALIB_YEARS = 10            # Alpaca SIP history starts 2016 — use all of it
 CALIB_STALE_DAYS = 30
 UNIVERSE_STALE_DAYS = 60
 TOP_CANDIDATES = 15
+
+# Universe = S&P 1500 (large 500 + mid 400 + small 600): the mid/small
+# segments are where under-the-radar candidates live. Illiquid names are
+# gated at scan time, not in the universe file:
+MIN_DOLLAR_VOL = 10_000_000     # 20d median close*volume floor (entry-time)
 
 # Composite weights — v4 engine (sum 1.00). v4 = v3 minus the gap/volume
 # PEAD proxy (its weight moved to 6-1 momentum), selected by train/holdout

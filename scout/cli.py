@@ -120,7 +120,9 @@ def cmd_scan(args) -> None:
             grade = {"A": "B", "B": "C"}[grade]
         sigma42 = float(row["vol"]) * math.sqrt(config.HORIZON_TDAYS / 252)
         disaster_price = round(price * (1 - config.SELL_DISASTER_SIGMA * sigma42), 2)
-        sig_text = (f"12-1 mom {row['mom']:+.0%} (p{row['mom_pct']:.0%}); "
+        segment = info.get(sym, {}).get("segment", "large")
+        sig_text = ((f"[{segment}-cap] " if segment != "large" else "")
+                    + f"12-1 mom {row['mom']:+.0%} (p{row['mom_pct']:.0%}); "
                     f"6-1 mom {row['mom6']:+.0%}; "
                     f"{row['high']:.0%} of 52w high; "
                     f"{row['brk20']:.0%} of 20d high; "
@@ -134,6 +136,7 @@ def cmd_scan(args) -> None:
         candidates.append({
             "symbol": sym, "name": info.get(sym, {}).get("name", ""),
             "sector": info.get(sym, {}).get("sector", ""),
+            "segment": segment,
             "price": round(price, 2),
             "target_price": round(price * (1 + config.TARGET_GAIN), 2),
             "score": round(float(row["score"]), 1),
@@ -360,6 +363,7 @@ def cmd_record(args) -> None:
             "Engine": scan.get("engine", config.ENGINE),
             "Sell Signal": cd.get("sell_if", ""),
             "Sell Below (Disaster)": cd.get("disaster_price", ""),
+            "Segment": cd.get("segment", "large"),
         })
     n = excel_book.append_picks(rows)
     print(f"recorded {n} picks -> {config.EXCEL_PATH}")

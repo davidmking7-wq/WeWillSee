@@ -30,10 +30,12 @@ import pickle
 import numpy as np
 import pandas as pd
 
-from . import config, data, signals, universe
+from . import config, data, pit, signals, universe
 
 REGIME_SYM = "SPY"
 CACHE = config.SCOUT_DIR / "backtest_cache.pkl"
+CACHE_PIT = config.SCOUT_DIR / "backtest_cache_pit.pkl"
+CACHE_1500 = config.SCOUT_DIR / "backtest_cache_1500.pkl"
 RESULTS = config.SCOUT_DIR / "backtest_results.json"
 WARMUP = 270                 # bars before the first entry (feature lookbacks)
 
@@ -122,31 +124,52 @@ def _v3_composite_at(frames, ts):
 ENGINES = {
     "v1": (_v1_feature_frames, _v1_composite_at),
     "v3": (signals.feature_frames, _v3_composite_at),
-    "v4": (signals.feature_frames, signals.composite_at),
+    # live signals module. v5 = v4 + tradeable-liquidity gate; on large-cap
+    # universes the gate is a near-no-op, so this row is comparable to the
+    # historical v4 numbers there.
+    "v5": (signals.feature_frames, signals.composite_at),
 }
 
 
 # ---------------------------------------------------------------- harness
 
-def load_bars(no_cache: bool = False) -> dict:
-    if CACHE.exists() and not no_cache:
-        with open(CACHE, "rb") as f:
+def universe_symbols(mode: str) -> list[str]:
+    """Symbol list for a backtest universe mode.
+    sp500  — current large-cap segment (the original test universe)
+    pit500 — every ACTUAL S&P 500 member at any point since 2016,
+             including later-delisted ones (point-in-time)
+    sp1500 — current S&P 1500 (large+mid+small; live-pipeline universe)"""
+    if mode == "pit500":
+        return sorted(set(pit.all_members_since("2016-01-01")) | {REGIME_SYM})
+    uni = universe.load()
+    if mode == "sp500":
+        uni = [u for u in uni if u.get("segment", "large") == "large"]
+    return sorted({u["symbol"] for u in uni} | {REGIME_SYM})
+
+
+def load_bars(no_cache: bool = False, mode: str = "sp500") -> dict:
+    cache = {"sp500": CACHE, "pit500": CACHE_PIT, "sp1500": CACHE_1500}[mode]
+    if cache.exists() and not no_cache:
+        with open(cache, "rb") as f:
             bars = pickle.load(f)
         print(f"bars from cache: {bars['close'].shape[0]} days x "
-              f"{bars['close'].shape[1]} symbols (delete {CACHE.name} to refetch)")
+              f"{bars['close'].shape[1]} symbols (delete {cache.name} to refetch)")
         return bars
-    uni = universe.load()
-    syms = sorted({u["symbol"] for u in uni} | {REGIME_SYM})
+    syms = universe_symbols(mode)
     print(f"fetching {config.CALIB_YEARS}y of SIP bars for {len(syms)} symbols "
-          "(a few minutes)...")
+          f"({mode}; a few minutes)...")
     bars = data.daily_ohlcv(syms, config.CALIB_YEARS * 365 + 60)
-    with open(CACHE, "wb") as f:
+    with open(cache, "wb") as f:
         pickle.dump(bars, f)
     return bars
 
 
-def window_outcomes(c, pos, syms, h):
-    """Per-symbol outcome dicts for the window starting the day after pos."""
+def window_outcomes(c, pos, syms, h, allow_partial=False):
+    """Per-symbol outcome dicts for the window starting the day after pos.
+    allow_partial keeps paths that end early (delisting mid-window): the
+    exit is the final print — right for acquisitions, and for failures
+    (SIVB/FRC) the collapse is already in the last bars. Point-in-time
+    mode uses this so dead members aren't silently dropped."""
     basis = c.iloc[pos]
     win = c.iloc[pos + 1: pos + 1 + h]
     out = {}
@@ -154,7 +177,7 @@ def window_outcomes(c, pos, syms, h):
         if sym not in win.columns or pd.isna(basis.get(sym)):
             continue
         r = (win[sym] / basis[sym]).dropna().values
-        if len(r) < h:
+        if len(r) < (5 if allow_partial else h):
             continue
         up = r >= 1 + config.TARGET_GAIN
         dn = r <= 1 + config.DROP_GAIN
@@ -215,8 +238,12 @@ def compound(windows):
             "eqw_market_growth_pct": round(100 * (mkt - 1), 1)}
 
 
-def run_engine(name, ff, comp, bars, positions, n_picks, min_pool=50):
-    """Replay one engine over the given entry positions. Returns window list."""
+def run_engine(name, ff, comp, bars, positions, n_picks, min_pool=50,
+               pit_mode=False):
+    """Replay one engine over the given entry positions. Returns window list.
+    pit_mode restricts each date's candidate pool AND benchmark to the
+    stocks that were actually in the S&P 500 THAT day, and keeps
+    delisted-mid-window paths (exit at final print)."""
     c = bars["close"]
     idx = c.index
     h = config.HORIZON_TDAYS
@@ -228,19 +255,28 @@ def run_engine(name, ff, comp, bars, positions, n_picks, min_pool=50):
     vol_q80 = spy_vol21.expanding(min_periods=252).quantile(0.80)
 
     frames = ff(bars["open"], c, bars["volume"])
-    mkt_syms = [s for s in c.columns if s != REGIME_SYM]
     windows = []
     for pos in positions:
         ts = idx[pos]
-        snap = comp(frames, ts).drop(index=[REGIME_SYM], errors="ignore")
+        if pit_mode:
+            mem = pit.members(ts)
+            cols = [s for s in c.columns if s in mem or s == REGIME_SYM]
+            # one-row slices so the cross-sectional ranks see ONLY that
+            # day's actual members (cheap: 1 x ~500 per frame)
+            day_frames = {k: f.loc[[ts], cols] for k, f in frames.items()}
+            snap = comp(day_frames, ts).drop(index=[REGIME_SYM], errors="ignore")
+            mkt_syms = [s for s in cols if s != REGIME_SYM]
+        else:
+            snap = comp(frames, ts).drop(index=[REGIME_SYM], errors="ignore")
+            mkt_syms = [s for s in c.columns if s != REGIME_SYM]
         if len(snap) < min_pool:
             continue
         top = list(snap.index[:n_picks])
-        outcomes = window_outcomes(c, pos, top, h)
+        outcomes = window_outcomes(c, pos, top, h, allow_partial=pit_mode)
         picks = [outcomes[s] for s in top if s in outcomes]
         if not picks:
             continue
-        mkt = window_outcomes(c, pos, mkt_syms, h)
+        mkt = window_outcomes(c, pos, mkt_syms, h, allow_partial=pit_mode)
         spy_out = window_outcomes(c, pos, [REGIME_SYM], h)
         if not mkt or REGIME_SYM not in spy_out:
             continue
@@ -293,26 +329,37 @@ def positions_for(idx, start, end, step):
 
 
 def run(n_picks: int, step: int, no_cache: bool, start=None, end=None,
-        engines=None, out_path=RESULTS) -> dict:
-    bars = load_bars(no_cache)
+        engines=None, out_path=RESULTS, mode: str = "sp500") -> dict:
+    bars = load_bars(no_cache, mode)
     idx = bars["close"].index
     positions = positions_for(idx, start, end, step)
     if not positions:
         raise SystemExit("no entry dates in the requested range")
+    pit_mode = mode == "pit500"
+    if out_path is RESULTS and mode != "sp500":
+        out_path = config.SCOUT_DIR / f"backtest_results_{mode}.json"
     print(f"{len(positions)} entry dates, {idx[positions[0]].date()} .. "
           f"{idx[positions[-1]].date()}, {n_picks} picks/date, "
-          f"horizon {config.HORIZON_TDAYS} td")
+          f"horizon {config.HORIZON_TDAYS} td, universe {mode}")
 
     results = {}
     for name, (ff, comp) in (engines or ENGINES).items():
-        windows = run_engine(name, ff, comp, bars, positions, n_picks)
+        windows = run_engine(name, ff, comp, bars, positions, n_picks,
+                             pit_mode=pit_mode)
         results[name] = summarize(windows, step)
 
+    UNIVERSE_NOTES = {
+        "sp500": "today's S&P 500 applied historically (survivorship)",
+        "pit500": "POINT-IN-TIME S&P 500: each date's actual members "
+                  "(fja05680 dataset), delisted paths kept to final print",
+        "sp1500": "today's S&P 1500 applied historically (survivorship — "
+                  "STRONGER for mid/small caps; no free point-in-time source)",
+    }
     out = {"span": [str(idx[positions[0]].date()), str(idx[positions[-1]].date())],
            "picks_per_date": n_picks, "step_tdays": step,
            "horizon_tdays": config.HORIZON_TDAYS, "target": config.TARGET_GAIN,
            "label": "HIT = max close over next 42 trading days >= entry close * 1.05",
-           "universe": "today's S&P 500 applied historically (survivorship)",
+           "universe": UNIVERSE_NOTES[mode],
            "benchmarks": "mkt = equal-weight same universe; spy = S&P 500 ETF "
                          "(SPY), identical windows",
            "note": "monthly windows overlap (~2x); see non_overlapping for the "
@@ -359,8 +406,14 @@ def main() -> None:
     ap.add_argument("--start", default=None, help="first entry date (YYYY-MM-DD)")
     ap.add_argument("--end", default=None, help="last entry date (YYYY-MM-DD)")
     ap.add_argument("--no-cache", action="store_true", help="refetch bars")
+    ap.add_argument("--universe", default="sp500",
+                    choices=["sp500", "pit500", "sp1500"],
+                    help="sp500 = current large caps; pit500 = each date's "
+                         "ACTUAL S&P 500 members (point-in-time); sp1500 = "
+                         "current S&P 1500 incl. mid/small")
     args = ap.parse_args()
-    run(args.picks, args.step, args.no_cache, args.start, args.end)
+    run(args.picks, args.step, args.no_cache, args.start, args.end,
+        mode=args.universe)
 
 
 if __name__ == "__main__":

@@ -36,6 +36,7 @@ from . import config
 def feature_frames(o: pd.DataFrame, c: pd.DataFrame, v: pd.DataFrame) -> dict[str, pd.DataFrame]:
     """Each value is a time × symbol DataFrame aligned to c's index."""
     ret = c.pct_change()
+    dvol20 = (c * v).rolling(20, min_periods=10).median()
     mom = c.shift(21) / c.shift(252) - 1
     mom6 = c.shift(21) / c.shift(126) - 1
     ret6 = c / c.shift(126) - 1
@@ -57,7 +58,7 @@ def feature_frames(o: pd.DataFrame, c: pd.DataFrame, v: pd.DataFrame) -> dict[st
     return {"mom": mom, "mom6": mom6, "ret6": ret6, "ret1m": ret1m,
             "high": high_prox, "brk20": brk20, "sma50ok": sma50ok,
             "sma200ok": sma200ok, "vol": vol63, "gap": gap,
-            "pos252": pos252, "max21": max21}
+            "pos252": pos252, "max21": max21, "dvol20": dvol20}
 
 
 def composite_at(frames: dict[str, pd.DataFrame], ts) -> pd.DataFrame:
@@ -77,7 +78,8 @@ def composite_at(frames: dict[str, pd.DataFrame], ts) -> pd.DataFrame:
             & (df["ret1m"] <= config.VETO_RET1M_HI)
             & (df["ret1m"] >= config.VETO_RET1M_LO)
             & (vol_decile < config.VETO_VOL_DECILE)
-            & (max_decile < config.VETO_MAX21_DECILE))  # no lottery spikes
+            & (max_decile < config.VETO_MAX21_DECILE)   # no lottery spikes
+            & (df["dvol20"] >= config.MIN_DOLLAR_VOL))  # tradeable liquidity
     df = df[keep]
     if df.empty:
         return df

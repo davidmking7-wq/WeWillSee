@@ -96,11 +96,12 @@ def run(force: bool = False) -> dict:
                   f"{cal.get('engine', 'v1')!r}, current is {config.ENGINE!r} "
                   "— rebuilding from scratch (old tables are invalid)...")
 
+    from . import backtest      # local import: backtest shares the bar cache
     uni = universe.load()
     syms = sorted({u["symbol"] for u in uni} | {REGIME_SYM})
     print(f"calibrating: {config.CALIB_YEARS}y of SIP bars for {len(syms)} symbols "
           f"(takes a few minutes)...")
-    bars = data.daily_ohlcv(syms, config.CALIB_YEARS * 365 + 60)
+    bars = backtest.load_bars(mode="sp1500")
     c = bars["close"]
     frames = signals.feature_frames(bars["open"], c, bars["volume"])
 

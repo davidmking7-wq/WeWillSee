@@ -36,7 +36,7 @@ HEADERS = ["Date Picked", "Stock", "Company", "Industry", "List",
            # columns added later — kept at the end so old workbooks migrate
            # by appending, never by shifting existing data
            "Chance +15%", "Earnings Before Deadline", "Sell Signal",
-           "Sell Below (Disaster)"]
+           "Sell Below (Disaster)", "Segment"]
 COL = {h: i + 1 for i, h in enumerate(HEADERS)}
 
 # old header -> new header (renamed in place on migration; renames never
