@@ -176,6 +176,15 @@ Show, in plain language (the user prefers no jargon):
    "Right now X% of eligible S&P stocks touch +5% in 2 months anyway; these
    picks historically did it Y% of the time (lift Z)." A 65% P(hit) in a bull
    market is mostly base rate, and the user must see that.
+   Then the **portfolio goal tracker** (the user's stated goal is +5%+ per
+   1-2 months on the whole portfolio): per BACKTEST-REPORT.md's portfolio
+   lab, a concentrated book of the top 2-3 overall picks historically
+   averaged +2.5 to +4.5% per window with ≥+5% landing in ~40-50% of
+   windows (never all of them — nothing documented achieves that), worst
+   windows of -15% to -25%, and multi-window losing streaks. State this
+   expectation every run so the goal is scored against reality, and never
+   suggest profit targets, static leverage, or 1-stock concentration to
+   force the number (each is documented to destroy the edge).
 4. The caveats from `last_scan.json`, briefly, plus: research scorecard, not
    financial advice; nothing was bought; and (from BACKTEST-REPORT.md) the
    tool historically does NOT beat buy-and-hold SPY — its value is finding

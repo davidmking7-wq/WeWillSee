@@ -336,6 +336,51 @@ literature actually supports for this horizon — time-based exit,
 deep disaster stop, wide post-gain trailing — are exactly the three that
 survived here.
 
+## The goal: "at least +5% every 1-2 months" — measured, then researched
+
+The goal was measured DIRECTLY (`python -m scout.portfolio_lab`): the
+whole portfolio's return per 42-td window, across concentration levels
+and a velocity variant (sell at +5% touch, redeploy into the next-ranked
+name). 54 non-overlapping windows, 2017-2026:
+
+| strategy (S&P 1500) | avg/window | windows ≥ +5% | worst window | compounded |
+|---|---|---|---|---|
+| top-2 concentrated | **+4.59%** | **46%** | −22.7% | **+733%** |
+| top-3 | +4.02% | 43% | −24.0% | +554% |
+| top-5 (current default) | +2.63% | 43% | −19.6% | +243% |
+| roll-5 (sell at +5%, redeploy) | +3.29% | 48% | −20.9% | +357% |
+| SPY | +2.50% | 37% | −16.0% | +251% |
+
+- **Stability:** top-2 is the one configuration that led BOTH halves
+  (+4.28%/window 2017-21, +4.90% 2022-26). The velocity strategy is
+  regime-dependent (weak in trending years, best in choppy ones).
+- **The honest floor:** on the point-in-time S&P 500, concentration
+  collapses (top-1: +0.34%/window; top-2: +1.89%) — a large share of the
+  concentrated edge lives in the mid/small segment, whose survivorship
+  cannot be corrected with free data. Reality sits between the two tables.
+- **The literature says the same thing from the other side** (checked
+  independently): even elite systematic funds land ≥+5% in only ~10-25%
+  of months (MTUM: ~61% of months positive, avg +1.35%); the only
+  documented every-month-level consistency is Renaissance's closed
+  Medallion fund. Concentrating to 1-3 names raises the left tail faster
+  than the right (our PIT top-1 collapse is textbook); profit targets cut
+  the right tail momentum lives on (stops yes, targets no — matching our
+  own exit-lab findings); vol-targeting (Barroso-Santa-Clara) is the
+  best-documented CONSISTENCY upgrade but manufactures no edge; static
+  2x leverage doubles crash depth for ~nothing after ~5.8% margin rates.
+
+**The verdict, stated plainly:** "+5% or more EVERY window" is not a
+target any evidence supports — not for this tool, not for anything
+documented short of Medallion. The closest achievable, measured
+formulation: a concentrated 2-3 pick book from the top of the scan's
+overall order, stops-not-targets, crash rule respected — expect roughly
+**+2.5 to +4.5% per window** (depending on how much of the small-cap
+edge survives survivorship), with **≥+5% landing in roughly 40-50% of
+windows**, a worst window of −15% to −25% every couple of years, and
+losing streaks that WILL span multiple windows. Success should be scored
+the way this scorecard already scores it: predicted vs realized, window
+by window — not by demanding the impossible window-after-window.
+
 ## Caveats (all apply, none are optional reading)
 
 1. **Survivorship**: now QUANTIFIED by the point-in-time section above —

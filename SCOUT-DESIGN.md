@@ -283,3 +283,22 @@ should account for each date's ACTUAL S&P candidates, not only today's."
 - Logistic-regression calibrator; as-of historical constituents
   (fja05680/sp500) to kill survivorship; purged-CV validation; earnings
   calendar API (Claude web-search covers it per-run for now).
+
+### Portfolio lab (2026-08-08): the user's goal measured directly
+
+Goal: "at least +5% (preferably more) every month or two" — portfolio
+level. scout/portfolio_lab.py measures exactly that per 42-td window
+across concentration levels (top-1/2/3/5), a bull-only variant, and a
+rolling sell-at-+5%-and-redeploy strategy, on sp1500 and pit500.
+Findings (full tables in BACKTEST-REPORT.md): top-2 concentration is the
+one configuration leading both halves (+4.3/+4.9%/window, 46-52% of
+windows >=+5%, worst -23%); the velocity strategy is regime-dependent;
+concentration collapses on the survivorship-corrected PIT-500 (top-1
++0.34%/window) — much of the concentrated edge lives in mid/small caps.
+Independent literature review concurs: no documented strategy short of
+Medallion clears +5% every window; stops help momentum, profit targets
+hurt; vol-targeting adds consistency but no edge; static leverage adds
+crash depth. Verdict shipped into the skill's Phase-5 "portfolio goal
+tracker": expect +2.5-4.5%/window on a concentrated 2-3 pick book with
+>=+5% in ~40-50% of windows — scored predicted-vs-realized, never
+promised.
