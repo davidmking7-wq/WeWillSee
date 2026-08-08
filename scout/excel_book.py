@@ -36,12 +36,14 @@ HEADERS = ["Date Picked", "Stock", "Company", "Industry", "List",
            # columns added later — kept at the end so old workbooks migrate
            # by appending, never by shifting existing data
            "Chance +15%", "Earnings Before Deadline", "Sell Signal",
-           "Sell Below (Disaster)", "Segment", "ML Check"]
+           "Sell Below (Disaster)", "Segment", "Insider Buys"]
 COL = {h: i + 1 for i, h in enumerate(HEADERS)}
 
 # old header -> new header (renamed in place on migration; renames never
 # shift columns, so they're always safe)
 RENAMES = {"Goal (+5%)": "Min Goal (+5%)"}
+# retired columns physically deleted on migration (feature removed)
+REMOVED = {"ML Check"}
 
 FILL_HEAD = PatternFill("solid", fgColor="1F3B57")
 FILL_PRED = PatternFill("solid", fgColor="2E4E6E")
@@ -143,13 +145,15 @@ Best So Far %     The best it has reached since picked — shows near-misses.
 
 Segment           Where the stock lives: large (S&P 500), mid (400) or
                   small (600) — mid/small are the under-the-radar names.
-ML Check          The tool's own second opinion: a small model trained on
-                  the tool's OWN past picks estimates this pick's chance
-                  of hitting +5%, from patterns the ranking alone misses.
-                  "strong" picks historically hit 73% (avg +4.4%);
-                  "weak" ones 55% (avg ~0%). Treat "weak" as a red flag.
-                  Computed only when you run the tool — nothing runs in
-                  the background.
+Insider Buys      Filled when company officers or directors bought their
+                  OWN stock on the open market in the 45 days before the
+                  pick (real SEC filings, checked at scan time). Rare on
+                  momentum names — and historically excellent when it
+                  happens (in our sample such picks hit 69% with +6.9%
+                  average and zero disasters, though the sample is small).
+                  A plus to note, never a guarantee. Insider SELLING is
+                  deliberately ignored — heavy selling into strength
+                  tested as profit-taking noise, not a warning.
 
 Honesty notes: numbers come from 2016-2026 — mostly good years for stocks;
 the tool refuses to give numbers when history is too thin; reaching +5% at
@@ -198,6 +202,9 @@ def _migrate(wb: Workbook) -> None:
         old = ws.cell(row=1, column=i).value
         if old in RENAMES:
             ws.cell(row=1, column=i, value=RENAMES[old])
+    for i in range(ws.max_column, 0, -1):
+        if ws.cell(row=1, column=i).value in REMOVED:
+            ws.delete_cols(i, 1)
     existing = [ws.cell(row=1, column=i).value for i in range(1, ws.max_column + 1)]
     for h in HEADERS:
         if h in existing:

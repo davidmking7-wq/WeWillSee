@@ -206,16 +206,16 @@ Show, in plain language (the user prefers no jargon):
 5. **The buy rule, in bold, every run:** buy at or near the market CLOSE —
    never at the open, never chase a morning gap (it's the first thing in
    the workbook's How To Read This sheet, in bold, for the same reason).
-6. The **ML Check** per pick (computed only during this scan — nothing
-   runs in the background): the tool's second-opinion model on its own
-   picks. "strong" historically hit 73% (avg +4.4%), "weak" 55% (avg ~0%).
-   IMPORTANT — it is INFORMATION, never a selector: a walk-forward test
-   (scout/ml_portfolio_lab.py) showed that mechanically skipping or
-   re-ranking by the model LOWERS portfolio returns (~-1.4pp/window) —
-   it predicts hit odds, not how far winners run, and the composite
-   order carries the return information. So: never replace a top pick
-   because of a weak flag; DO disclose every flag plainly and give
-   weak-flagged picks extra research scrutiny.
+6. **Insider buying, when present** (the scan checks real SEC Form 4
+   filings automatically): if a candidate's `insider_buyers` > 0, say so
+   prominently — officers/directors buying their own stock before a pick
+   is rare and was historically excellent (69% hit, +6.9% avg, zero
+   disasters in our sample; small sample, so a plus, not a promise). It
+   also lands in the workbook's "Insider Buys" column. Never treat
+   insider SELLING as a warning — tested as profit-taking noise.
+   (An ML second-opinion feature was built, tested as a selector, found
+   to REDUCE returns, and removed at the user's request — see
+   scout/hypotheses.md H3/H3b; don't rebuild it.)
 7. Mention `picks.xlsx` was updated (send it with SendUserFile if available).
 
 ## Failure notes
