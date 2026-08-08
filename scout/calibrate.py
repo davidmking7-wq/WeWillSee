@@ -28,9 +28,61 @@ from datetime import datetime, timezone
 import numpy as np
 import pandas as pd
 
-from . import config, data, signals, universe
+from . import config, data, meta, signals, universe
 
 REGIME_SYM = "SPY"
+
+
+def _meta_panel(frames, c, bull_series, idx) -> pd.DataFrame:
+    """Entry-time features + outcomes for the meta-label model (H3):
+    top-10 candidates at 21-td cycles over the same bars as calibration."""
+    from . import universe as _u
+    seg = {u["symbol"]: u.get("segment", "large") for u in _u.load()}
+    ep = {}
+    hist = config.SCOUT_DIR / "earnings_history.json"
+    if hist.exists():
+        emap = json.loads(hist.read_text(encoding="utf-8"))
+        dates_np = np.array([str(d.date()) for d in idx.tz_localize(None)])
+        for sym, ds in emap.items():
+            p = np.searchsorted(dates_np, np.array(sorted(ds)))
+            ep[sym] = p[p < len(dates_np)]
+    h = config.HORIZON_TDAYS
+    rows = []
+    for pos in range(270, len(idx) - h - 1, 21):
+        ts = idx[pos]
+        if ts not in bull_series.index:
+            continue
+        snap = signals.composite_at(frames, ts).drop(index=[REGIME_SYM],
+                                                     errors="ignore")
+        if len(snap) < 50:
+            continue
+        pct = snap["score"].rank(pct=True)
+        basis = c.iloc[pos]
+        for sym in list(snap.index[:10]):
+            if sym not in c.columns or pd.isna(basis.get(sym)):
+                continue
+            fwd = (c.iloc[pos + 1: pos + 1 + h][sym] / basis[sym]).dropna()
+            if len(fwd) < h:
+                continue
+            evs = ep.get(sym, np.array([]))
+            nxt = evs[evs > pos] if len(evs) else np.array([])
+            prev = evs[evs <= pos] if len(evs) else np.array([])
+            rows.append({
+                "rank_pct": float(pct[sym]),
+                "mom": float(snap.loc[sym, "mom"]),
+                "mom6": float(snap.loc[sym, "mom6"]),
+                "high": float(snap.loc[sym, "high"]),
+                "brk20": float(snap.loc[sym, "brk20"]),
+                "pos252": float(snap.loc[sym, "pos252"]),
+                "vol": float(snap.loc[sym, "vol"]),
+                "bull": 1.0 if bool(bull_series.loc[ts]) else 0.0,
+                "mid": 1.0 if seg.get(sym) == "mid" else 0.0,
+                "small": 1.0 if seg.get(sym) == "small" else 0.0,
+                "earn_ahead": 1.0 if len(nxt) and nxt[0] <= pos + 15 else 0.0,
+                "just_rep": 1.0 if len(prev) and prev[-1] >= pos - 10 else 0.0,
+                "hit": 1.0 if (fwd.values >= 1.05).any() else 0.0,
+            })
+    return pd.DataFrame(rows)
 
 
 def bucket_of(rank_pct: float) -> str:
@@ -178,7 +230,17 @@ def run(force: bool = False) -> dict:
                            "n": len(sub),
                            "n_dates": int(sub["date_i"].nunique()), "buckets": buckets}
 
+    try:
+        panel = _meta_panel(frames, c, bull_series, idx)
+        meta_model = meta.train_model(panel) if len(panel) >= 300 else None
+        if meta_model:
+            print(f"  meta-label model fitted on {meta_model['n']} picks")
+    except Exception as e:
+        print(f"  meta-model skipped: {e}")
+        meta_model = None
+
     cal = {"method": "v3", "engine": config.ENGINE,
+           "meta_model": meta_model,
            "generated": datetime.now(timezone.utc).isoformat(),
            "years": config.CALIB_YEARS, "n_dates": int(df["date_i"].nunique()),
            "span": [str(idx[270].date()), str(idx[len(idx) - h - 1].date())],

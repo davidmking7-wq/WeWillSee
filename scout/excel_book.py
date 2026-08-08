@@ -36,7 +36,7 @@ HEADERS = ["Date Picked", "Stock", "Company", "Industry", "List",
            # columns added later — kept at the end so old workbooks migrate
            # by appending, never by shifting existing data
            "Chance +15%", "Earnings Before Deadline", "Sell Signal",
-           "Sell Below (Disaster)", "Segment"]
+           "Sell Below (Disaster)", "Segment", "ML Check"]
 COL = {h: i + 1 for i, h in enumerate(HEADERS)}
 
 # old header -> new header (renamed in place on migration; renames never
@@ -141,18 +141,58 @@ What-happened columns:
 Gain So Far %     Where the stock is now vs the pick price.
 Best So Far %     The best it has reached since picked — shows near-misses.
 
+Segment           Where the stock lives: large (S&P 500), mid (400) or
+                  small (600) — mid/small are the under-the-radar names.
+ML Check          The tool's own second opinion: a small model trained on
+                  the tool's OWN past picks estimates this pick's chance
+                  of hitting +5%, from patterns the ranking alone misses.
+                  "strong" picks historically hit 73% (avg +4.4%);
+                  "weak" ones 55% (avg ~0%). Treat "weak" as a red flag.
+                  Computed only when you run the tool — nothing runs in
+                  the background.
+
 Honesty notes: numbers come from 2016-2026 — mostly good years for stocks;
 the tool refuses to give numbers when history is too thin; reaching +5% at
 some point is NOT the same as ending with a profit. This is a research
 scorecard, NOT financial advice. Nothing is ever bought automatically.
 """
 
+# written in BOLD at the top of How To Read This — the one execution rule
+# adopted from the overnight-returns literature (buying at the open pays
+# the overnight drift plus the day's widest spreads)
+BUY_RULES = [
+    "HOW TO BUY (tested rule — read this first):",
+    "Buy at or near the market CLOSE — never at the open,",
+    "and never chase a morning gap up.",
+]
+
+
+def _write_about(wb: Workbook) -> None:
+    """(Re)write the How To Read This sheet: bold buy rules first, then the
+    column guide. Rewritten on every migration so docs never go stale."""
+    if "How To Read This" in wb.sheetnames:
+        about = wb["How To Read This"]
+        about.delete_rows(1, about.max_row + 1)
+    else:
+        about = wb.create_sheet("How To Read This")
+    r = 1
+    for line in BUY_RULES:
+        cell = about.cell(row=r, column=1, value=line)
+        cell.font = Font(bold=True, size=12)
+        r += 1
+    r += 1
+    for line in ABOUT.strip().splitlines():
+        about.cell(row=r, column=1, value=line)
+        r += 1
+    about.column_dimensions["A"].width = 100
+
 
 def _migrate(wb: Workbook) -> None:
     """Rename retitled headers in place, then append any headers added since
     the workbook was created (new columns only ever go at the END of HEADERS
     so old data never shifts). Rows written before the Engine column existed
-    are stamped 'v1'."""
+    are stamped 'v1'. The About sheet is rewritten to stay current."""
+    _write_about(wb)
     ws = wb["Picks"]
     for i in range(1, ws.max_column + 1):
         old = ws.cell(row=1, column=i).value
@@ -199,10 +239,7 @@ def _ensure() -> Workbook:
         ws.column_dimensions[get_column_letter(COL[h])].width = widths.get(h, 11)
     ws.freeze_panes = "C2"
     wb.create_sheet("Track Record")
-    about = wb.create_sheet("How To Read This")
-    for i, line in enumerate(ABOUT.strip().splitlines(), 1):
-        about.cell(row=i, column=1, value=line)
-    about.column_dimensions["A"].width = 100
+    _write_about(wb)
     return wb
 
 

@@ -197,7 +197,16 @@ Show, in plain language (the user prefers no jargon):
    financial advice; nothing was bought; and (from BACKTEST-REPORT.md) the
    tool historically does NOT beat buy-and-hold SPY — its value is finding
    likely-fast +5%+ movers with a safer path, not index outperformance.
-5. Mention `picks.xlsx` was updated (send it with SendUserFile if available).
+5. **The buy rule, in bold, every run:** buy at or near the market CLOSE —
+   never at the open, never chase a morning gap (it's the first thing in
+   the workbook's How To Read This sheet, in bold, for the same reason).
+6. The **ML Check** per pick (computed only during this scan — nothing
+   runs in the background): the tool's second-opinion model on its own
+   picks. "strong" historically hit 73% (avg +4.4%), "weak" 55% (avg ~0%).
+   Treat a "weak" ML Check on a top-3 candidate as a research red flag —
+   prefer the next research-cleared name unless the research case is
+   compelling; never present a weak-flagged pick without saying so.
+7. Mention `picks.xlsx` was updated (send it with SendUserFile if available).
 
 ## Failure notes
 

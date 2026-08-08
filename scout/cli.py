@@ -22,7 +22,8 @@ from datetime import date, datetime
 
 import pandas as pd
 
-from . import calibrate, config, data, earnings, excel_book, signals, universe
+from . import (calibrate, config, data, earnings, excel_book, meta, signals,
+               universe)
 
 POOL = 30   # composite-score pool that the rankings then re-order
 
@@ -121,6 +122,23 @@ def cmd_scan(args) -> None:
         sigma42 = float(row["vol"]) * math.sqrt(config.HORIZON_TDAYS / 252)
         disaster_price = round(price * (1 - config.SELL_DISASTER_SIGMA * sigma42), 2)
         segment = info.get(sym, {}).get("segment", "large")
+        model = cal.get("meta_model")
+        ml_p = ml_b = None
+        if model:
+            edays = ((date.fromisoformat(edate) - ts.date()).days
+                     if edate else 999)
+            ml_p = meta.predict_proba(model, {
+                "rank_pct": float(pct[sym]), "mom": float(row["mom"]),
+                "mom6": float(row["mom6"]), "high": float(row["high"]),
+                "brk20": float(row["brk20"]), "pos252": float(row["pos252"]),
+                "vol": float(row["vol"]),
+                "bull": 1.0 if regime == "bull" else 0.0,
+                "mid": 1.0 if segment == "mid" else 0.0,
+                "small": 1.0 if segment == "small" else 0.0,
+                "earn_ahead": 1.0 if edays <= 21 else 0.0,
+                "just_rep": 1.0 if jr_date else 0.0,
+            })
+            ml_b = meta.bucket(model, ml_p)
         sig_text = ((f"[{segment}-cap] " if segment != "large" else "")
                     + f"12-1 mom {row['mom']:+.0%} (p{row['mom_pct']:.0%}); "
                     f"6-1 mom {row['mom6']:+.0%}; "
@@ -162,6 +180,8 @@ def cmd_scan(args) -> None:
             "p5_end_ret": stats.get("p5_end_ret") if quotable else None,
             "n_eff": stats.get("n_eff") if stats else None,
             "grade_quant": grade,
+            "ml_check": round(ml_p, 3) if ml_p is not None else None,
+            "ml_bucket": ml_b,
             "earnings_date": edate,
             "earnings_in_window": e_inside,
             "just_reported": jr_date,
@@ -217,16 +237,19 @@ def cmd_scan(args) -> None:
         print("!! CRASH-RISK REGIME (bear + high SPY vol): momentum signals "
               "historically invert here. Strong case for ZERO picks this cycle.")
     print(f"{'sym':<6}{'opp':>6}{'gain':>6}{'P+5%':>6}{'P+10%':>6}{'peak':>6}"
-          f"{'days':>5}{'dip':>5}{'grade':>6}  signals")
+          f"{'days':>5}{'dip':>5}{'grade':>6}{'ML':>7}  signals")
     for cd in candidates:
+        ml = (f"{cd['ml_check']:.0%}!" if cd.get("ml_bucket") == "strong"
+              else f"{cd['ml_check']:.0%}" if cd.get("ml_check") is not None
+              else "-")
         if cd["opp_score"] is not None:
             print(f"{cd['symbol']:<6}{cd['opp_score']:>6.1f}{cd['gain_score']:>6.1f}"
                   f"{cd['p5']:>6.0%}{cd['p10']:>6.0%}{cd['med_max_gain']:>6.1%}"
                   f"{cd['med_days_to_hit']:>5.0f}{cd['p_drop_first']:>5.0%}"
-                  f"{cd['grade_quant']:>6}  {cd['signals_text']}")
+                  f"{cd['grade_quant']:>6}{ml:>7}  {cd['signals_text']}")
         else:
-            print(f"{cd['symbol']:<6}{'n/q':>6}{'':>34}{cd['grade_quant']:>6}  "
-                  f"{cd['signals_text']}")
+            print(f"{cd['symbol']:<6}{'n/q':>6}{'':>34}{cd['grade_quant']:>6}"
+                  f"{ml:>7}  {cd['signals_text']}")
     print(f"\nbig-gain eligible (P+5% >= {config.GAIN_MIN_P5:.0%}): "
           + (", ".join(out["big_gain_order"]) or "NONE this run"))
     print(f"wrote {config.LAST_SCAN_JSON}")
@@ -364,6 +387,8 @@ def cmd_record(args) -> None:
             "Sell Signal": cd.get("sell_if", ""),
             "Sell Below (Disaster)": cd.get("disaster_price", ""),
             "Segment": cd.get("segment", "large"),
+            "ML Check": (f"{cd['ml_check']:.0%} ({cd['ml_bucket']})"
+                         if cd.get("ml_check") is not None else ""),
         })
     n = excel_book.append_picks(rows)
     print(f"recorded {n} picks -> {config.EXCEL_PATH}")

@@ -15,3 +15,4 @@ scout/backtest_cache.pkl
 scout/earnings_cache.json
 scout/backtest_cache_pit.pkl
 scout/backtest_cache_1500.pkl
+scout/form4_cache/
