@@ -35,10 +35,31 @@ import numpy as np
 from . import backtest, config, signals
 
 
-def simulate(r: np.ndarray, rule: str, below_sma: np.ndarray | None = None) -> float:
-    """Realized return of one pick path under a rule. r = win/entry closes."""
+def simulate(r: np.ndarray, rule: str, below_sma: np.ndarray | None = None,
+             sigma42: float | None = None) -> float:
+    """Realized return of one pick path under a rule. r = win/entry closes.
+    sigma42 = the stock's own expected 42-day return volatility at entry
+    (annualized 63d vol * sqrt(42/252)) — used by the vol-scaled rules."""
     n = len(r)
     if rule == "none":
+        return r[-1] - 1
+
+    if rule.startswith("vstop"):        # per-stock disaster stop: K x sigma42
+        k = float(rule[5:]) / 100
+        lvl = 1 - k * (sigma42 or 0.12)
+        hitmask = r <= lvl
+        return (r[np.argmax(hitmask)] if hitmask.any() else r[-1]) - 1
+
+    if rule.startswith("vprot"):        # post-hit protect, trail J x sigma42
+        j = float(rule[5:]) / 100
+        trail = max(0.03, min(0.15, j * (sigma42 or 0.12)))
+        hit, peak = False, r[0]
+        for i in range(n):
+            peak = max(peak, r[i])
+            if not hit and r[i] >= 1.05:
+                hit = True
+            elif hit and r[i] <= max(1.00, peak * (1 - trail)):
+                return r[i] - 1
         return r[-1] - 1
 
     if rule.startswith("stop"):
@@ -124,7 +145,12 @@ def simulate(r: np.ndarray, rule: str, below_sma: np.ndarray | None = None) -> f
 RULES = ("none", "stop8", "stop10", "stop12", "stop15", "stop18",
          "time21", "time21_5", "time21_8", "time30",
          "combo", "2phase", "trail8", "trail10", "be_hit", "protect",
-         "event7", "sma50")
+         "event7", "sma50",
+         # per-stock volatility-scaled levels (sigma42 = the stock's own
+         # expected 42-day move): disaster stop at K x sigma42 below entry,
+         # post-hit protect trailing J x sigma42 (breakeven floor, 3-15% clamp)
+         "vstop100", "vstop125", "vstop150", "vstop200",
+         "vprot40", "vprot60", "vprot80")
 
 
 def collect_windows(picks: int, step: int, start, end):
@@ -146,7 +172,7 @@ def collect_windows(picks: int, step: int, start, end):
         basis = c.iloc[pos]
         win = c.iloc[pos + 1: pos + 1 + h]
         win_sma = sma50.iloc[pos + 1: pos + 1 + h]
-        paths, smas = [], []
+        paths, smas, sigmas = [], [], []
         for sym in list(snap.index[:picks]):
             if sym not in win.columns or np.isnan(basis.get(sym, np.nan)):
                 continue
@@ -155,9 +181,11 @@ def collect_windows(picks: int, step: int, start, end):
                 continue
             paths.append(seg.values)
             smas.append((win[sym] < win_sma[sym]).reindex(seg.index).fillna(False).values)
+            ann_vol = float(frames["vol"].iloc[pos].get(sym, np.nan))
+            sigmas.append(ann_vol * math.sqrt(h / 252) if np.isfinite(ann_vol) else None)
         spy = float(win["SPY"].iloc[-1] / basis["SPY"] - 1)
         if paths:
-            windows.append((paths, smas, spy))
+            windows.append((paths, smas, sigmas, spy))
     span = (str(idx[positions[0]].date()), str(idx[positions[-1]].date()))
     return windows, span
 
@@ -171,7 +199,7 @@ def main() -> None:
     args = ap.parse_args()
 
     windows, span = collect_windows(args.picks, args.step, args.start, args.end)
-    n_picks = sum(len(p) for p, _, _ in windows)
+    n_picks = sum(len(p) for p, _, _, _ in windows)
     print(f"{len(windows)} windows, {n_picks} picks, {span[0]} .. {span[1]}")
     stride = max(1, math.ceil(config.HORIZON_TDAYS / args.step))
     out = {}
@@ -181,8 +209,9 @@ def main() -> None:
     for rule in RULES:
         per_win, allr = [], []
         killed = []
-        for paths, smas, _ in windows:
-            rets = [simulate(r, rule, s) for r, s in zip(paths, smas)]
+        for paths, smas, sigmas, _ in windows:
+            rets = [simulate(r, rule, s, sig)
+                    for r, s, sig in zip(paths, smas, sigmas)]
             per_win.append(float(np.mean(rets)))
             allr.extend(rets)
             killed.extend((r >= 1.05).any() and x < 0.0
@@ -199,7 +228,7 @@ def main() -> None:
         print(f"{rule:<10}{row['avg_per_window']:>9}{row['compounded']:>12}"
               f"{row['tail_below_10']:>10}{row['avg_loser']:>11}"
               f"{row['hits_killed']:>12}{row['worst_pick']:>12}")
-    spys = [s for _, _, s in windows]
+    spys = [s for _, _, _, s in windows]
     spy_comp = float(np.prod([1 + s for s in spys[::stride]]) - 1)
     print(f"SPY same windows: avg {100*float(np.mean(spys)):+.2f}%/win, "
           f"compounded {100*spy_comp:+.1f}%")
