@@ -381,6 +381,29 @@ losing streaks that WILL span multiple windows. Success should be scored
 the way this scorecard already scores it: predicted vs realized, window
 by window — not by demanding the impossible window-after-window.
 
+## The ML Check as a selector — tested, rejected (information only)
+
+The meta-label model (walk-forward AUC 0.60; strong-bucket picks hit 73%
+vs 55% weak) was tested as an actual pick SELECTOR
+(`python -m scout.ml_portfolio_lab`, fully walk-forward, all variants on
+the same 39 out-of-fold non-overlapping periods):
+
+| variant | avg/window | windows ≥ +5% | worst | compounded |
+|---|---|---|---|---|
+| top-2 composite order (baseline) | **+4.88%** | **51%** | −22.7% | **+409%** |
+| top-2, skip ML-weak | +3.45% | 46% | −26.9% | +193% |
+| top-2 ranked by model | +3.86% | 49% | −30.7% | +193% |
+| top-3 baseline / skip / rank | +4.51 / +3.70 / +3.65 | 46/41/49 | — | +362 / +235 / +213 |
+
+Worse in BOTH halves for every ML-selected variant. Why a good hit
+classifier hurts selection: it predicts the ODDS of touching +5%, but
+portfolio profit lives in how far winners RUN — and chasing hit odds
+tilts toward safer, smaller-enders while the composite order carries the
+end-return information. Verdict: the ML Check ships as INFORMATION and a
+research-scrutiny flag only; it never skips or reorders picks. (Insider
+buys, the other Round-1 candidate, remain display-only: 13 events in ten
+years — 69% hit, +6.9% avg, zero tail — cannot move a backtest.)
+
 ## Caveats (all apply, none are optional reading)
 
 1. **Survivorship**: now QUANTIFIED by the point-in-time section above —

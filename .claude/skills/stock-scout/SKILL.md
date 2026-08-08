@@ -209,9 +209,13 @@ Show, in plain language (the user prefers no jargon):
 6. The **ML Check** per pick (computed only during this scan — nothing
    runs in the background): the tool's second-opinion model on its own
    picks. "strong" historically hit 73% (avg +4.4%), "weak" 55% (avg ~0%).
-   Treat a "weak" ML Check on a top-3 candidate as a research red flag —
-   prefer the next research-cleared name unless the research case is
-   compelling; never present a weak-flagged pick without saying so.
+   IMPORTANT — it is INFORMATION, never a selector: a walk-forward test
+   (scout/ml_portfolio_lab.py) showed that mechanically skipping or
+   re-ranking by the model LOWERS portfolio returns (~-1.4pp/window) —
+   it predicts hit odds, not how far winners run, and the composite
+   order carries the return information. So: never replace a top pick
+   because of a weak flag; DO disclose every flag plainly and give
+   weak-flagged picks extra research scrutiny.
 7. Mention `picks.xlsx` was updated (send it with SendUserFile if available).
 
 ## Failure notes
