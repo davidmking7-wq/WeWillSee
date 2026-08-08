@@ -700,6 +700,67 @@ risk taken without even full market exposure to pay for it. The gates
 select steady trending names rather than high-beta ones, so concentration
 buys idiosyncratic variance, not leverage.
 
+## Are the gates the edge? — tested (scout/gates_lab.py)
+
+weekly_forensics left one question open: the ranking sorts nothing, but the
+gated pool sits near market-like alpha, so does holding *everything that
+passes the gates*, equal-weighted, at a long horizon beat SPY? The lab runs
+that book against SPY **and against an ungated equal-weight control**,
+because equal-weighting is itself a size tilt — gated-vs-SPY alone cannot
+separate the gates from the tilt. Costs are turnover-based (two-way,
+0.5*sum|w_target - w_drifted|), not a flat charge.
+
+### First, a survivorship measurement worth more than the strategy result
+
+| ungated equal-weight | CAGR | universe |
+|---|---|---|
+| sp1500 (today's members, applied back to 2017) | **22.28%** | biased |
+| pit500 (each date's ACTUAL members, delisted included) | **11.91%** | honest |
+
+**10.4 percentage points a year of pure survivorship bias.** The 22.28%
+figure is not a strategy result at all — it is what you get by holding, from
+2017, the companies that would later *grow into* the index. It is also a
+warning about this lab's own first draft: on sp1500 the gates appeared to
+destroy 10.8pp of CAGR, and essentially all of that was the vetoes
+declining to buy names that were guaranteed winners *only because the
+universe was chosen after the fact*. On honest data the gap is 1.76pp.
+Quote the S&P 1500 tables elsewhere in this report with that in mind.
+
+### The honest answer (pit500, point-in-time, 2017-07 .. 2026-07)
+
+| strategy | CAGR% | vol% | Sharpe | maxDD% | beta | ann.alpha% | turnover% |
+|---|---|---|---|---|---|---|---|
+| gated_eqw | 10.15 | 12.61 | **0.81** | **-18.3** | **0.77** | -1.08 | 30.2 |
+| ungated_eqw (control) | **11.91** | 15.76 | 0.76 | -21.3 | 0.99 | -2.33 | **4.1** |
+| **SPY** | **14.96** | 14.62 | **1.02** | -22.2 | 1.00 | 0.0 | 0.0 |
+
+1. **The gates cost return and buy risk reduction.** Against the control:
+   -1.76pp of CAGR, but volatility 12.61 vs 15.76, drawdown -18.3 vs -21.3,
+   beta **0.77 vs 0.99**, and Sharpe slightly *better* at 0.81 vs 0.76. That
+   is precisely what the trend-following literature claims for an SMA-type
+   filter: it is a drawdown/exposure tool, not a return enhancer. Most of
+   the missing 1.76pp is simply less market exposure.
+2. **Neither book beats SPY** — on return or on Sharpe. Cap-weighted won
+   this decade decisively. Note the era: 2017-2026 is the mega-cap period
+   in which equal-weight underperformance is well documented, so "SPY wins"
+   is partly a statement about this decade rather than a timeless one.
+3. **No individual gate earns its place.** Leave-one-out flips sign across
+   horizons: dropping `vol_decile` *improves* CAGR at both 21 td (10.56 vs
+   10.15) and 63 td (10.66 vs 10.32); dropping `sma200` hurts at 21 td
+   (9.93) but helps at 63 td (10.83); dropping `absmom` helps at 21 td and
+   hurts at 63 td. Nothing survives as a consistent contributor — these
+   differences are noise around a ~10% book.
+4. **The gates are expensive to maintain.** 30-45% two-way turnover per
+   rebalance against the control's 4-9%. The gated book constantly churns
+   membership to hold the same asset class.
+
+**Verdict.** The gates are a mild risk-reduction overlay — lower beta,
+shallower drawdowns, marginally better Sharpe — not a source of return, and
+not enough to beat holding SPY over this period. Combined with the decile
+result (the ranking sorts nothing) the honest summary of the whole pipeline
+is: **its selection layer does not add return at any horizon tested; what
+it adds is defensiveness, at a cost in CAGR and turnover.**
+
 ## Caveats (all apply, none are optional reading)
 
 1. **Survivorship**: now QUANTIFIED by the point-in-time section above —
