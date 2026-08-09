@@ -1300,3 +1300,29 @@ deviations of a bar. H27 cleared by 0.02 of one MC standard deviation.
 fitted model against an unfitted one and charged the whole difference to its
 data source; a third of the gap was the fitting. Before attributing a gap to
 the thing you are testing, build the cell that isolates it.
+
+### Verification tally, Round 3
+
+Only results that were not outright rejections face the adversarial panel —
+three independent verifiers per claim, attacking along different axes
+(alignment/lookahead, statistics/multiplicity, economics/costs), with a
+majority required to uphold.
+
+| claim | verifiers upholding | outcome |
+|---|---|---|
+| **H20** forecast (5-min RV beats daily closes) | **2 of 3** | **SURVIVES**, headline cut from -20.3% to -13/-16% |
+| **H27** accruals | **1 of 3** | **KILLED IN VERIFICATION** |
+| H22 net repurchase | pending | — |
+
+H27 is the round's clearest demonstration of why the panel exists. The lab's
+own verdict was already the cautious "NOT PROVEN", it reproduced to the printed
+decimal, and its mechanism findings were confirmed sound by every verifier.
+What did not survive was the single affirmative statistic in the write-up —
+"clears t>3" — which turned out to be a Monte-Carlo coin flip (analytic value
+2.9510; 85% of re-seeds below the bar). Two of three verifiers refused it on
+that basis, and they were right to: this repo's entire multiple-testing
+discipline is built on that threshold meaning something.
+
+**Round 3 running score: 14 registered, 12 reported, 10 rejected outright,
+1 surviving with a corrected headline (H20), 1 killed in verification (H27),
+1 inconclusive and awaiting verification (H22), 2 still running (H23, H24).**

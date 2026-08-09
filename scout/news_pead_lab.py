@@ -673,7 +673,7 @@ def main() -> None:
           "kindly' effect survives it and a timing effect\n    cannot. Rule 14: "
           "each null's SE is printed as a ratio to the block bootstrap's.")
     for col, label, _ in SIGNALS:
-        for h in HEADLINE_H + (63,):
+        for h in HORIZONS:          # every horizon printed above gets a control
             r = primary[(col, h)]
             rp = random_pick_control(r["entry"], r["lab"], r["y"], n_t, h, rng,
                                      n_d=N_Q, reps=CTRL_REPS)
@@ -701,7 +701,7 @@ def main() -> None:
     terc = trailing_deciles(ev["react2_adj"].to_numpy(), ev["entry"].to_numpy(),
                             3, window=COHORT_WINDOW, min_cohort=MIN_COHORT)
     for col, label, _ in SIGNALS[:4]:
-        for h in HEADLINE_H:
+        for h in HORIZONS:
             cells = []
             for k in range(3):
                 r = run_sort(ev[terc == k], col, f"fwd{h}", f"mkt{h}", h, n_t,
@@ -789,10 +789,13 @@ def main() -> None:
 
     # -------------------------------------------------------------- costs
     print("\n=== cost arithmetic (10 bps round trip, charged per leg) ===")
+    print("    'ann.net' assumes the capital is redeployed 252/h times a year, "
+          "which an event\n    book cannot do - announcements do not fill the "
+          "calendar. Read it as a ceiling.")
     print(f"  {'signal':<20} {'h':>3} {'Q5-Q1':>9} {'break-even':>11} "
           f"{'net':>9}   {'Q5-pool':>9} {'break-even':>11} {'net':>9} {'ann.net':>8}")
     for col, label, _ in SIGNALS:
-        for h in HEADLINE_H:
+        for h in HORIZONS:
             r = primary[(col, h)]
             sp, ex = 1e4 * r["spread"], 1e4 * r["excess"]
             print(f"  {label:<20} {h:>3} {sp:>+9.2f} {sp / 2:>11.1f} "
