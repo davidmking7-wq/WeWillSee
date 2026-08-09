@@ -1472,3 +1472,137 @@ What the repo has instead is a research process that caught itself three times
 in one round — H25's beta sort, H20's inflated headline, H27's coin-flip
 t-statistic — and a data layer it now understands the defects of. That is worth
 more than a signal it would have shipped and lost money on.
+
+### 13. H22 verification — the last candidate falls, 1 of 3
+
+Net share repurchase was the only thing still standing after fourteen
+hypotheses. The completed panel voted **1 of 3 to uphold**, so it joins the
+rejections. Two decompositions the lab never ran are what did it.
+
+**Every headline number reproduced bit-exact** — +1.7483 bps/day, NW t 1.8048,
+CI [-0.151, +3.720], turnover 0.01310, break-even 266.8 bps, DSR 0.470 at
+N=14, 56 windows at t 1.5872. No arithmetic error, no data defect: the
+split-adjusted share series was spot-checked across eleven names with splits
+and multiple share classes and carries no residue of the four `sec_bulk` bugs
+fixed earlier this round, and the frozen-quote guard works.
+
+**Three checks came back FAVOURABLE and the verifier recorded them:** the
+reported t = 1.587 is the second-LOWEST of the 42 possible partition offsets
+(mean 1.788, max 2.100), so the honest-sample statistic was conservative rather
+than cherry-picked; re-seeding the bootstrap 40 times gives a CI-low sd of
+0.062 bps with only 2.5% of re-seeds excluding zero, so no H27-style
+Monte-Carlo coin flip; and a drop-one-year jackknife holds between +1.325 and
++1.988 with alpha +1.957 (t 2.32) against momentum/reversal/vol books, so it is
+not 2020 in the naive sense and not momentum in disguise.
+
+**What killed it — 1: the effect is one regime, and "halves agree" was an
+artifact of where the median falls.**
+
+| equal-thirds split (chosen without looking at P&L) | h=21 | h=42 | h=126 |
+|---|---|---|---|
+| first third | +0.55 | +0.612 (t 0.35) | +0.85 |
+| **middle third** | **+3.83** | **+4.055 (t 2.35)** | **+3.54** |
+| last third | +0.51 | +0.578 (t 0.43) | +1.07 |
+
+The window 2020-05..2022-12 is **28% of sessions and carries 81% of total
+P&L** (+4.991 bps t 2.61 inside; +0.474 bps t 0.45 outside). The card's
+"+2.009 / +1.488, both halves agree" survives only because the median split
+lands on 2021-11-04, which **bisects that single hot regime and puts a piece
+on each side.** The most recent 902 sessions (2023-2026, 38% of the sample)
+earn +0.231 bps at t = 0.20.
+
+That is exactly the failure this repo already wrote a rule about, and already
+killed H21h for: the halves compare two slices of the same era.
+
+**2: 40-83% of the spread is a sector tilt whose composition contradicts the
+registered mechanism.**
+
+| construction | spread | t |
+|---|---|---|
+| headline (sector-mapped subset) | +1.653 | 1.68 |
+| sector-neutral quintiles | +0.770 | 1.03 |
+| sector-neutral terciles | +0.879 | 1.65 |
+| signal demeaned within sector | **+0.277** | **0.30** |
+
+The short leg is a near-permanent basket: **O sits in Q1 on 2,385 of 2,385
+traded sessions**, AJG 2,381, EQIX 2,372, WELL 2,368, DLR 2,251, plus
+SO/ATO/XEL/ETR/D and high-SBC tech (NOW, AMD, MCHP, WDC). REITs must distribute
+~90% of taxable income and regulated utilities fund rate base with equity;
+tech dilutes through stock compensation. **None of that is "managers issue
+when they believe the stock is overpriced"**, which is the mechanism H22a
+registered. It is a duration/value bet wearing an insider-timing label, and
+nothing in the write-up disclosed it.
+
+**3: the placebo control was the t-statistic restated.** Rule 14 applied: the
+placebo null's SD is 0.62-0.66 against the series' own NW SE of 0.9687, a
+ratio of ~1.5, so the null is anti-conservative — the same discount this repo
+applied to H21h at 1.6x. Corrected to the series' own SE, z falls from 2.80 to
+**1.81, identical to the t-stat already reported.** The module's claim that
+"it does clear (z = 2.80), which is why this is not proven rather than
+rejected" is therefore circular.
+
+**4: the deflated Sharpe was computed at the wrong N.** `report()` hard-codes
+`N_TRIALS_REGISTERED = 14` and prints 0.470. At the repo's actual running trial
+count: **0.078 (N=550), 0.068 (N=700), 0.063 (N=800)** — failing by an order
+of magnitude more than stated.
+
+**5: "passed every pre-registered failure condition" is one p ~ 0.055 test,
+not a stack.** On 200 pure-null draws, P(positive at h=42) = 0.475,
+P(positive AND both halves positive) = 0.275, P(positive AND halves agree AND
+monotone in horizon) = **0.055**. The three horizons share the same underlying
+returns, so monotonicity is not independent evidence. Every pillar in the
+write-up is the same marginal p restated.
+
+**6: even the caveat had no error bars.** The lab's own "the effect is GONE in
+the top momentum tercile", called the finding that decides whether to build it,
+is +66.8 / +92.1 / +21.7 bps as actual portfolios with a T1-minus-T3 difference
+of +45.2 bps at **t = 0.84**, CI straddling zero. Not distinguishable from noise
+either way.
+
+**Disposition: REJECTED.** The honest statement is: no evidence of a firm-level
+net-issuance effect in this large-cap cohort; what was measured is a
+regime-confined sector tilt. The verifier's closing line is the one worth
+keeping — *"everything about it is right EXCEPT sample size" is exactly the
+sentence that produced this repo's two retractions.*
+
+## ROUND 3 FINAL: fourteen registered, fourteen reported, zero shipped
+
+| outcome | count |
+|---|---|
+| rejected by the lab | 11 |
+| **killed by the verification panel** | **2** (H27 accruals 1/3, H22 repurchase 1/3) |
+| confirmed, headline corrected, not tradeable | 1 (H20) |
+| **shipped as a trading signal** | **0** |
+
+~800 variants across news text, intraday bars and SEC fundamentals. Running
+trial count past 700.
+
+**The verification panel earned its cost.** It killed two claims that the labs
+themselves had already marked cautiously (both "not proven"), on grounds no
+lab caught about its own work: a t-statistic inside its own Monte-Carlo noise,
+and an effect that lives in one 2.7-year regime and half in a sector tilt. Two
+further headlines (H25's decile profile, H20's -20.3%) were restated rather
+than killed. **Four of the round's fifteen reportable claims needed
+correction after independent attack.**
+
+**What the round leaves behind, none of it a trade:**
+
+1. **A specific engine change to test** — `W_HIGH = 0.25`, the largest weight
+   in v5, measures -298.6 (t -3.17) once momentum is controlled while momentum
+   measures +265.0 (t +3.74). Set it to zero and re-run `scout.backtest`.
+2. **Three price-data defects**, now guarded: unadjusted splits (5.1%),
+   spin-offs and reused tickers (146 events), frozen quotes (+896 bps of fake
+   drift when unfiltered).
+3. **A validated fundamentals layer** — 23.4M facts, point-in-time by filing
+   date, four bugs found and fixed, each of which had produced a confident
+   wrong answer.
+4. **Five method rules (13-17)**, each bought with a specific mistake, and
+   between them responsible for four corrections and two kills this round.
+5. **One measurement improvement** — 5-minute realised variance forecasts risk
+   13-16% better than daily closes (29 of 29 symbols, both halves), useful for
+   `VOL_BAND`, `SELL_DISASTER_SIGMA` and the calibration tercile. Not a trade.
+
+**And one empirical finding stated four independent ways:** news volume,
+attention shocks, story novelty, headline tone, earnings-announcement coverage
+and abnormal volume all forecast the **size** of the next move and essentially
+**none of its sign**.
