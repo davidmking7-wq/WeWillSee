@@ -1435,3 +1435,83 @@ stale-12m 4, ex-financials 4, peek 4, liquidity 4, 3 GP terciles x 2).
 Controls are nulls and do not count. Deflated Sharpe of the best book at
 N=58: **0.63** — which is the highest in this repo and still describes a book
 whose own controls say it is a style tilt.
+
+### H24 — post-earnings drift measured from the NEWS rather than the price (`scout/news_pead_lab.py`, run 2026-08-09)
+
+Mechanism (Barber-Odean 2008; Tetlock 2007; Bernard-Thomas 1989): the market
+learns how a quarter landed from the coverage that follows the release — how
+much is written and how positive it reads — so if that text diffuses more
+slowly than the price reaction, a news-measured surprise should forecast drift
+where the reaction alone does not. This is the first surprise measure in this
+repo that needs no fundamental data: H2b rejected the PRICE reaction, H26
+rejected accounting SUE, and neither ever read the announcement's own news.
+
+Universe the cached Benzinga panel — 120 point-in-time-liquid S&P 500 members
+as of 2016-01-04 — joined to REAL 8-K Item 2.02 dates from
+`scout/earnings_history.json`. **3,725 usable events, 95 firms,
+2016-04-07..2026-02-04**, 1,271 distinct entry sessions. Quintiles against the
+previous 252 sessions of announcements (Livnat-Mendenhall breakpoints, min
+cohort 100), market-adjusted, 1%/99% winsorised, block bootstrap over sessions
+with block = h, 2,000 draws. **The shift:** signals read news attributed by
+`news_data`'s rule to sessions {e, e+1} — everything readable before close(e+1)
+— plus a coverage baseline over [e-63, e-1]; ENTRY = close(e+1); fwd_h =
+close(e+1+h)/close(e+1) − 1. The two-session window is forced, not chosen: an
+8-K's filing DATE does not say whether the release was pre-open (moves session
+e) or post-close (moves session e+1), so {e, e+1} is the smallest window that
+contains the reaction under both and close(e+1) the first price after it under
+both. `main` asserts it on the real table; `--selftest` proves it on synthetic.
+
+| # | date | hypothesis (mechanism, one sentence) | expected sign | status |
+|---|---|---|---|---|
+| H24a | 2026-08-09 | A — net headline TONE in the two sessions around the announcement forecasts drift at 21 and 42 sessions. | Q5-Q1 > 0 | **REJECTED — no drift, and half the variable is the price.** +27.63 bps (t=+0.71) at h=21 and +29.26 (t=+0.53) at h=42, all stories; +19.38 / -5.19 for specific-only. Every CI straddles zero; halves disagree in 6 of 10 primary cells. Tone's rank correlation to the same announcement's reaction is **+0.407** (SUE's was 0.118) — a headline written after the bell largely reports the move — so inside reaction terciles the spread is **-118.21 / +28.91 / -101.01** bps at h=42, negative in four of six cells and never the registered sign. Tone on session e alone (before the move can be reported) is +46.43 at h=21 (t=+1.22, halves +86.20/-6.91) and -8.70 at h=42. |
+| H24b | 2026-08-09 | B — abnormal headline VOLUME on the announcement window forecasts drift (attention shock at the one event where attention is guaranteed). | Q5-Q1 != 0 | **REJECTED — and H15's failure mode fires again, at h=5.** +39.56 (t=+0.96) / +10.98 (t=+0.21) at h=21/42 all-story, -9.93 / -19.01 specific. The three largest \|t\| in the whole study are at h=5 — abn(spec) +35.74 (t=+1.87, halves +34.92/+36.57), C +33.25, abn(all) +31.31 — and the FIRM-LEVEL DATE SHUFFLE returns **+19.29 ± 15.92 (p=0.205)** against abn(all)'s +31.31: **62% of it survives destroying the timing entirely**, so it is which firms get swarmed, not when. Unlike tone, B IS genuinely independent of the price (rank corr **+0.034**) — and equally null. |
+| H24c | 2026-08-09 | **THE CONTROL THAT MUST REPRODUCE H2b.** C — the two-session price reaction predicts nothing at 21/42 sessions. | ≈ 0 | **REPRODUCED.** The H2b cohort test run verbatim: reaction ≥ +5% ends **+2.40%** (n=620), ≤ −5% ends **+2.56%** (n=545), difference **−0.17pp** (H2b: "end identically, ~+1.7-2.4% both"; H26d: −0.06pp). Quintile spread +54.23 (t=+1.39) at h=21 and +13.15 (t=+0.24) at h=42. **And A and B did not beat it** — at h=21 the largest spread of the five belongs to the control, and at h=5 the only cell clearing both nulls (random p=0.030, shuffle p=0.020) is C. That is H24's pre-registered failure condition, stated before the run. |
+| H24d | 2026-08-09 | POSITIVE CONTROL, registered so a null is readable: the news instruments must sort the announcement's OWN reaction. | monotone | **PASSES EMPHATICALLY, AND IT IS THE FINDING.** Two-day market-adjusted reaction by tone quintile: **-385.9 -130.4 +43.4 +170.9 +278.6 bps, Q5-Q1 +664.5 at t=+22.22** (specific +699.7, t=+23.70), monotone across all five. Abnormal volume sorts the ABSOLUTE reaction monotonically — **3.18 / 3.78 / 3.97 / 4.60 / 5.12 %** — and the signed one barely (+26.3, t=+0.91), which is H15's "attention forecasts size, not sign" reproduced at the event where attention is guaranteed. A 435-word hand lexicon reads the earnings verdict at t=+22 and that buys **nothing** the next day. Contamination scale: +664.5 contemporaneous against +27.6 forward at h=21 — entering one session earlier would have manufactured a 24x "PEAD" that is entirely the announcement move. |
+| H24e | 2026-08-09 | LATE-WINDOW PLACEBO: sessions +42..+84 on the same signal must pay ~0. | ≈ 0 | **NO DRIFT CLOCK, same as H26f.** Tone +27.71 bps (+0.66/session) against the in-window +0.70/session; abn(all) +78.00 (+1.86) against +0.26. The late window is if anything the larger — both are zero. |
+
+Registered variants, counted from the run's own output: **155 sort cells**
+(primary 5 signals x 4 horizons = 20, their unwinsorised twins 20, raw
+not-market-adjusted 10, deciles 10, ex-defect 10, tone-by-session 8, liquidity
+terciles 24, reaction-tercile double sorts 48, late placebo 5). Controls are
+nulls and do not count: random-pick 200 draws x 20 cells, firm-level date
+shuffle 200 x 20, the price-reaction sort, the H2b cohort test, matched pool +
+SPY, the positive control, the late placebo. **Best \|t\| anywhere in the
+registered set is +1.87**, at h=5, in a cell whose own date shuffle reproduces
+most of it; at the registered headline horizons the best is **+0.96**.
+
+Effective independent sample, the binding constraint: 3,580 ranked events on
+1,271 distinct entry sessions inside a 2,664-session calendar = **63
+non-overlapping 42-session windows**, 127 at h=21. This study excludes a
+news-sorted drift bigger than roughly 1.1%/quarter in this cohort; it cannot
+exclude one of 20-30 bps.
+
+**Instrument quality, measured, because this is where H24 differs from H16.**
+H16 measured tone on every session of every name and 49% of symbol-sessions
+scored exactly zero because no lexicon word fired. Conditioning on an earnings
+announcement fixes that: the window carries a **median of 15 stories** (mean
+18.1), 98.8% of events have at least one, and only **9.7%** score zero tone.
+The instrument was ~5x denser and pointed at the event the literature says it
+should work on, and it still measured nothing forward.
+
+**Method note that outlives the verdict — Rule 14 is EXONERATED by this design.**
+H16, H22 and H25 found permutation nulls 2.3x, 12.1x and 6.7x TIGHTER than the
+honest standard error, which is why Rule 14 exists. Here all 40 of them land at
+**0.66x to 1.10x of the block bootstrap's SE** (median 0.90). The reason is
+structural: a persistent daily long-short book's P&L is autocorrelated and
+within-date permutation destroys that, while an event study whose cross-section
+is collapsed to one row per SESSION before any statistic, with breakpoints from
+a trailing cohort, has no such persistence to destroy. **Rule 18: Rule 14 is a
+warning about a DESIGN, not about permutation tests — collapse to sessions and
+take breakpoints from a trailing cohort, and the permutation p-value becomes
+quotable again.** Print the ratio either way; that is what shows which case you
+are in.
+
+**Survivorship, in the EVENT layer rather than the price layer.** The price
+universe is point-in-time, but only **96 of the 120 panel names have any 8-K
+history**: the SEC's ticker file maps CIK to the CURRENT ticker, so FB, UTX,
+BRCM, CELG, TWX, EMC, MON, AET, PXD, ESRX, ATVI, ALXN, MYL, CBS, WBA, EA and 8
+others vanish, and XOM contributes one usable date. The missing names are the
+acquired and the renamed, so the event sample tilts to survivors. Same leak
+H22 and H26 documented, reached by a third route; no `pit.py` fixes it.
+
+Trial count: N rises by **155** registered cells.

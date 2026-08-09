@@ -9,6 +9,11 @@ reads - so if that text is absorbed more slowly than the price reaction itself
 Bernard-Thomas 1989), then a news-measured surprise should forecast drift over
 the following weeks where the price reaction alone does not.
 
+Read that twice, because the answer turns on its second half: this lab
+establishes that the text DOES carry the earnings verdict - a 435-word hand
+lexicon sorts the announcement move at t = +22 - and that carrying it buys
+nothing whatsoever afterwards.
+
 WHY THIS IS NOT A REPEAT OF H2b, H16 OR H26
 -------------------------------------------
 - H2b rejected drift sorted on the two-day PRICE REACTION (+5% and -5% reactors
@@ -23,8 +28,9 @@ WHY THIS IS NOT A REPEAT OF H2b, H16 OR H26
   events score zero tone, against H16's 49%. Same instrument, ~5x the signal
   density, and pointed at the event the literature says it should work on.
 - H26 rejected drift sorted on accounting SUE over the S&P 1500. This is a
-  different sort variable (rank correlation to the reaction is 0.181 here,
-  0.118 there), a different universe, and it needs no fundamental data at all.
+  different sort variable, a different universe, and it needs no fundamental
+  data at all. It is also a LESS independent one, and that is measured below:
+  tone's rank correlation to the price reaction is +0.407, against SUE's 0.118.
 
 The claim under test is specific and falsifiable: A (tone) and/or B (abnormal
 coverage volume) drift where C (the price reaction) does not. If all three are
@@ -32,51 +38,89 @@ null, that is a clean replication of H2b with two better instruments.
 
 VERDICT: REJECTED - AND THE POSITIVE CONTROL IS WHAT MAKES IT READABLE
 ----------------------------------------------------------------------
-Every number in this docstring is from `python -m scout.news_pead_lab`
-(~9 min warm; full output kept in scout/cache_newspead_lastrun.txt).
+Every number below is from `python -m scout.news_pead_lab`, 687 s warm, output
+kept in scout/cache_newspead_lastrun.txt. 3,725 usable events, 95 firms, 8-K
+dates 2016-04-07..2026-02-04, quintiles against a trailing 252-session cohort,
+market-adjusted, forward returns winsorised at their own 1%/99% (unwinsorised
+printed beside every headline), circular moving-block bootstrap over SESSIONS
+with block = holding period, 2,000 draws.
 
-1. THE INSTRUMENT WORKS. Announcement-window tone sorts the announcement's own
-   two-day reaction monotonically across all five quintiles - **-93.0 -33.6
-   +25.7 +72.4 +156.4 bps, Q5-Q1 = +249.4 bps at t = +12.36** (event-level SE,
-   contemporaneous by construction and therefore NOT tradeable). Abnormal
-   coverage volume sorts the ABSOLUTE reaction the same way H15 found for
-   attention generally: 3.71% in Q5 against 2.61% in Q1. So a null below is a
-   statement about the market, not about a dead signal.
+1. THE INSTRUMENT WORKS, AND EMPHATICALLY. Mean two-day announcement reaction
+   by announcement-window tone quintile, market-adjusted, in bps:
 
-2. AND THE DRIFT IS ZERO. Market-adjusted quintile spreads, entry at
-   close(a+1), 3,780 events, 96 firms, 2016-01..2026-05:
+       Q1      Q2      Q3      Q4      Q5      Q5-Q1
+     -385.9  -130.4   +43.4  +170.9  +278.6  **+664.5  at t = +22.22**
 
-       signal                h=21              h=42
-       tone (all)        +11.53 bps t+0.27  -20.75 bps t-0.36
-       tone (specific)   -46.06 bps t-1.14  -51.85 bps t-0.90
-       abn volume (all)   -8.14 bps t-0.21  -46.65 bps t-0.83
-       abn volume (spec) -31.68 bps t-0.79  -44.19 bps t-0.72
-       reaction (C)      -11.16 bps t-0.28  -18.10 bps t-0.31
+   monotone across all five buckets (specific-story tone: +699.7 at t = +23.70).
+   This is contemporaneous by construction - the text and the price move span
+   the same two sessions - so it is NOT tradeable and is not offered as a
+   result. Its job is to make the null readable, and it does: a 435-word hand
+   lexicon reads the earnings verdict about as cleanly as anything in this repo
+   reads anything. Abnormal coverage VOLUME meanwhile sorts the ABSOLUTE
+   reaction monotonically - 3.18 / 3.78 / 3.97 / 4.60 / 5.12 % across quintiles
+   - and the SIGNED reaction barely at all (+26.3 bps, t = +0.91). That is
+   H15's central finding ("attention forecasts the size of the next move and
+   almost none of its sign") reproduced at the one event where attention is
+   guaranteed.
 
-   No cell reaches |t| = 1.2 at either registered horizon, every 95% interval
-   straddles zero, and the halves disagree in sign in 8 of the 10 registered
-   cells. **The control reproduced its null (C is flat, as H2b and H26d say),
-   and A and B did not beat it** - which is the pre-registered failure
-   condition for H24, stated before the run.
+2. AND THERE IS NO DRIFT. Market-adjusted Q5-Q1 at the registered horizons:
 
-3. THE ONE CELL THAT LOOKS LIKE SOMETHING IS KILLED BY ITS OWN CONTROL, IN
-   H15'S EXACT WAY. Specific-story tone at h=63 is -136.55 bps (t = -1.63), the
-   biggest |t| in the registered set. The FIRM-LEVEL DATE SHUFFLE - each firm's
-   own tone values permuted across that firm's own announcement dates, so which
-   firms get written about kindly survives and only the timing dies - returns
-   **-100.61 +- 45.61 bps, p = 0.212**. Seventy-four per cent of the effect
-   survives destroying its timing entirely. It is a property of WHICH firms get
-   positive coverage, not of WHEN.
+       signal               h=21                     h=42
+       A tone (all)      +27.63 bps t=+0.71      +29.26 bps t=+0.53
+       A tone (specific) +19.38 bps t=+0.47       -5.19 bps t=-0.10
+       B abn vol (all)   +39.56 bps t=+0.96      +10.98 bps t=+0.21
+       B abn vol (spec)   -9.93 bps t=-0.23      -19.01 bps t=-0.34
+       C reaction (CTRL) +54.23 bps t=+1.39      +13.15 bps t=+0.24
 
-4. NEWS ADDS NOTHING TO THE PRICE. Double sort, tone quintiles inside reaction
-   terciles at h=42: **-97.4 / -37.9 / -35.7 bps** - negative in all three,
-   nowhere near the registered positive sign. The rank correlation between tone
-   and the reaction is 0.181, so these genuinely are different variables; the
-   news variable simply carries no forward information that the price does not.
+   No cell reaches |t| = 1 at h=42 or |t| = 1.4 at h=21, every 95% interval
+   straddles zero, and the halves disagree in sign in 6 of the 10 cells.
+   **C reproduced its null exactly as required** - the H2b cohort test run
+   verbatim gives reaction >= +5% ending +2.40% against reaction <= -5% ending
+   +2.56%, a difference of **-0.17pp** on n = 620/545 (H2b: "end identically,
+   ~+1.7-2.4% both"; H26d: -0.06pp) - **and A and B did not beat it.** At h=21
+   the largest spread of the five belongs to the CONTROL. That is the
+   pre-registered failure condition for H24, stated before the run.
 
-5. COSTS ARE ACADEMIC HERE BECAUSE THE GROSS SIGN IS WRONG, but they are
-   reported: the best long-only cell (tone Q5 minus pool) is +11.62 bps at
-   h=42, break-even 11.6 bps against the 10 bps charged, t = +0.42.
+3. THE ONE HORIZON WHERE ANYTHING MOVES IS h=5, AND ITS OWN CONTROLS DISMANTLE
+   IT - IN H15'S EXACT WAY. The three largest |t| in the whole registered set
+   are B abn vol (spec) +35.74 (t = +1.87), C +33.25 (t = +1.71) and B abn vol
+   (all) +31.31 (t = +1.70), all at h=5, and the abnormal-volume cells are
+   stable across halves (+34.92/+36.57 and +36.55/+26.28). Then the FIRM-LEVEL
+   DATE SHUFFLE - each firm's own attention values permuted across that firm's
+   own announcement dates, so "which firms get swarmed at earnings" survives
+   and only the timing dies - returns **+19.29 +- 15.92 (p = 0.205)** against
+   the all-story +31.31, i.e. **62% of the effect survives destroying its
+   timing entirely**, and +10.17 +- 15.71 (p = 0.050) against the
+   specific-story +35.74. The only h=5 cell that clears both nulls (random-pick
+   p = 0.030, shuffle p = 0.020) is **C, the control**: a five-session
+   continuation of the price reaction itself, at t = +1.71 against this house's
+   t > 3 bar. Whatever lives at h=5 is not news.
+
+4. THE NEWS ADDS NOTHING TO THE PRICE, AND HALF OF IT IS THE PRICE. Tone's rank
+   correlation to the same announcement's reaction is **+0.407** (specific
+   +0.429) - a headline written after the bell largely reports the move - so A
+   is substantially C in words, which SUE (0.118) was not. Inside terciles of
+   the reaction the tone spread is **-118.21 / +28.91 / -101.01** bps at h=42
+   and -21.84 / +18.07 / -66.43 at h=21: negative in four of six cells, never
+   the registered positive sign, never consistent. Abnormal volume IS genuinely
+   independent of the price (+0.034 / +0.026) and is equally null.
+
+5. COSTS. The best long-only cell at a registered horizon is tone Q5-minus-pool
+   at h=42, +16.30 bps, break-even 16.3 bps against the 10 charged, t = +0.50 -
+   and its own h=21 twin is +5.26 bps, break-even 5.3. Nothing here is
+   tradeable, and the gross numbers say so before the costs do.
+
+6. METHOD NOTE THAT OUTLIVES THE VERDICT - RULE 14 IS EXONERATED BY THIS
+   DESIGN. In H16, H22 and H25 the permutation nulls were 2.3x, 12.1x and 6.7x
+   TIGHTER than the real series' honest standard error, which is why Rule 14
+   exists. Here all 40 of them land at **0.66x to 1.10x of the block
+   bootstrap's SE** (median 0.90). The reason is structural: a persistent daily
+   long-short book's P&L is autocorrelated and within-date permutation destroys
+   that; an event study whose cross-section is collapsed to one row per SESSION
+   before any statistic, with breakpoints from a trailing cohort, has no such
+   persistence to destroy. Rule 14 is a warning about a design, not about
+   permutation tests - and this is the design where the permutation p-value can
+   be quoted.
 
 WHERE THE shift() IS (the only thing that can manufacture this result)
 ---------------------------------------------------------------------
@@ -100,11 +144,11 @@ sessions[e+1] > a on the real event table before any number prints, and
 {e, e+1} cannot see close(e+2) onward.
 
 The contamination scale is printed on the real data, as H16 requires: tone
-sorts the CONTEMPORANEOUS two-day reaction at +249.4 bps and the FORWARD
-21-session return at +11.5 bps. A study that entered at close(e-1) - i.e. that
-treated the announcement window's coverage as if it were tradeable before the
-announcement - would have reported a 22x larger "PEAD" that is entirely the
-announcement move.
+sorts the CONTEMPORANEOUS two-day reaction at **+664.5 bps** and the FORWARD
+21-session return at **+27.6 bps**. A study that entered at close(e-1) - i.e.
+that treated the announcement window's coverage as if it were readable before
+the announcement - would have reported a 24x larger "PEAD" that is entirely
+the announcement move.
 
 SIGNALS (all four registered before the run; all four reported)
 ---------------------------------------------------------------
@@ -153,24 +197,31 @@ prices  scout/data.py daily SIP closes via news_sentiment_lab.load_bars(), so
 DATA DEBT, HANDLED WITH THREE GUARDS AND THE COUNT OF EACH PRINTED
 ------------------------------------------------------------------
 1. Unapplied splits (5.1% of splits; BACKTEST-REPORT.md). Repaired from the
-   corporate-actions feed: 1 event here (AAPL). MET's 2017 Brighthouse spin-off
-   is correctly left alone - its filed ratio 1.122 is under the classifier's
-   resolution and "repairing" it would INSERT an 11% fake jump.
-2. Residual |1-day return| > 45% anywhere in an event's widest window: flagged
-   per event and the whole study is re-run without them as a registered variant.
+   corporate-actions feed: exactly one event here, AAPL 2020-08-31 4:1, 1,173
+   bars rescaled. MET's 2017 Brighthouse spin-off is correctly left alone - its
+   filed ratio 1.122 is under the classifier's resolution and "repairing" it
+   would INSERT an 11% fake jump.
+2. Residual |1-day return| > 45% anywhere in an event's widest window: touches
+   0.05% of events, and the whole primary table is re-run without them as a
+   registered variant (it moves h=21 tone from +27.63 to +28.34 bps).
 3. Frozen quotes (sue_lab's Rule 17). This universe is point-in-time, so it
-   contains names that stopped trading: MON prints 127.95 at zero volume for
-   695 sessions after Bayer closed, and reused tickers splice a penny quote onto
-   an unrelated issuer. Symbols are retired at their first run of 10 identical
-   closes and zero-volume sessions are blanked.
+   contains names that stopped trading. Two symbols are retired at their first
+   run of 10 identical closes - EMC from 2016-09-06 and MON from 2018-06-06,
+   where MON prints 127.95 at zero volume for hundreds of sessions after Bayer
+   closed - and 3 further zero-volume sessions are blanked. Small here, because
+   the 8-K file has no history for most delisted names in the first place (see
+   limit 2 below), which is itself the bias.
 
 KNOWN LIMITS (measured or structural, none of them fixed here)
 --------------------------------------------------------------
-1. POWER, and it is the binding constraint. 3,780 events sound like a lot but
-   they sit on 1,001 distinct entry sessions inside a 2,664-session calendar =
-   **63 non-overlapping 42-session windows**. The h=42 interval is about +-115
-   bps. This study excludes a news-sorted drift bigger than roughly 1.2% per
-   quarter in this cohort; it cannot exclude one of 20-30 bps.
+1. POWER, and it is the binding constraint. 3,725 events sound like a lot, but
+   the 3,580 that get ranked sit on 1,271 distinct entry sessions inside a
+   2,664-session calendar = **63 non-overlapping 42-session windows** and 127
+   at h=21 (Rule 16: the honest count is windows, never events). The h=42
+   interval is about +-110 bps. This study excludes a news-sorted drift bigger
+   than roughly 1.1% per quarter in this cohort; it cannot exclude one of
+   20-30 bps, and the published large-sample PEAD in mega caps is smaller than
+   that.
 2. SURVIVORSHIP IN THE EVENT LAYER, not the price layer. The price universe is
    point-in-time, but only 96 of the 120 panel names have 8-K dates: the SEC's
    ticker file maps CIK to the CURRENT ticker, so FB, UTX, BRCM, CELG, TWX,
@@ -187,8 +238,23 @@ KNOWN LIMITS (measured or structural, none of them fixed here)
    establishes it is not merely noise; it does not make it a language model.
 5. ONE PUBLISHER. Benzinga is fast and broad but it is not the tape.
 6. ONE MACRO ERA, 2016-2026.
+7. TONE IS NOT INDEPENDENT OF THE THING IT IS COMPARED WITH (+0.407). The
+   double sort is what carries the test because of it, and a cleaner
+   text-only instrument - tone on session e alone, before the reaction can be
+   reported - is run as a registered variant: +46.43 bps at h=21 (t = +1.22,
+   halves +86.20/-6.91) and -8.70 at h=42. Same null, more honestly measured.
 
-Run: python -m scout.news_pead_lab              (full study, ~9 min warm)
+TRIAL COUNT
+-----------
+155 registered sort cells: primary 5 signals x 4 horizons = 20, their
+unwinsorised twins 20, raw not-market-adjusted 10, deciles 10, ex-defect 10,
+tone-by-session 8, liquidity terciles 24, reaction-tercile double sorts 48,
+late-window placebo 5. Controls are nulls and do not count: random-pick 200
+draws x 20 cells, firm-level date shuffle 200 x 20, the positive control, the
+H2b cohort test, the matched pool and SPY. Best |t| anywhere in the registered
+set is **+1.87**, at h=5, in a cell whose date shuffle reproduces most of it.
+
+Run: python -m scout.news_pead_lab              (full study, ~11 min warm)
      python -m scout.news_pead_lab --selftest    (offline leakage checks, <10s)
      python -m scout.news_pead_lab --fast        (structural smoke run, NOT a result)
      python -m scout.news_pead_lab --no-retire   (what the frozen-quote guard is worth)
@@ -241,7 +307,12 @@ BENCH = "SPY"
 
 DATASET_PKL = config.SCOUT_DIR / "cache_newspead_dataset.pkl"
 
-#: (column, label, needs_news) - every signal that gets a primary row.
+#: (column, label, news_conditioned) - every signal that gets a primary row.
+#: news_conditioned marks the sorts that can only rank an event whose
+#: announcement window actually contained a story: tone is NaN on a silent
+#: window (calling it neutral would put "nobody wrote about it" in the middle
+#: quintile), while abnormal volume and the price reaction are defined for
+#: every event. It is why the n per bucket differs across rows of one table.
 SIGNALS = (
     ("tone",       "A tone (all)",       True),
     ("tone_spec",  "A tone (specific)",  True),
@@ -349,6 +420,13 @@ def attach(ev: pd.DataFrame, ds: dict, horizons=HORIZONS,
     date. Every signal input is read at a session index <= e + 1; every return
     starts at e + 1. That is the whole no-lookahead argument, and `main`
     asserts it on the real table.
+
+    Every horizon shares ONE event set: an event is kept only if it has room
+    for the widest window any cell reads (the late-window placebo, 2 x 63
+    sessions) as well as the baseline before it. That costs the h=21 table
+    events it did not individually need, and it buys the only thing worth more
+    - the horizon columns are the same events, so the decay profile is a
+    profile rather than four different samples.
     """
     sess = ds["sessions"]
     close, volume = ds["close"], ds["volume"]
@@ -605,8 +683,10 @@ def main() -> None:
           "shape context.\n    C (the reaction) is the CONTROL and must "
           "reproduce H2b's null.")
     primary: dict[tuple[str, int], dict] = {}
-    for col, label, _ in SIGNALS:
-        print(f"\n  --- {label} ---")
+    for col, label, news_cond in SIGNALS:
+        print(f"\n  --- {label} ---"
+              + ("   (ranks only events whose window carried a story)"
+                 if news_cond else ""))
         for h in HORIZONS:
             r = run_sort(ev, col, f"fwd{h}", f"mkt{h}", h, n_t, rng)
             primary[(col, h)] = r
@@ -649,12 +729,16 @@ def main() -> None:
                  for k in range(N_Q)]
         print(f"  {'':<20} |reaction| by quintile (%): " +
               " ".join(f"{100 * m:6.2f}" for m in aprof))
+    rt = primary[("tone", 21)]
+    rr = react[rt["idx"]]
+    contemp = (np.nanmean(rr[rt["lab"] == N_Q - 1])
+               - np.nanmean(rr[rt["lab"] == 0]))
     print("\n    CONTAMINATION SCALE (H16's check, on this panel): tone's "
-          f"quintile spread on the\n    CONTEMPORANEOUS reaction is "
-          f"{1e4 * (np.nanmean(react[primary[('tone', 21)]['idx']][primary[('tone', 21)]['lab'] == N_Q - 1]) - np.nanmean(react[primary[('tone', 21)]['idx']][primary[('tone', 21)]['lab'] == 0])):+.1f} bps "
-          f"against {1e4 * primary[('tone', 21)]['spread']:+.1f} bps on the "
-          "FORWARD 21-session\n    return. Entering one session earlier would "
-          "have reported the first number as drift.")
+          "quintile spread on the\n    CONTEMPORANEOUS reaction is "
+          f"{1e4 * contemp:+.1f} bps against {1e4 * rt['spread']:+.1f} bps on "
+          "the FORWARD 21-session\n    return, a factor of "
+          f"{abs(contemp / rt['spread']):.0f}. Entering one session earlier "
+          "would have reported the\n    first number as drift.")
 
     print("\n=== RULE 13: trailing 252-session beta to SPY by quintile ===")
     for col, label, _ in SIGNALS:
@@ -929,11 +1013,12 @@ def selftest() -> None:
     ent = np.tile(np.arange(12) * 63 + 90, n_f2)
     s = np.random.default_rng(7).normal(size=len(tick))
     firm = np.repeat(np.random.default_rng(8).normal(size=n_f2), 12)
+    noise = np.random.default_rng(9).normal(size=len(s))
     for name, sg, y, must_die in (
-            ("event-timed", s, 0.02 * s + 0.01 * np.random.default_rng(9).normal(size=len(s)), True),
-            ("firm characteristic", firm, 0.02 * firm + 0.01 * np.random.default_rng(10).normal(size=len(s)), False)):
+            ("event-timed", s, 0.02 * s + 0.01 * noise, True),
+            ("firm characteristic", firm, 0.02 * firm + 0.01 * noise, False)):
         lab = trailing_deciles(sg, ent, N_Q, window=COHORT_WINDOW,
-                              min_cohort=MIN_COHORT)
+                               min_cohort=MIN_COHORT)
         a, b, _ = _stat(session_sums(ent, lab, y, n_t2, N_Q - 1, 0).sum(axis=0))
         real = a - b
         sh = firm_date_shuffle(tick, sg, ent, y, n_t2,

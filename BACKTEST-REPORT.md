@@ -1326,3 +1326,149 @@ discipline is built on that threshold meaning something.
 **Round 3 running score: 14 registered, 12 reported, 10 rejected outright,
 1 surviving with a corrected headline (H20), 1 killed in verification (H27),
 1 inconclusive and awaiting verification (H22), 2 still running (H23, H24).**
+
+### 10. Illiquidity (H23) — the round's cleanest survivorship demonstration
+
+This one looked like the winner, and it is the most instructive rejection in
+three rounds because of *how* it died.
+
+**On today's S&P 1500 it passes everything.** Amihud illiquidity, quintiles,
+42-session holds:
+
+| | value |
+|---|---|
+| Q5-Q1 | **+198.39 bps/hold**, CI [+105.63, +295.45], **t = +4.09** |
+| both halves | +241.52 / +155.28 — same sign |
+| entry phases (Rule 9) | positive on **all 42** |
+| Rule 13 | **not a beta sort** — quintile betas 0.96/1.03/1.09/1.14/1.12, long-short beta +0.13, alpha **+8.55%/yr** (t +2.31) |
+| controls | random quintiles -0.11 +/- 2.39; symbol placebo -0.17 +/- 18.16 |
+| tradeable book | Q5 **+28.31%/yr, Sharpe 1.13**, alpha +9.29%/yr |
+| costs | charged at each stock's OWN Corwin-Schultz spread (58-93 bps), effect survives |
+
+t = +4.09 clears the house bar. Both halves. Every entry phase. Not beta. Real
+per-stock spread costs. By every rule this repo has written, it ships.
+
+**Then run the identical code on point-in-time membership:**
+
+| universe | Amihud Q5-Q1 | dollar-volume sort | Q5 book |
+|---|---|---|---|
+| today's S&P 1500 | **+198.39** bps (t +4.09) | +150.97 | +28.31%/yr, Sharpe 1.13, alpha +9.29% |
+| **point-in-time S&P 500** | **-42.68** bps (t -0.85) | **-86.16** (t -2.14, wrong-signed) | +14.71%/yr, Sharpe 0.59, alpha **-4.20%** |
+
+The sign inverts. The tradeable book goes from beating SPY comfortably to
+losing to SPY (0.59 vs 0.90 Sharpe), losing to its own Q1 (+16.35%,
+Sharpe 0.94), and losing in **both halves** (0.73/0.43 against 1.03/0.83).
+
+The contamination gradient is exactly what survivorship predicts: large caps
++138.89, mid +450.21, small +479.09 bps, sub-$10M slice +439.47 (t 9.78).
+The illiquid tail of *today's* index is disproportionately made of companies
+that were small in 2016 and **grew into the index** — the ones that survived.
+Even the benchmarks disagree by the size of the effect: equal-weight S&P 1500
+returns +19.61%/yr against point-in-time's +15.00%.
+
+**Consequence, and it is the opposite of the registered expectation:
+`MIN_DOLLAR_VOL = $10M` is vindicated, not condemned.** The lab was
+registered to test whether the gate throws away a real premium. On honest data
+there is no premium below it to throw away — the apparent one is the index
+reconstituting itself. The sub-$10M slice's +439 bps at t = 9.78 is the purest
+measurement of the bias in this repo, not a trading opportunity.
+
+**And costs did not decide it, which is worth recording.** The classic finding
+is that the illiquidity premium is eaten by the cost of accessing it. At a
+42-session horizon that does not reproduce: illiquidity is extremely
+persistent, so turnover is low and the long-short survives its own
+77.7 bps blended spread (+11.92% -> +10.75%/yr). The effect was not too
+expensive to capture. It was not there. 46 variants.
+
+### 11. Short-horizon reversal (H21) — Rule 13 again
+
+Registered as the most important untested idea in the repo: this repo has
+tested momentum four times and never once tested its opposite.
+
+Unconditional 5-session reversal: +6.95 bps [-12.32, +26.70], t = +0.69. Then
+Rule 13: **the dollar-neutral book runs beta +0.33** — a stock that just fell
+for five days is temporarily the high-beta one — and market-adjusted alpha is
+**-3.35 bps (t = -0.35). The whole gross spread is the beta.** Third time this
+round that a raw cross-sectional spread turned out to be a risk exposure.
+
+The mechanism test (Nagel's: reversal is paid on uninformed liquidity demand,
+so it should be strong on no-news moves and absent on news moves) gave
+quiet +9.70 vs news -2.00, difference +11.69 bps — right sign, and **both**
+pre-registered failure conditions fired: halves flip (-10.23 then +33.61), and
+it sits inside the news-label-shuffle null (p = 0.17). The sharper conditioner,
+abnormal news volume, gives +8.58 / +3.03 / +8.37 — **a U, not a slope** —
+with low-minus-high of +0.05 bps (t = +0.01).
+
+The lab's own honesty note is the most useful line in it: an independent
+re-implementation written from the hypothesis text agrees within 5% on every
+thick cell (+7.28 vs +6.95 unconditional, beta +0.340 vs +0.33) and **moves
+64% on the 4.3-name quiet cell** (+15.90 vs +9.70). That disagreement between
+two correct implementations is a sharper error bar on the thin cell than any
+confidence interval in the file. 18 variants.
+
+### 12. News-measured earnings surprise (H24) — 155 variants, all null
+
+Every forward spread's CI straddles zero, and at h=21 **the largest spread of
+the five belongs to the CONTROL** (the price reaction, +54.23 bps) — the
+registered failure condition, stated before the run.
+
+The contemporaneous control makes the null readable and delivers the round's
+single most quotable number. Two-day announcement reaction by tone quintile:
+**-385.9 / -130.4 / +43.4 / +170.9 / +278.6 bps, Q5-Q1 = +664.5 at t = +22.22**,
+monotone across all five.
+
+**+664.5 bps contemporaneous against +27.6 bps forward at h=21 — a factor of
+24. Entering one session earlier would have manufactured that first number as
+"PEAD".** That single comparison is the best argument in this repo for why the
+entry-timing discipline exists at all.
+
+Abnormal volume sorts the ABSOLUTE reaction monotonically (3.18 -> 5.12%) and
+the signed one barely (+26.3, t = +0.91) — H15's "attention forecasts size,
+not sign" reproduced independently at earnings announcements, now four times
+in this round by four different measures.
+
+The price-reaction control reproduces H2b verbatim: +5% reactors end +2.40%
+(n=620), -5% reactors +2.56% (n=545), difference **-0.17pp** against H2b's
+"end identically" and H26's -0.06pp. Three independent pipelines, one answer.
+155 variants.
+
+## Round 3 — final tally and what it means
+
+**14 registered, 14 reported. 11 rejected outright. 1 confirmed and corrected
+(H20, survived 2/3). 1 killed in verification (H27, 1/3). 1 inconclusive
+(H22).** Roughly 800 variants; running N past 700.
+
+### The three things this round actually produced
+
+**1. A specific engine change to test.** `W_HIGH = 0.25` is the largest weight
+in the v5 composite and measures **-298.6 (t -3.17)** once momentum is
+controlled, while momentum measures **+265.0 (t +3.74)** controlling for it.
+Cheapest possible next step: set `W_HIGH = 0` and re-run `scout.backtest`.
+
+**2. Three price-data defects nobody knew about**, all found by labs that were
+required to guard against defects they hadn't yet met: unadjusted splits (5.1%,
+SIRI reads +925.6%), unadjusted spin-offs and reused tickers (146 events), and
+frozen quotes on delisted names (which alone manufactured +896 bps of fake
+drift in H26 when unfiltered).
+
+**3. Five method rules (13-17)**, each bought with a specific mistake made and
+caught here. Rules 13 and 16 have already killed three separate results.
+
+### The one-sentence summary of the data
+
+**News, attention, novelty, tone, earnings-surprise coverage and abnormal
+volume all forecast the SIZE of the next move and essentially none of its
+sign** — measured four separate ways, by four labs, with four different
+conditioning variables, each reaching it independently.
+
+### And the honest bottom line, unchanged
+
+Nothing found in three rounds beats the market. The most promising candidate
+(H22 net repurchase) is orthogonal to the engine and cost-insensitive, and
+still sits at t = 1.81 while vanishing inside the engine's own eligible pool.
+The best-verified finding (H20) is a measurement improvement, not a trade.
+
+What the repo has instead is a research process that caught itself three times
+in one round — H25's beta sort, H20's inflated headline, H27's coin-flip
+t-statistic — and a data layer it now understands the defects of. That is worth
+more than a signal it would have shipped and lost money on.
