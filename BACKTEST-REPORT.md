@@ -670,3 +670,75 @@ concentration on record; and leverage was assumed free. A better instrument
 set could plausibly move trend from 0.43 toward its published 0.75. It could
 not plausibly move the sleeve correlation from 0.67 to 0.25, and that is the
 number the thesis needed.
+
+## Data integrity — are the prices themselves clean? (scout/data_audit.py)
+
+Audited 2026-08-09, prompted by an incidental finding while building the
+intraday adapter. Every result in this repository rests on an assumption
+nobody had checked in three research rounds: that Alpaca bars fetched with
+`adjustment=all` are actually adjusted.
+
+**They are not, always.** S&P 1500, 2016-2026:
+
+| check | result |
+|---|---|
+| splits in Alpaca's corporate-actions feed | 204 (198 checkable) |
+| **of those, UNADJUSTED in the bars** | **10 (5.1%)** |
+| further \|1-day\| > 50% moves with no split on file | 146 |
+
+| symbol | ex-date | factor | fake 1-day return |
+|---|---|---|---|
+| SIRI | 2024-09-10 | 1:10 reverse | **+925.6%** |
+| DEA | 2025-04-28 | 0.400 | +155.6% |
+| SNEX | 2023-11-27 | 1.500 | +47.7% |
+| CNX | 2017-11-29 | 0.125 | −89.6% |
+| FNF | 2017-10-02 | 0.307 | −77.8% |
+| AAPL | 2020-08-31 | 4:1 forward | −74.2% |
+| TRN | 2018-11-01 | 0.333 | −73.5% |
+| AA | 2016-11-01 | 0.333 | −73.3% |
+| EQT | 2018-11-13 | 0.800 | −57.2% |
+| AWI | 2016-04-04 | 0.500 | −56.6% |
+
+Note the vendor disagrees with itself: the corporate-actions endpoint knows
+about every one of these splits, and the bars endpoint does not apply them.
+
+The 146 orphan moves are mostly **spin-offs** — the parent drops by the value
+of the child and no split is recorded anywhere (RTX −71.0% at the
+Carrier/Otis separation, APTV −71.6% at the Delphi spin) — and **reused
+tickers** splicing two unrelated companies into one series.
+
+### Did it reach the picks? Almost not at all.
+
+Re-scoring the universe with `signals.composite_at` across 114 month-end
+dates, 1,710 top-15 slots:
+
+| | |
+|---|---|
+| slots taken by a name within 1 yr after a fake **+45%** move | **10 (0.58%)** |
+| slots taken by a name within 1 yr after a fake **−45%** move | **0 (0.00%)** |
+
+And several of those ten are plausibly genuine 45% moves (biotech does that)
+rather than corruption, so 0.58% is an upper bound.
+
+**Why it did not matter: the vetoes.** `VETO_RET1M_HI` (+25%) and
+`VETO_RET1M_LO` (−15%), plus the top-vol-decile and MAX-effect vetoes,
+exclude any name that just printed an enormous move — which is exactly what
+a corrupted bar looks like. Those gates were adopted from the reversal and
+lottery-effect literature for entirely unrelated reasons, and they block this
+by accident. `gates_lab` concluded the gates "do not earn their place" on
+return grounds; this is a use for them that no return table would ever show.
+
+**Verdict: real data debt, no retraction required.** No previously reported
+result changes. What changes is the confidence interval around anything that
+touches a corporate action.
+
+### What this audit does NOT cover, and it is the worrying part
+
+It uses **today's** S&P 1500 membership. The point-in-time backtests
+(`--universe pit500`) deliberately include delisted names, and those are
+precisely the symbols most likely to carry bad final prints, reused tickers
+and unadjusted terminal corporate actions — and precisely the ones that
+cannot be cross-checked, because the corporate-actions feed thins out for
+dead symbols. Treat pit500 numbers as carrying an extra, unquantified
+data-quality discount on top of the survivorship correction they already
+document.

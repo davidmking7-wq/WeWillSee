@@ -122,6 +122,7 @@ import gzip
 import json
 import pickle
 import time
+from collections import Counter
 from datetime import date
 from pathlib import Path
 
@@ -417,20 +418,109 @@ def concept(cik: int, tag: str, taxonomy: str = "us-gaap",
     return result
 
 
+PRED_CACHE = SCOUT_DIR / f"{CACHE_PREFIX}predecessors.json"
+PRED_PROBE_TAG = "Assets"
+PRED_MIN_SPAN_DAYS = 3 * 365      # below this, suspect a reorganised CIK
+
+
+def predecessor_cik(cik: int, refresh: bool = False) -> int | None:
+    """The CIK that holds this filer's history, when the ticker's CURRENT CIK
+    does not — or None.
+
+    THE CIK REASSIGNMENT TRAP. `company_tickers.json` maps a ticker to the
+    CIK filing under it TODAY. When a company reorganises into a new holding
+    company, redomiciles, or emerges from a merger, the new CIK starts with
+    an empty filing history and the old one keeps the decade. Measured here:
+    XOM resolves to CIK 2115436 ("ExxonMobil Holdings Corp"), which has
+    exactly 2 `Assets` facts, both filed 2026-08-03. CIK 34088 ("Exxon Mobil
+    Corporation") has 152, going back to 2008. Nothing errors. The panel just
+    starts in 2026 for one name, and a cross-sectional test quietly runs on
+    24 stocks instead of 25.
+
+    Detection: if the filer's own history spans less than PRED_MIN_SPAN_DAYS,
+    look at the accession numbers on its facts — a modern self-filed document
+    is numbered with the FILER's own CIK, so `0000034088-26-000093` names the
+    predecessor. A candidate is accepted only if it has at least 4x more
+    facts AND its history ends where the short one begins (within 400 days),
+    which is what a genuine continuation looks like and what a coincidental
+    filing-agent CIK will not survive.
+    """
+    cache = {}
+    if PRED_CACHE.exists() and not refresh:
+        try:
+            cache = json.loads(PRED_CACHE.read_text())
+        except Exception:
+            cache = {}
+    key = str(int(cik))
+    if key in cache and not refresh:
+        return cache[key]
+
+    result = None
+    own = concept(int(cik), PRED_PROBE_TAG, "us-gaap") or []
+    if own:
+        ends = sorted(date.fromisoformat(r["end"]) for r in own if r.get("end"))
+        if ends and (ends[-1] - ends[0]).days < PRED_MIN_SPAN_DAYS:
+            prefixes = Counter(str(r["accn"]).split("-")[0] for r in own
+                               if r.get("accn"))
+            for prefix, _ in prefixes.most_common(3):
+                try:
+                    cand = int(prefix)
+                except ValueError:
+                    continue
+                if cand == int(cik):
+                    continue
+                bulk = company_facts(cand)
+                rows = (bulk.get("us-gaap", {}).get(PRED_PROBE_TAG, {})
+                        .get("units", {}).get("USD", []))
+                if len(rows) < max(4 * len(own), 20):
+                    continue
+                cand_last = max(date.fromisoformat(r["end"]) for r in rows
+                                if r.get("end"))
+                if abs((ends[0] - cand_last).days) <= 400:
+                    result = cand
+                    break
+    cache[key] = result
+    try:
+        PRED_CACHE.write_text(json.dumps(cache))
+    except Exception:
+        pass
+    return result
+
+
+def history_ciks(ticker) -> list[int]:
+    """Every CIK that holds part of this ticker's filing history, current
+    first. Usually one; two when `predecessor_cik` finds a reorganisation."""
+    cik = ticker if isinstance(ticker, (int, np.integer)) else resolve_cik(ticker)
+    if cik is None:
+        return []
+    pred = predecessor_cik(int(cik))
+    return [int(cik)] + ([pred] if pred else [])
+
+
 def facts(ticker, tag: str, taxonomy: str = "us-gaap",
           refresh: bool = False) -> pd.DataFrame:
     """Tidy fact table for one ticker (or CIK). Empty frame if untagged.
 
     Columns: start, end, filed (datetime64), val (float), unit, form, accn,
     fy, fp, frame, days (period length; NaN for instantaneous facts).
+
+    Spans predecessor CIKs automatically — see `predecessor_cik`.
     """
-    cik = ticker if isinstance(ticker, (int, np.integer)) else resolve_cik(ticker)
-    if cik is None:
+    if isinstance(ticker, (int, np.integer)):
+        ciks = [int(ticker)]
+    else:
+        ciks = history_ciks(ticker)
+    if not ciks:
         return _empty_facts()
-    rows = concept(int(cik), tag, taxonomy, refresh=refresh)
+    rows = []
+    for cik in ciks:
+        rows += concept(cik, tag, taxonomy, refresh=refresh) or []
     if not rows:
         return _empty_facts()
     df = pd.DataFrame(rows)
+    df = df.drop_duplicates(subset=[c for c in ("accn", "unit", "start",
+                                                "end", "val")
+                                    if c in df.columns])
     for col in FACT_COLUMNS:
         if col not in df.columns:
             df[col] = np.nan
@@ -733,13 +823,18 @@ def shares_outstanding(tickers, start: str, end: str, calendar=None,
     cal = _calendar(start, end, calendar)
     frames, sources = _pick_source(tickers, SHARES_TAGS, start, end,
                                    "any", refresh=refresh, verbose=verbose)
-    panel = panel_from_frames(frames, cal, period="any", unit="shares",
-                              lag_sessions=lag_sessions)
     if split_adjust:
-        factors = split_factors(list(panel.columns), start, end, calendar=cal)
-        panel = panel * factors.reindex(index=panel.index,
-                                        columns=panel.columns).fillna(1.0)
-    return panel, sources
+        # reach back before `start`: a fact filed earlier is carried into the
+        # window by the forward fill and still needs adjusting
+        lo = str(pd.Timestamp(start) - pd.DateOffset(years=2))[:10]
+        ev = split_events(list(frames), lo, end)
+        by_sym = dict(tuple(ev.groupby("symbol"))) if not ev.empty else {}
+        for t in frames:
+            basis = "end" if sources.get(t) in AS_OF_SHARE_TAGS else "filed"
+            frames[t] = adjust_facts_for_splits(frames[t], by_sym.get(t),
+                                                basis=basis)
+    return panel_from_frames(frames, cal, period="any", unit="shares",
+                             lag_sessions=lag_sessions), sources
 
 
 def total_assets(tickers, start: str, end: str, calendar=None,
@@ -923,33 +1018,40 @@ def split_events(tickers, start: str, end: str,
     return df
 
 
-def split_factors(tickers, start: str, end: str,
-                  calendar=None) -> pd.DataFrame:
-    """time x ticker: how many of TODAY'S shares one share on that date became.
+# Tags whose value is a COUNT AS OF a measurement date (the cover page, the
+# balance sheet). Their split basis is that date. Everything else — notably
+# the weighted-average share counts — is restated retrospectively by the
+# filer under ASC 260, so its basis is the FILING date instead.
+AS_OF_SHARE_TAGS = frozenset({"dei:EntityCommonStockSharesOutstanding",
+                              "us-gaap:CommonStockSharesOutstanding"})
 
-    Multiply an as-reported share count by this to put the whole history on
-    one basis, which is what a shares_t / shares_{t-12m} ratio needs. Before
-    AAPL's 2020-08-31 4:1 split the factor is 4.0; after it, 1.0.
 
-    Subtlety worth naming: the factor is applied at the FILING date, because
-    a cover-page share count is stated on the basis in force when the
-    document was filed. A filing whose period ended before an ex-date but was
-    filed after it is therefore treated as already split-adjusted — which is
-    what ASC 260 requires filers to do anyway. It matters for at most one
-    filing per split.
+def adjust_facts_for_splits(df: pd.DataFrame, splits: pd.DataFrame,
+                            basis: str = "end") -> pd.DataFrame:
+    """Put every as-reported share count on TODAY'S share basis.
+
+    THE ADJUSTMENT BELONGS ON THE FACT, NOT ON THE PANEL CELL. The first
+    version of this function multiplied the finished panel by a factor that
+    stepped on the EX-DATE, and it made things worse (8 spurious jumps became
+    16): the panel steps on the FILING date, roughly two months after the
+    ex-date, so between the two it was pairing a pre-split count with a
+    post-split factor and inventing a 4x drop followed by a 4x rebound. Each
+    fact is multiplied by the splits that happened after ITS OWN basis date,
+    which is the only version that makes shares_t / shares_{t-12m} mean
+    anything.
+
+    `basis` is "end" for as-of counts and "filed" for retrospectively
+    restated ones — see AS_OF_SHARE_TAGS.
     """
-    cal = _calendar(start, end, calendar)
-    ev = split_events(list(tickers), start, end)
-    out = pd.DataFrame(1.0, index=cal, columns=list(tickers))
-    if ev.empty:
-        return out
-    for sym, g in ev.groupby("symbol"):
-        if sym not in out.columns:
-            continue
-        col = pd.Series(1.0, index=cal)
-        for r in g.itertuples(index=False):
-            col.loc[col.index < r.ex_date] *= r.ratio
-        out[sym] = col
+    if df.empty or splits is None or splits.empty:
+        return df
+    out = df.copy()
+    when = out[basis].values
+    factor = np.ones(len(out))
+    for r in splits.itertuples(index=False):
+        factor = np.where(when < np.datetime64(r.ex_date), factor * r.ratio,
+                          factor)
+    out["val"] = out["val"] * factor
     return out
 
 
@@ -968,7 +1070,7 @@ def detect_share_jumps(panel: pd.DataFrame, ratio: float = 1.4
         hits = chg[(chg > ratio) | (chg < 1 / ratio)]
         for d, v in hits.items():
             rows.append({"ticker": col, "date": d, "ratio": v,
-                         "from": s.shift(1).loc[d], "to": s.loc[d]})
+                         "prev": s.shift(1).loc[d], "curr": s.loc[d]})
     return pd.DataFrame(rows).sort_values("date") if rows else pd.DataFrame()
 
 
@@ -1259,10 +1361,12 @@ def smoke_test() -> None:
     if found:
         allrs = pd.concat(found, ignore_index=True)
         allrs["abs_pct"] = allrs["pct_change"].abs()
+        in_win = allrs[allrs["first_filed"] >= pd.Timestamp(start)]
         print(f"  {len(allrs)} restated period-facts across "
-              f"{allrs['ticker'].nunique()} tickers "
-              f"(NetIncomeLoss + Assets)")
-        big = allrs.sort_values("abs_pct", ascending=False).head(4)
+              f"{allrs['ticker'].nunique()} tickers (NetIncomeLoss + Assets); "
+              f"{len(in_win)} first filed inside {start}..{end}")
+        big = pd.concat([allrs.sort_values("abs_pct", ascending=False).head(2),
+                         in_win.sort_values("abs_pct", ascending=False).head(2)])
         for r in big.itertuples(index=False):
             print(f"  {r.ticker} {r.tag} period ending {r.end:%Y-%m-%d}:")
             print(f"      first filed {r.first_filed:%Y-%m-%d} ({r.first_form}) "
@@ -1338,7 +1442,7 @@ def smoke_test() -> None:
         print(f"  {len(jumps)} single-step jumps >1.4x in the raw panel:")
         for r in jumps.head(8).itertuples(index=False):
             print(f"      {r.ticker:<6s} {r.date:%Y-%m-%d}  "
-                  f"{r._4:>15,.0f} -> {r.to:>15,.0f}   x{r.ratio:.2f}")
+                  f"{r.prev:>15,.0f} -> {r.curr:>15,.0f}   x{r.ratio:.2f}")
         print("  Every one of these is a split, not an issuance. A "
               "net-issuance signal\n  computed on this panel would measure "
               "corporate actions.")
@@ -1346,16 +1450,15 @@ def smoke_test() -> None:
     jumps_adj = detect_share_jumps(sh_adj, ratio=1.4)
     print(f"  after split_adjust=True: {len(jumps_adj)} jumps remain "
           f"(was {len(jumps)})")
-    if not jumps_adj.empty:
-        for r in jumps_adj.head(4).itertuples(index=False):
-            print(f"      residual: {r.ticker} {r.date:%Y-%m-%d} x{r.ratio:.2f}")
-    aapl_col = sh_adj["AAPL"].dropna()
-    if len(aapl_col):
-        for probe in ("2020-08-25", "2020-09-08"):
-            near = aapl_col.loc[:probe]
-            if len(near):
-                print(f"      AAPL adjusted shares at {probe}: "
-                      f"{near.iloc[-1]:,.0f}")
+    for r in jumps_adj.head(6).itertuples(index=False):
+        print(f"      residual: {r.ticker} {r.date:%Y-%m-%d} "
+              f"{r.prev:,.0f} -> {r.curr:,.0f} x{r.ratio:.2f}")
+    print("  AAPL across its 2020-08-31 4:1 split, adjusted panel "
+          "(should not move):")
+    for probe in ("2020-08-14", "2020-09-30", "2020-11-30"):
+        near = sh_adj["AAPL"].loc[:probe].dropna()
+        if len(near):
+            print(f"      {probe}: {near.iloc[-1]:>18,.0f}")
 
     # ---- 9. worked example of the safe usage
     print("\n--- WORKED EXAMPLE: gross profitability, PIT ---")
