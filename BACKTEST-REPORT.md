@@ -1,5 +1,13 @@
 # Stock Scout — Final Backtest Report (engines v1 / v3 / v4 / v5)
 
+> **Current conclusion (2026-08-10):** no tested selection or portfolio beats
+> SPY. This file preserves interim results and later retractions as an audit
+> trail. The old top-2/3 concentration recommendation, the +2.5% to +4.5%
+> expectation, the breakeven-after-+5% rule, and the automatic crash sit-out
+> rule are not current guidance. The repository has no live execution path;
+> the rejected weekly executor remains excluded. See `STATE.md` for current
+> truth and `FORWARD-TEST.md` for the paper-forward and `main` merge gates.
+
 Run 2026-08-08 on 10 years of dividend-adjusted Alpaca SIP daily bars,
 via `python -m scout.backtest` (machine-readable results:
 `scout/backtest_results.json` for the current-S&P-500 universe,
@@ -126,8 +134,9 @@ What the tool IS measurably good at — its actual stated purpose:
   gated base rate, **faster** (median 13-15 days vs the 42-day budget), with
   a **less painful path** (dip-first rate down from ~51% to ~43-45%);
 - producing far more +10%/+15% runners than v1 while keeping the same floor;
-- knowing when to stand aside (bear windows: 55% hit, ~0 avg end — the
-  crash rule's "zero picks" stance is validated again).
+- flagging bear/high-volatility periods as low-confidence context. A later
+  portfolio-level test rejected the automatic “zero picks” response because
+  sitting out reduced return (`Round 2`, below).
 
 ## The v4 selection protocol (why to trust it more than a lucky draw)
 
@@ -163,7 +172,7 @@ quantile) and a non-overlap stride bug were fixed first.
   train-selected "exclude weak sectors" rule was tested and did NOT survive
   holdout (below) — treat sector as research color, not a mechanical rule.
 
-## Sell rules — tested, and mostly rejected
+## Sell rules — tested, mostly rejected, and later corrected
 
 Motivated by the miss anatomy (misses average −6.6% because broken momentum
 has no floor: 23% of misses end below −10%, and ~19% contain a >7%
@@ -175,6 +184,12 @@ Rules were designed on TRAIN 2017-2021 and the survivors judged once on
 HOLDOUT 2022-2026. All exits execute at the breaching CLOSE (no pretending
 you got out at the stop level through a gap).
 
+**Audit note:** this first-pass section temporarily promoted a
+breakeven-after-+5% rule using single-stock results. Round 2 later tested the
+same rule at the portfolio level, where it cut compounded return by about one
+third. That later test controls current behavior: the breakeven rule is fully
+removed, not an optional exit.
+
 **Finding 1 — no rule that can act BEFORE the deadline survived.** Every
 hard stop, time stop and trend stop reduced the average window return in
 BOTH periods (e.g. −10% stop: +1.09%/window on train vs +2.41% holding).
@@ -184,8 +199,9 @@ levels (a −10% stop's realized exits averaged below −10%, so the loss tail
 actually got WORSE). The deadline itself is the only pre-hit sell rule the
 data supports.
 
-**Finding 2 — protection AFTER a pick touches +5% is the only family worth
-shipping, and the accounting matters.** "Once +5% is touched, sell on a
+**Historical interim finding 2 — protection AFTER a pick touches +5% appeared
+worth shipping at the single-stock level, and accounting mattered.** "Once
++5% is touched, sell on a
 close at/below max(breakeven, peak−8%)":
 - If exit proceeds sit in CASH for the rest of the window, the rule costs
   ~0.3pp per window (~2%/yr) — protection is not free.
@@ -199,7 +215,8 @@ close at/below max(breakeven, peak−8%)":
 - Under both accountings it reliably buys a smaller average loser (−6.0%
   vs −7.9%) and a smaller tail (11% vs 14% of picks below −10%).
 That combination — ~zero expected cost with redeployment, consistently
-smaller losses — is why it ships. (Hard stops occasionally look good under
+smaller losses — is why the first pass shipped it. Round 2 later overturned
+that decision at the portfolio level. (Hard stops occasionally look good under
 redeployment in crisis windows — e.g. stopped out into the 2020 SPY
 rebound — but that is timing luck concentrated in 2-3 windows, they still
 fail train AND holdout averages, and they whipsaw. Still rejected.)
@@ -207,7 +224,7 @@ fail train AND holdout averages, and they whipsaw. Still rejected.)
 | rule (full period) | avg/window | compounded | picks < −10% | avg loser |
 |---|---|---|---|---|
 | hold to deadline | **+2.49%** | **+150%** | 13.5% | −7.9% |
-| protect after +5% (shipped as guidance) | +2.13% | +111% | 11.2% | −6.0% |
+| protect after +5% (historical interim rule; later rejected) | +2.13% | +111% | 11.2% | −6.0% |
 | −15% hard stop | +2.11% | +113% | 16.4% | −8.6% |
 | sell if below entry at day 21 | +1.69% | +74% | 10.5% | −6.3% |
 | close < 50d SMA | +0.96% | +37% | 5.0% | −5.3% |
@@ -222,9 +239,9 @@ trails at J×σ42 (J = 0.4–0.8). Results:
   gets a ~16% stop, a lively one ~25% — noise stays inside the level.
 - Tighter vol-scaled stops (1–1.5×σ42) still hurt — scaling doesn't fix
   the whipsaw problem, only widening does.
-- Vol-scaled post-hit trails did NOT beat the simple **breakeven floor**
-  (be_hit: holdout +2.11%/window, best of every post-hit variant; the
-  fixed 8%-peak-trail sold ongoing runners and lost ~0.2pp to it).
+- Vol-scaled post-hit trails did not beat the simple **breakeven floor** in
+  this single-stock comparison. That relative result is retained for history;
+  it did not survive the later portfolio-level test and is not current advice.
 
 **Re-confirmed on the current v5 / S&P 1500 pipeline** (full period,
 cash-exit accounting): the per-stock disaster stop remains the best exit
@@ -234,21 +251,22 @@ stop: +2.02%/window, 17.9% tail, +228% compounded (hold: +2.26%/+243%).
 Small caps move more, so a one-size stop whipsaws them harder — exactly
 why the level must come from each stock's own volatility. The post-hit
 breakeven floor costs more here (~0.45pp/window cash; big small-cap
-winners re-run after round-trips) — it stays loss-minimizing guidance
-with its price stated, not a return enhancer.
+winners re-run after round-trips). It was still described as guidance at this
+stage; Round 2 subsequently removed it.
 
-**What ships** — the pipeline prints a per-pick "Sell Signal" with live
-PER-STOCK dollar levels, refreshed on every update:
+**Current correction to what the first pass said would ship** — the pipeline
+prints per-pick research guidance with dollar levels, refreshed on every
+update:
 1. **Disaster stop at 2× the stock's own expected 2-month move** below
    entry (stored per pick as "Sell Below (Disaster)"). Rarely fires;
    truncates catastrophes. Tail-capping only.
 2. **No other stop before the deadline; the deadline is the exit.**
-3. **After a +5% touch: breakeven floor** — sell on any close back
-   at/below entry; a winner is never allowed to become a loss.
+3. **No breakeven-after-+5% rule.** Touching +5% is a scorecard milestone,
+   not a sell trigger. The former rule was rejected at portfolio level.
 The guidance never alters the scoreboard's HIT/MISS labels. The
 loss-prevention that actually works for free is at ENTRY: the earnings
-gate (binary-event days cause the worst single-day wrecks), the lottery-
-spike veto, and the crash-regime rule.
+gate (binary-event days cause the worst single-day wrecks) and the lottery-
+spike veto. The crash flag is context only; it does not force a sit-out.
 
 ## Earnings: what REAL dates say (supersedes every proxy result)
 
@@ -289,7 +307,7 @@ were stacked on the shipped discipline:
 | stack (holdout, expectations frozen) | avg/window | compounded |
 |---|---|---|
 | hold to deadline | +2.57% | +116.9% |
-| shipped guidance (per-stock disaster + breakeven) | +1.91% | +95.4% |
+| then-shipped guidance (per-stock disaster + breakeven; later rejected) | +1.91% | +95.4% |
 | + time budget (sell if not +5% by 2× its expected days) | +1.70% | +64.8% |
 | + take-profit at 1.25× its expected peak | +1.64% | +78.0% |
 | + protect once above its expected peak | +1.35% | +79.3% |
@@ -299,11 +317,11 @@ in the forensics: losers rarely recover in-horizon (so early time-exits
 only lock smaller losses while killing the late bloomers), and winners
 run past their cell's expected peak often enough that capping or
 tight-protecting at the expectation costs more than it saves. The
-per-stock personalization that survives testing remains: the disaster
-level from the stock's own volatility, the breakeven floor after +5%,
-and the deadline. (Caveat: take-profit results carry an optimistic
-execution bias — gaps book above the level — making the rejection
-conservative.)
+per-stock personalization that remains current is the disaster level from
+the stock's own volatility plus the deadline. The breakeven-after-+5% rule
+was removed by the later portfolio-level test. (Caveat: take-profit results
+carry an optimistic execution bias — gaps book above the level — making the
+rejection conservative.)
 
 ## Other entry-side rules
 
@@ -431,7 +449,7 @@ per-stock exits were tested inside it for the first time:
 | hold to deadline (baseline) | +4.59% | −22.7% | −29.1% | +733% | — |
 | disaster stop 2.0σ (shipped) | +4.56% | −22.4% | −29.4% | +719% | 3 / 108 legs |
 | disaster + replace next-ranked | +4.66% | −22.1% | −28.5% | +768% | 3 |
-| **breakeven after +5% (shipped)** | **+3.76%** | −14.6% | −23.1% | **+471%** | 29 |
+| **breakeven after +5% (then-shipped; now removed)** | **+3.76%** | −14.6% | −23.1% | **+471%** | 29 |
 | trailing 1.5σ | +4.01% | −15.0% | −27.2% | +516% | 19 |
 | inverse-vol weights | +4.47% | −22.0% | −28.6% | +692% | — |
 
@@ -442,8 +460,8 @@ worst window. The **breakeven rule costs real money**: it fires 29 times,
 saves 2020-01 (−22.7% → −4.1%), and loses far more selling winners that
 dip through entry and then run. It was adopted on single-stock stats and
 never checked at portfolio level. **Corrected: it is no longer a rule,
-only an option for someone who wants a smoother ride and accepts ~35%
-less compounded return.**
+and it is not offered as an optional exit.** A smoother historical path does
+not justify keeping a rule that failed its stated portfolio-level purpose.
 
 ### 3. The finding that matters: +733% was the luckiest of six schedules
 
@@ -483,22 +501,22 @@ how much the answer depends on when you started (5.43pp → 1.68pp) and how
 deep the drawdown gets (−48% → −30%). The one thing concentration does
 deliver is the tool's actual claim: a top-2 book reaches +5% in 47% of
 windows vs SPY's 38% — it gets there more often, and gives it back on the
-misses, which is why the averages match.
+misses, which is why the averages match. This is a historical diagnostic,
+not a top-2 recommendation.
 
-### 4. What ships from Round 2
+### 4. What survives from Round 2 as research guidance
 
-- **The ladder** (`H7b`): split capital across entry dates instead of
-  betting the account on one. It cannot raise the mean — it *is* the
-  mean — but a 6-sleeve ladder's worst window is −20.1% and maxDD −46.1%
-  against single-schedule worsts of −30.7% and −82.8%. Two sleeves a
-  month apart already gets most of it (−18.4% / −29.6%).
-- **The corrected expectation**, replacing "+2.5 to +4.5% per window":
-  roughly **+2% per 42-day window, ≥+5% in 40-47% of windows, worst
+- **Entry-date pooling** (`H7b`) is required in research so one lucky start
+  date cannot own the result. The historical ladder numbers are retained as
+  diagnostics, not as an instruction to allocate capital.
+- **The corrected historical estimate**, replacing "+2.5 to +4.5% per
+  window" and not serving as a future promise: roughly **+2% per 42-day
+  window, ≥+5% in 40-47% of windows, worst
   window −18% to −25%, and no reliable edge over holding SPY.** The
   tool's defensible value is unchanged and narrower than the old
   headline: it finds names that reach +5% *sooner and more often* than
   the index, with calibrated odds — not names that compound faster.
-- **Breakeven-after-+5% demoted** from rule to option (see above).
+- **Breakeven-after-+5% removed** from current guidance (see above).
 - Nothing else. 23 pre-registered variants, zero winners.
 
 The failure this round exposes is a process failure worth naming: every
@@ -2068,3 +2086,16 @@ the one thing here that is not beta, not survivorship, and not one lucky regime.
 
 It also does not beat the market. It recovers you to roughly SPY from a book
 that was losing to it by 2.7 pp/yr.
+
+## Operational conclusion
+
+All results in this report are research. They do not authorize live execution,
+and this branch contains no live-order path. The rejected weekly executor is
+deliberately excluded and disabled.
+
+The next candidate change, if any, must be frozen and recorded on genuinely
+future data in paper only. A change affecting picks, probabilities, portfolio
+weights, or exits may become current `main` behavior only after it passes the
+pre-written forward contract and the evidence checklist in `FORWARD-TEST.md`.
+Passing that merge gate permits a research-code change only; it never grants
+permission to trade live.

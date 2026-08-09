@@ -1,4 +1,4 @@
-"""picks.xlsx — the running scorecard, in plain language.
+"""picks.xlsx — the running research scorecard, in plain language.
 
 Sheets:
 - Picks: one row per pick. New picks appended each run; old picks re-priced
@@ -6,6 +6,11 @@ Sheets:
 - Track Record: rebuilt each update — how the tool is actually doing vs what
   it predicted.
 - How To Read This: every column explained simply.
+
+This module records research observations and never submits an order. Paper
+forward tests freeze a signal after the close, use the next trading day's open
+as the reference entry, and apply the cost assumption registered before the
+test. Promotion still requires the gates in FORWARD-TEST.md.
 
 Every row carries the signal-engine version that produced it ("Engine").
 Workbooks created before the column existed are migrated on load: the column
@@ -61,6 +66,20 @@ Every time the scout runs, it adds its picks here and re-checks the old ones.
 A pick is a HIT if the stock's closing price gained 5% or more at any point
 before the Deadline (about 2 months). After the Deadline, it's a MISS.
 
+RESEARCH ONLY: this workbook does not place orders and is not a live trading
+system. The rejected weekly executor remains excluded and disabled.
+
+For a paper-forward test, freeze the signal after today's market close and use
+the NEXT trading day's OPEN as the reference entry — never today's close. The
+test contract must state a transaction-cost assumption before observations
+begin, and that cost must be applied to every reported result. Do not skip or
+replace a row after seeing a gap. Older scorecard or backtest rows may use a
+historical reference price; they are not executable forward evidence.
+
+A strategy may become current research behavior only after a frozen
+paper-forward PASS and the main-branch merge gate in FORWARD-TEST.md. Passing
+those gates still does not allow live execution.
+
 IMPORTANT: 5% is the MINIMUM bar, not the goal. The tool ranks picks by how
 far and how fast they usually run (see Usual Peak %, Chance +10%, Chance
 +15%), and a pick that HITs keeps being re-priced until its Deadline — so
@@ -104,8 +123,9 @@ Avg Stock Chance +5%     How often ANY normal S&P stock reached +5% in the
 Overall Score     Chance x size of gain x speed x safety, in one number.
                   Higher = better. Only compare within the same run.
 Gain Score        Usual peak x chance of +10% — the "how big" ranking.
-Confidence        A = proven edge over the average stock. B = modest edge.
-                  C = no proven edge (kept only if something else is special).
+Confidence        A = strongest historical lift in its calibration group.
+                  B = modest historical lift. C = no reliable lift. No grade
+                  means the strategy beat SPY or will make money next time.
 Engine            Which version of the scanner chose the pick (v1, v3...).
                   Versions are scored separately in the Track Record so an
                   upgrade can't hide behind the old version's results.
@@ -125,17 +145,19 @@ Sell Signal       When to sell, updated every run — and specific to EACH
                   The rules that survived testing:
                   1) Disaster stop, sized to the stock: if it closes below
                      "Sell Below (Disaster)" — 2x that stock's own normal
-                     2-month move under the buy price — sell; the pattern
-                     is broken. A calm stock gets a tighter level, a lively
-                     one gets more room. Rarely fires; caps catastrophes.
-                  2) Otherwise no stop — sell at the Deadline.
-                  3) Once it has touched +5%, never let it become a loss:
-                     sell on any close back at/below your buy price.
-                     (A tighter "8% below its peak" version was tested and
-                     sold winners that kept running — rejected.)
-                  This column shows the live instruction with exact price
-                  levels. Protection buys smaller losses, not bigger gains
-                  (roughly free if you re-invest the freed cash).
+                     2-month move under the recorded reference entry — the
+                     simulated rule exits because the pattern is broken. A
+                     calm stock gets a tighter level, a lively one gets more
+                     room. Rarely fires; caps catastrophes.
+                  2) Otherwise no stop — the simulated exit is the Deadline.
+                  RETRACTED: the old "after +5%, move to breakeven" rule is
+                  not an option. At portfolio level it cut compounded return
+                  by about one third, so touching +5% remains a scorecard
+                  milestone rather than an automatic exit. The tighter
+                  "8% below peak" variation was also rejected because it sold
+                  winners that kept running.
+                  This column shows a research signal with exact price levels.
+                  It never places an order.
 Sell Below (Disaster)  This stock's own disaster price, computed on the day
                   it was picked from how much it normally moves.
 
@@ -157,22 +179,25 @@ Insider Buys      Filled when company officers or directors bought their
 
 Honesty notes: numbers come from 2016-2026 — mostly good years for stocks;
 the tool refuses to give numbers when history is too thin; reaching +5% at
-some point is NOT the same as ending with a profit. This is a research
-scorecard, NOT financial advice. Nothing is ever bought automatically.
+some point is NOT the same as ending with a profit. No completed strategy
+test beat buy-and-hold SPY. This is a research scorecard, NOT financial advice.
+No order is placed, and nothing becomes current without the paper-forward and
+main-branch gates in FORWARD-TEST.md.
 """
 
-# written in BOLD at the top of How To Read This — the one execution rule
-# adopted from the overnight-returns literature (buying at the open pays
-# the overnight drift plus the day's widest spreads)
+# Written in bold at the top of How To Read This. This is a research recording
+# convention, not an execution rule: a signal known after the close cannot
+# honestly receive that same close as its forward entry.
 BUY_RULES = [
-    "HOW TO BUY (tested rule — read this first):",
-    "Buy at or near the market CLOSE — never at the open,",
-    "and never chase a morning gap up.",
+    "PAPER-FORWARD ENTRY (research only — no order is placed):",
+    "Freeze the signal after today's close; use the NEXT trading day's OPEN",
+    "as the reference entry. Never backfill today's close or skip a gap.",
+    "Apply the transaction cost fixed in the forward-test contract.",
 ]
 
 
 def _write_about(wb: Workbook) -> None:
-    """(Re)write the How To Read This sheet: bold buy rules first, then the
+    """(Re)write How To Read This: bold paper-entry rules first, then the
     column guide. Rewritten on every migration so docs never go stale."""
     if "How To Read This" in wb.sheetnames:
         about = wb["How To Read This"]

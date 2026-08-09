@@ -1,6 +1,10 @@
 """Stock Scout CLI — run via  python -m scout.cli <command>  (from the repo
 root, using the project venv if there is one).
 
+Research only: these commands read data, update the scorecard, and write
+research files. They do not place broker orders. There is deliberately no
+live-execution command or weekly executor in this branch.
+
 Commands:
   scan             score the universe, write top candidates to scout/last_scan.json
   update           re-price OPEN picks in picks.xlsx, resolve HIT/MISS
@@ -179,11 +183,9 @@ def cmd_scan(args) -> None:
             "sell_if": (f"this stock's normal 2-month move is about "
                         f"±{sigma42:.0%}; sell on a close at/below "
                         f"${disaster_price} (2x that move — its own disaster "
-                        f"level; ordinary stops tested worse); once it "
-                        f"touches ${round(price * (1 + config.TARGET_GAIN), 2)}, "
-                        f"never let it become a loss — sell on any close "
-                        f"at/below breakeven (${round(price, 2)}); otherwise "
-                        f"sell at the deadline {horizon_end}"),
+                        f"level; ordinary stops tested worse); touching +5% "
+                        f"is a scorecard milestone, not a sell trigger; "
+                        f"otherwise sell at the deadline {horizon_end}"),
             "signals_text": sig_text,
         })
     # Real-dates finding (SEC EDGAR, train AND holdout): picks with the
@@ -223,8 +225,9 @@ def cmd_scan(args) -> None:
           + (f" | after quality gates {base:.0%} touch +5% within 2 months"
              if base is not None else ""))
     if crash_risk:
-        print("!! CRASH-RISK REGIME (bear + high SPY vol): momentum signals "
-              "historically invert here. Strong case for ZERO picks this cycle.")
+        print("!! HIGH-VOLATILITY BEAR REGIME: the historical sample is small, "
+              "so treat the quoted odds as rough and lower confidence. Later "
+              "portfolio tests did not support automatically sitting out.")
     print(f"{'sym':<6}{'opp':>6}{'gain':>6}{'P+5%':>6}{'P+10%':>6}{'peak':>6}"
           f"{'days':>5}{'dip':>5}{'grade':>6}  signals")
     for cd in candidates:
@@ -238,6 +241,7 @@ def cmd_scan(args) -> None:
                   f"{cd['signals_text']}")
     print(f"\nbig-gain eligible (P+5% >= {config.GAIN_MIN_P5:.0%}): "
           + (", ".join(out["big_gain_order"]) or "NONE this run"))
+    print("RESEARCH ONLY — no order was placed; no live-execution path exists.")
     print(f"wrote {config.LAST_SCAN_JSON}")
 
 
@@ -249,19 +253,15 @@ def _sell_signal(result: str, basis: float, latest: float, peak: float,
     the HIT/MISS labels the scoreboard is graded on."""
     if result == "MISS":
         return "SELL — deadline passed"
-    if result == "HIT":
-        if latest <= basis:
-            return (f"SELL — hit +5%, then closed back at/below breakeven "
-                    f"(${basis:.2f}); never let a winner become a loss")
-        return (f"hold — it already hit +5%: sell on any close at/below "
-                f"breakeven (${basis:.2f}), otherwise sell at the deadline "
-                f"{hz_end}")
     kind = ("this stock's own disaster level, 2x its normal 2-month move"
             if per_stock else "-15% fallback level; per-stock levels start "
             "with newly recorded picks")
     if latest <= disaster:
         return (f"SELL — closed at/below ${disaster:.2f} ({kind}); the "
                 f"pattern is broken")
+    if result == "HIT":
+        return (f"hold — it touched +5%, which is a scorecard milestone, not "
+                f"a sell trigger; otherwise sell at the deadline {hz_end}")
     return (f"hold — ordinary stops tested worse; sell only on a close "
             f"at/below ${disaster:.2f} ({kind}), else at the deadline "
             f"{hz_end}")
