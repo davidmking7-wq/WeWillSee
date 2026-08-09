@@ -163,9 +163,114 @@ Beating SPY on raw return while running beta 1.3 is not an answer. Every book
 reports its SPY beta and its market-adjusted alpha with a Newey-West t, and the
 verdict is written on the Sharpe and the alpha, never on the raw return.
 
-VERDICT (filled in from the run; numbers in BACKTEST-REPORT / hypotheses.md)
----------------------------------------------------------------------------
-See `python -m scout.beatspy_lab` and `scout/beatspy_results.json`.
+VERDICT — REJECTED. NO. (run 2026-08-09, 2016-01-04 .. 2026-08-07)
+------------------------------------------------------------------
+The honest answer to the user's question is no, and it is not close.
+
+THE PRIMARY, exactly as pre-registered (pit500, 20 names, inverse-vol,
+42-session holds, monthly rebalance, phase-pooled, net of 10 bps on a MEASURED
+3.79x/yr turnover):
+
+    book   CAGR +11.21%  vol 20.92%  Sharpe 0.613  maxDD -38.90%
+           beta 0.97  alpha -2.71%/yr (NW t -0.80)
+    SPY    CAGR +15.34%  vol 17.55%  Sharpe 0.902  maxDD -33.79%
+
+    Sharpe difference -0.280, 95% block-bootstrap CI [-0.634, +0.057],
+    P(book > SPY) = 0.050. It loses in BOTH halves (0.50 vs 0.96, then 0.75 vs
+    0.83) - consistent, not a sign flip. Across the 21 entry phases the book's
+    Sharpe runs 0.52..0.64; SPY is outside that whole range.
+
+COSTS DID NOT DO THIS. Turnover costs 37.9 bps/yr at 10 bps and 75.8 at 20;
+both break-even costs are NEGATIVE (-69 bps on return, -149 bps on Sharpe),
+which is the arithmetic way of saying there is no advantage for costs to erase.
+Gross of all costs the book still returns +11.64% against SPY's +15.34%.
+
+THE CONTROL IS WHAT KILLS IT. 200 histories drawing 20 names UNIFORMLY at
+random from the identical gated pool on the identical dates, weighted the same
+way and charged their own (higher, 5.64x) turnover, earn Sharpe 0.697
+[p5 0.674, p95 0.721]. The momentum book sits at PERCENTILE 0 - below all 200.
+The decomposition says why in one line: ranking by momentum moved return
++0.99pp and volatility +5.16pp against the same pool. mu roughly flat, sigma
+sharply up; `g = mu - sigma^2/2` does the rest. Momentum's cross-sectional
+premium is real (H25 measured it on a market-adjusted long-short spread) and it
+is simply smaller than the variance a long-only top-20 concentration buys.
+
+THE INCUMBENT IS WORSE, WHICH IS THE ONE PIECE OF GOOD NEWS. The v5 composite
+at the same size returns +8.43% at Sharpe 0.54 with alpha -3.56%. Ranking by
+momentum instead of the composite is worth about +2.8pp of CAGR and +0.07 of
+Sharpe - a real improvement to what the user has, on a book that still loses
+to SPY. H25's recommendation to drop `W_HIGH` survives this test.
+
+AND THE FINDING THAT MATTERS MOST, which this lab did not set out to make:
+EVERY configuration in the 72-book grid that beats SPY on Sharpe is standing on
+survivorship. Point-in-time S&P 500: 0 of 24 books clear SPY's 0.902. Today's
+S&P 1500: 8 of 24. Today's S&P 500 frozen across history: 8 of 24. All 16
+winners are UNGATED momentum books, and the same cell measured across the three
+universes reads:
+
+    momU_5_ew   pit500      CAGR +27.47%  Sharpe 0.83  alpha  +8.90% (t 1.05)
+                sp500today  CAGR +54.31%  Sharpe 1.25  alpha +27.52% (t 2.82)
+                sp1500      CAGR +57.15%  Sharpe 1.19  alpha +30.22% (t 2.52)
+
+Survivorship AT FIXED BREADTH - same index, same gates, same costs, the only
+difference being foreknowledge of who survives - is worth +26.84pp of CAGR,
++0.420 of Sharpe and +18.62pp of alpha to a concentrated ungated momentum book.
+It is worth +0.24 of Sharpe even to a PASSIVE equal-weight S&P 500 book (0.76
+point-in-time vs 1.00 frozen-today). The repo's documented estimate of the bias
+(~+3pp hit rate, ~+1pp per window) was measured on the gated composite's picks
+and badly understates what it does to a concentrated momentum book: the bias
+scales with concentration and with the absence of the gates, because the gates
+happen to exclude the names most likely to die. The point-in-time book really
+did hold the casualties - 74 of the 517 distinct names it ever held are not in
+today's S&P 1500 (7.8% of position slots): ABMD, AET, AGN, ANTM, APC, ATVI,
+CELG, and so on.
+
+LEVERAGE. Unavailable, and the reason is structural, not a matter of degree.
+Leverage multiplies a Sharpe; it cannot manufacture one. The primary's Sharpe
+is 0.613 against SPY's 0.902, so at every leverage L the book is dominated by
+holding SPY at the same volatility. No landslide is available from this
+construction. Even the flattering survivorship cell would require DE-leveraging
+(L = 0.42) to match SPY's volatility, paying +21.9%/yr - and its point-in-time
+twin pays +14.5% against SPY's +15.8%.
+
+WHAT SURVIVED, both smaller than the question asked:
+ 1. The shipped per-stock disaster stop (2 x sigma42) is the only overlay that
+    improved anything: Sharpe 0.613 -> 0.651, maxDD -38.90% -> -26.13%, beta
+    0.97 -> 0.78, alpha -2.71% -> -0.42%. It is a de-risking, not an edge, and
+    the book still loses to SPY.
+ 2. Momentum beats the v5 composite as a ranking, as H25 predicted, in ALL
+    24 gated cells (3 universes x 4 sizes x 2 weightings) - mean +0.099 of
+    Sharpe and +4.96pp of CAGR, 24 for 24. That is the one shippable
+    conclusion here, and it is a conclusion about the ENGINE, not about
+    beating the market.
+
+WHAT DIED:
+ 3. H20's better volatility MEASUREMENT buys nothing at the sizing step. On the
+    29 symbols where both estimates exist, feeding the identical EWMA 5-minute
+    realised variance instead of daily squared returns moves the book's Sharpe
+    from 1.28 to 1.29. QLIKE improved 13-20%; the book did not notice. The
+    forecast was never the binding constraint.
+ 4. Inverse-vol weighting is worth +0.00 to +0.02 of Sharpe over equal weight
+    across the grid - it lowers volatility and lowers return by the same
+    proportion.
+
+REGIME OF EACH NUMBER, as the brief requires. The RANKING test is CONFIRMATORY
+(external prior: Jegadeesh-Titman, plus this repo's own H25) and it FAILS at
+the book level with the control outside its entire distribution - that is
+strong evidence, not a t-statistic quibble. The 72-cell construction GRID is
+EXPLORATORY; its best cell (t 2.82) is exactly the kind of number the
+exploratory bar exists to reject, and the survivorship control rejects it
+independently of any multiple-testing argument. Deflated Sharpe of the primary
+against SPY, with the registry's honest N (340 prior variants + 77 here): 0.186.
+
+WHAT WOULD HAVE TO CHANGE FOR THE ANSWER TO BECOME YES. Not a better ranking -
+the control shows the ranking is already fighting the variance term and losing.
+Either (a) a book whose volatility is BELOW SPY's at equal return, which points
+at the gated pool (Sharpe 0.71 at 16.38% vol) plus the disaster stop rather than
+at concentration, or (b) genuinely weakly-correlated sleeves, which ALPHA-STACK
+already tried and measured at effective_bets 1.02 of 4. NEITHER IS MEASURED TO
+WORK HERE - they are the directions left standing, not results. The direction
+this lab does close is concentration.
 """
 import argparse
 import json
@@ -1303,6 +1408,24 @@ def main() -> None:
     print(f"  SPY Sharpe {spy_p['sharpe']:.3f}. Every winner is an UNGATED "
           f"momentum book on a SURVIVORSHIP universe; the point-in-time column "
           f"has {len(beat_tab['pit500'])}.")
+
+    # ---- ranking by momentum vs ranking by the shipped v5 composite ------
+    wins, tot, dsh, dcg = 0, 0, [], []
+    for u in UNIVERSES:
+        bk = store[u][0]["books"]
+        for size in BOOK_SIZES:
+            for sc in WEIGHTS:
+                a, b = bk.get(f"mom_{size}_{sc}"), bk.get(f"v5_{size}_{sc}")
+                if not a or not b:
+                    continue
+                tot += 1
+                wins += a["sharpe"] > b["sharpe"]
+                dsh.append(a["sharpe"] - b["sharpe"])
+                dcg.append(a["cagr"] - b["cagr"])
+    print(f"\n  RANKING BY MOMENTUM vs THE SHIPPED v5 COMPOSITE, gated cells "
+          f"only: momentum wins on Sharpe in {wins} of {tot} "
+          f"(mean +{np.mean(dsh):.3f} Sharpe, +{np.mean(dcg):.2f}pp CAGR). "
+          f"H25's recommendation to drop W_HIGH survives at the BOOK level.")
 
     # ---- the flattering cell, and the survivorship discount on it --------
     _hdr("THE BEST CELL ANYWHERE IN THE GRID — and what is holding it up")

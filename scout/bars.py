@@ -60,6 +60,25 @@ from . import config
 
 MASTER = config.SCOUT_DIR / "cache_bars_master.pkl"
 FIELDS = ("open", "high", "low", "close", "volume")
+TZ = "US/Eastern"          # scout/data.py's convention; everything is coerced to it
+
+
+def _norm_index(frame: pd.DataFrame) -> pd.DataFrame:
+    """Coerce a frame's index to tz-aware US/Eastern midnight.
+
+    Labs pickle their caches with whatever tz-awareness they happened to have:
+    scout/data.py returns tz-aware US/Eastern, several labs strip it, and one
+    stores naive UTC. Unioning a naive index with an aware one raises
+    "Cannot compare tz-naive and tz-aware timestamps, sort order is undefined"
+    and yields an unsorted object index — which then silently fails every
+    subsequent date comparison, so `_missing` reports that nothing is cached
+    and the whole point of the cache is lost. That is exactly what the first
+    absorb did: it folded in 1,649 symbols and then refetched all 1,506."""
+    idx = pd.DatetimeIndex(frame.index)
+    idx = idx.tz_localize(TZ) if idx.tz is None else idx.tz_convert(TZ)
+    out = frame.copy()
+    out.index = idx.normalize()
+    return out[~out.index.duplicated(keep="first")].sort_index()
 
 
 def _load() -> dict[str, pd.DataFrame]:
@@ -90,11 +109,11 @@ def _merge(store: dict[str, pd.DataFrame],
     for field, frame in new.items():
         if frame is None or not isinstance(frame, pd.DataFrame) or frame.empty:
             continue
-        frame = frame.sort_index()
+        frame = _norm_index(frame)
         if field not in out:
             out[field] = frame
             continue
-        cur = out[field]
+        cur = _norm_index(out[field])
         idx = cur.index.union(frame.index)
         cols = cur.columns.union(frame.columns)
         cur = cur.reindex(index=idx, columns=cols)
@@ -122,9 +141,9 @@ def _missing(store, symbols, start, end) -> list[str]:
     c = store.get("close")
     if c is None or c.empty:
         return list(symbols)
-    lo, hi = pd.Timestamp(start), pd.Timestamp(end)
-    if c.index.tz is not None:
-        lo, hi = lo.tz_localize(c.index.tz), hi.tz_localize(c.index.tz)
+    c = _norm_index(c)
+    lo = pd.Timestamp(start).tz_localize(TZ)
+    hi = pd.Timestamp(end).tz_localize(TZ)
     win = c.loc[(c.index >= lo) & (c.index <= hi)]
     have = set(win.columns[win.notna().any()]) if not win.empty else set()
     return [s for s in symbols if s not in have]
@@ -148,13 +167,13 @@ def get(symbols, start, end, use_cache: bool = True,
     elif verbose:
         print(f"  bars: all {len(symbols)} symbols served from cache")
 
-    lo, hi = pd.Timestamp(start), pd.Timestamp(end)
+    a = pd.Timestamp(start).tz_localize(TZ)
+    b = pd.Timestamp(end).tz_localize(TZ)
     out = {}
     for field, frame in store.items():
-        idx = frame.index
-        a, b = (lo.tz_localize(idx.tz), hi.tz_localize(idx.tz)) if idx.tz is not None else (lo, hi)
+        frame = _norm_index(frame)
         cols = [s for s in symbols if s in frame.columns]
-        out[field] = frame.loc[(idx >= a) & (idx <= b), cols]
+        out[field] = frame.loc[(frame.index >= a) & (frame.index <= b), cols]
     return out
 
 
