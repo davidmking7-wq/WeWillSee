@@ -81,10 +81,17 @@ g = mu - sigma^2/2      L* = mu/sigma^2      g(L*) = S^2/2
 ```
 
 Growth is quadratic in Sharpe, and Sharpe is bought with weakly-correlated
-sleeves rather than with better forecasts. The honest size of the prize,
-costed in `scout/agenda_rank.py`: about **1.5x the market's excess return at
-the same risk**, or ~2x compounded growth at a fixed drawdown budget — from
-four builds totalling ~30 days, each able to fail its own test.
+sleeves rather than with better forecasts.
+
+**It was built, tested on 2016-2026, and it lost.** Projected stacked Sharpe
+0.73; measured **0.40 against SPY's 0.76**. The sleeves turned out correlated
+(0.67 between trend and cross-sectional momentum; effective bets 1.02 of 4),
+which was the pre-registered failure condition. Volatility targeting improved
+drawdown but not return consistently; fractional Kelly worked mechanically
+and still lost, because leverage scales an edge and cannot create one. See
+BACKTEST-REPORT.md "The alpha stack" and `scout/hypotheses.md` H9-H14.
+
+What survives is the diagnosis and the toolkit, not the trade.
 
 ```
 python -m scout.growth_selftest          # 51 checks, no API keys needed

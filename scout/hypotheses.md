@@ -122,3 +122,35 @@ Method rows adopted from this round, independent of any result:
   draft weighted sleeves by full-sample inverse volatility and full-sample
   HRP. Both are lookahead, both are easy to write by accident, and neither is
   visible in a headline number. `causal_weights` exists because of it.
+
+### H9-H14 results (2026-08-09, real data — full tables in BACKTEST-REPORT.md "The alpha stack")
+
+Ran on 2534 days of Alpaca SIP data, 20 ETFs, 2016-08..2026-08. Registered
+above BEFORE the run; statuses filled in after. **Nothing shipped.**
+
+| # | verdict |
+|---|---|
+| H9 multi-asset trend | **HALF-CONFIRMED, NOT USEFUL.** The diversification claim holds — beta to equity 0.09-0.14, well inside the pre-registered \|rho\|<0.3 bar. The return claim fails: Sharpe 0.24 at the 5-day cadence, 0.43 monthly, 0.48 at literally zero cost, against SPY's 0.76. An uncorrelated sleeve that earns a third of the benchmark's Sharpe adds nothing at any long-only weight — which `agenda_rank` predicts for exactly these inputs. Prior caveat stands: 2017-2026 is managed futures' worst documented decade and 19 ETFs are a thin proxy for 50-80 futures. |
+| H10 sleeve independence | **REJECTED, as pre-registered.** rho(trend, xsec) = 0.67 at 5 td and 0.70 at 21 td, against the <0.5 bar. **Effective bets 1.02 of 4.** The stack is one bet wearing four coats. This was written down in advance as the most likely failure, and it is the one that fired. |
+| H11 volatility targeting | **PARTIAL — a drawdown tool, not a return tool.** On SPY at matched volatility: Sharpe 0.78 -> 0.80, maxDD -34.0% -> -27.3%. But by halves 1.03 vs 0.92 then 0.56 vs 0.63 — the drawdown gain is consistent, the Sharpe gain is not. Fails the both-halves condition. NOT shipped, and the ALPHA-STACK projection of +0.11 Sharpe from this overlay is retracted. |
+| H12 HRP vs inverse-vol | **REJECTED (no material difference).** 0.30 vs 0.28 combined Sharpe. With 4 sleeves there is no hierarchy to exploit; HRP's published advantage is at 20+ assets, as the pre-registered prior said. |
+| H13 fractional Kelly | **MECHANICALLY CORRECT, OUTCOME NEGATIVE.** The expanding-window rule behaved as designed (mean 1.52x, de-levering to 0.85x by the end) and still turned a 0.40-Sharpe book into -0.20 with a -47% drawdown. Leverage converts Sharpe into return; it cannot create Sharpe. Applying it to a book weaker than the benchmark magnifies the weakness — `growth_at_leverage` says so directly, and this is that formula measured. The drawdown budget was breached (-47% against a 30% start-relative budget), which is consistent with the self-test's finding that peak-to-trough runs ~1.5x the start-relative bound. |
+| H14 rebalancing premium | **REAL BUT NEGLIGIBLE.** gamma* = 0.27%/yr on the 4-sleeve book. The theorem holds (it is always >= 0) and the magnitude is simply too small to matter at this holding count. Harvesting it materially needs many more, less-correlated positions — which is the same requirement H10 just failed. |
+
+**Round verdict: 0 shipped, 6 tested, 1 projection retracted.** The
+projection in ALPHA-STACK.md Part 3 (stacked Sharpe 0.73, ~1.5x the market's
+excess return at equal risk) is **measured at 0.40 against SPY's 0.76** and
+is withdrawn. The error was not in the algebra — the combination identity is
+exact — but in the input: rho between sleeves was assumed 0.25 and measured
+0.67. The document flagged that assumption as the one the result rested on,
+which is the only thing that went right about it.
+
+Trial count: N rises by 18 (6 hypotheses + 12 lab configurations), plus the
+4 cost/cadence sensitivity runs, which were diagnostics reported in full
+rather than a search for a winner — all four are in BACKTEST-REPORT.md
+including the ones that look best.
+
+- **Rule 12: a sizing rule is not a strategy.** H13 is the cleanest
+  demonstration in the repo: a correctly implemented, correctly de-levering
+  Kelly rule still lost money because the thing it was sizing had no edge.
+  Test the signal before building the sizing on top of it.

@@ -547,3 +547,126 @@ years — 69% hit, +6.9% avg, zero tail — cannot move a backtest.)
    reduces snooping, it does not eliminate it.
 6. This is a research scorecard, not financial advice. Nothing is bought
    automatically.
+
+## The alpha stack — tested on real data, REJECTED (scout/sleeve_lab.py)
+
+ALPHA-STACK.md argued that since the selection layer adds no return, the
+lever must be portfolio GEOMETRY: stack weakly-correlated sleeves to raise
+Sharpe, then convert Sharpe into return with volatility targeting and
+fractional Kelly. It projected a stacked Sharpe of 0.73 against a book of
+0.50, i.e. ~1.5x the market's excess return at the same risk.
+
+**Measured, it does not work.** 2534 trading days (2016-08 .. 2026-08),
+20 ETFs, engine-independent, entry lagged one bar, excess of BIL, weights
+fitted on trailing 504-day windows only.
+
+### Sleeves, each normalised to 10% volatility
+
+| sleeve | CAGR% | vol% | Sharpe | maxDD% | beta | skew |
+|---|---|---|---|---|---|---|
+| trend (5 td rebal) | 1.95 | 10.63 | 0.24 | -36.8 | 0.09 | -0.76 |
+| trend (21 td rebal) | 4.04 | 10.58 | 0.43 | -27.2 | 0.14 | -0.71 |
+| xsec relative momentum | 2.13 | 10.98 | 0.25 | -35.6 | 0.01 | -0.52 |
+| defensive (low-vol half) | 3.60 | 10.56 | 0.39 | -27.0 | 0.25 | -0.52 |
+| gated_equity (= vol-targeted SPY) | 8.44 | 10.90 | 0.80 | -17.5 | 0.53 | -0.94 |
+| **SPY (excess)** | **12.85** | **18.00** | **0.76** | **-34.0** | 1.00 | -0.34 |
+
+**Every diversifying sleeve is below SPY's Sharpe standalone**, at 0.24-0.46
+against 0.76. The projection assumed trend would land at S_eff 0.34 after
+haircuts; at the 5-day cadence it delivered 0.24, at monthly 0.43. That part
+was roughly right. What was badly wrong is everything downstream.
+
+### The correlation assumption was wrong by a factor of three
+
+|  | trend | xsec | defensive | gated_equity |
+|---|---|---|---|---|
+| trend | 1.00 | **0.67** | 0.40 | 0.39 |
+| xsec | 0.67 | 1.00 | 0.07 | 0.21 |
+| defensive | 0.40 | 0.07 | 1.00 | 0.51 |
+| gated_equity | 0.39 | 0.21 | 0.51 | 1.00 |
+
+ALPHA-STACK assumed rho = 0.25 between sleeves and flagged that assumption
+as the thing the whole result rested on. Measured: **0.67** between trend and
+cross-sectional momentum, 0.51 between the defensive sleeve and equity.
+
+**Effective bets: 1.02 of 4 sleeves.** Meucci's diagnostic says this book is
+ONE bet wearing four coats. That is the single number that kills the thesis,
+and it was pre-registered as the most likely failure (H10).
+
+### The combination, and the leverage on top of it
+
+| book | CAGR% | vol% | Sharpe | maxDD% |
+|---|---|---|---|---|
+| combo_eqrisk | 1.86 | 7.69 | 0.28 | -16.2 |
+| combo_hrp | 2.01 | 7.66 | 0.30 | -15.7 |
+| combo_eqrisk + vol target | 3.82 | 12.50 | 0.36 | -31.1 |
+| combo_hrp + vol target | 4.27 | 12.54 | 0.40 | -30.1 |
+| **+ fractional Kelly** | **-5.65** | 19.62 | **-0.20** | **-47.0** |
+| **SPY (excess)** | **12.85** | 18.00 | **0.76** | -34.0 |
+
+Projected 0.73. **Measured 0.40**, against SPY's 0.76 — barely half the
+benchmark, not 1.5x it.
+
+The Kelly row deserves its own sentence. The sizing rule behaved exactly as
+designed (expanding window, de-levering to 0.85x by the end) and still
+produced -0.20 Sharpe, because **leverage converts Sharpe into return and
+this book's Sharpe was below the benchmark's.** Kelly cannot rescue a
+signal; it can only scale one. Applying it to a weak book magnifies the
+weakness, which is the whole content of `growth_at_leverage`.
+
+### Halves: the sign flips
+
+| | first half 2017-2021 | second half 2021-2026 |
+|---|---|---|
+| combo_eqrisk_voltgt | **1.13** | **-0.25** |
+| combo_hrp_voltgt | **1.18** | **-0.23** |
+| SPY (excess) | 0.92 | 0.60 |
+
+The stack beat SPY on Sharpe in the first half and lost outright in the
+second. By this repo's own standing rule (SCOUT-DESIGN, sell-rule and H5g
+sections): a result that flips sign across halves is noise, not an effect.
+
+### It is not a cost artifact
+
+| variant | best sleeve Sharpe |
+|---|---|
+| 5 td rebalance, 5 bps | 0.39 |
+| 21 td rebalance, 5 bps | 0.46 |
+| 5 td rebalance, **0 bps** | 0.42 |
+| 21 td rebalance, **0 bps** | 0.48 |
+
+Turnover was the obvious suspect at 63-69x/yr for the trend sleeves. Cutting
+rebalance frequency and setting costs to literally zero lifts the best sleeve
+to 0.48 — still well under SPY's 0.76, and the sleeve correlations get
+slightly WORSE (trend/xsec 0.70). There is no cost fix.
+
+### The one thing that partly survived: volatility targeting (H11)
+
+Applied to SPY alone, over the same window:
+
+| | CAGR% | vol% | Sharpe | maxDD% |
+|---|---|---|---|---|
+| SPY (excess) | 12.92 | 17.64 | 0.78 | **-34.0** |
+| vol-targeted, rescaled to SPY's vol | 13.41 | 17.74 | 0.80 | **-27.3** |
+
+Sharpe 0.78 -> 0.80 and maxDD -34.0% -> -27.3% at matched volatility. But by
+halves: **1.03 vs SPY's 0.92, then 0.56 vs SPY's 0.63.** The drawdown
+improvement is consistent; the Sharpe uplift is not. Verdict: a drawdown
+tool, not a return enhancer — the same conclusion the gates lab reached about
+the gates, reached again by a different route. Not shipped.
+
+### Why this is a useful negative result
+
+The stack was the strongest argument available for beating the market with
+free data, and it was built with every control this repo has: causal weights,
+a 12-draw synthetic null, a known-edge synthetic, a lookahead audit, and
+hypotheses registered before the run. It still lost, and the pre-registered
+failure condition (H10, sleeve correlation) is exactly the one that fired.
+
+Honest caveats that do NOT rescue it but bound what was tested: 19 ETFs are a
+thin proxy for the 50-80 futures a real trend programme trades; 2017-2026 is
+managed futures' worst documented decade AND the strongest mega-cap
+concentration on record; and leverage was assumed free. A better instrument
+set could plausibly move trend from 0.43 toward its published 0.75. It could
+not plausibly move the sleeve correlation from 0.67 to 0.25, and that is the
+number the thesis needed.

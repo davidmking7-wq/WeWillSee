@@ -1,5 +1,34 @@
 # The Alpha Stack — where a landslide can legitimately come from
 
+> ## RETRACTION — read this before anything below (2026-08-09, same day)
+>
+> **Part 3's projection was tested on real data and is withdrawn.** It
+> projected a stacked Sharpe of **0.73** against a 0.50 book, i.e. ~1.5x the
+> market's excess return at equal risk. Measured over 2016-2026 on 20 ETFs:
+> **0.40, against SPY's 0.76.** Barely half the benchmark, not one and a half
+> times it. Full tables in BACKTEST-REPORT.md ("The alpha stack"); verdicts
+> in `scout/hypotheses.md` H9-H14.
+>
+> **The algebra was fine; one input was wrong.** The combination identity
+> `S_p = w'S / sqrt(w'Cw)` is exact. It was fed an assumed correlation of
+> **0.25** between sleeves. Measured: **0.67** between trend and
+> cross-sectional momentum, 0.51 between the defensive sleeve and equity.
+> Effective bets came out at **1.02 of 4** — the book is one bet wearing four
+> coats. Part 4 named that as the most likely failure before the run, and it
+> is the one that fired.
+>
+> **What survived:** nothing shippable. Volatility targeting improved SPY's
+> drawdown (-34% -> -27% at matched vol) but its Sharpe gain flips sign
+> across halves. Fractional Kelly worked mechanically and still lost, because
+> leverage scales an edge and cannot create one.
+>
+> **What is still true below:** Parts 1 and 2 — the diagnosis of why the
+> stock-selection engine cannot win, and the formulas themselves, which are
+> identities and simulations rather than claims about markets. Part 3's
+> METHOD (rank candidates by growth added to the whole book, not by
+> standalone Sharpe) is also unaffected; its inputs need the measured
+> correlations, not literature guesses. Part 3's NUMBERS are dead.
+
 Written 2026-08-09, after re-reading every result in `BACKTEST-REPORT.md`,
 `SCOUT-DESIGN.md`, `RESEARCH-AGENDA.md` and `scout/hypotheses.md`, including
 the weekly-hold and gates labs from the session that closed PR #2.
