@@ -54,28 +54,34 @@ WHERE THE shift() IS  (the only thing that can manufacture this result)
    - the shift(1) comes FIRST, and the offline selftest asserts it.
 
 The whole study is re-run under news_data's deliberately WRONG attribution
-(UTC calendar date, no close cutoff - `_attribute_naive`) as a lookahead
-control. The measured damage is small here (h=1 spread moves -2.3 -> -3.3 bps)
-precisely because news VOLUME is unsigned; a signed-sentiment study on the
-same feed moves far more (news_data --lookahead-demo). It is reported anyway,
-because "we checked" is worth more than "it could not have mattered".
+(UTC calendar date, no ET conversion, no close cutoff - `_attribute_naive`) as
+a lookahead control. Measured: the wrong rule INFLATES the registered effect by
+43% on average (-2.3/-3.4/-15.8/-23.6 becomes -2.8/-5.9/-22.7/-32.1 bps) and
+pushes |t| from 0.9-1.8 to 1.6-2.3. That is the direction that turns a null
+into a publication, on a signal that is unsigned and should have been the hard
+case to corrupt.
 
 CONTROLS (four, all run, none optional)
 ---------------------------------------
-a. POSITIVE control - abnormal attention must predict something, or the
-   pipeline is broken rather than the hypothesis. It predicts next-session
-   ABSOLUTE return decisively: Q5 realises 1.60% against Q1's 1.10%, a +50%
-   relative gap. The signal is live; it just does not carry a sign.
+a. POSITIVE control - abnormal attention must predict SOMETHING, or a null
+   result is evidence about the pipeline rather than about the hypothesis. It
+   predicts absolute return, decisively and in the right places: same-session
+   |return| Q5 1.71% vs Q1 1.23%, next-session |return| Q5 1.45% vs Q1 1.32%.
+   The signal is live. It simply carries almost no SIGN, even contemporaneously
+   (same-session signed return Q5 +10.9 bps vs Q1 +5.2 bps).
 b. RANDOM-QUINTILE control - labels permuted inside each session over the same
-   eligible pool, 200 draws, mean and SD quoted (Rule 10: one null draw is not
-   a control).
+   eligible pool, 200 draws, mean AND SD quoted (Rule 10: one null draw is not
+   a control). Lands at +0.05 / +0.18 / +0.24 / -0.49 bps with SD 1.1 / 2.3 /
+   4.6 / 7.1 - zero, as it must be.
 c. DATE-SHUFFLED-NEWS control - each symbol's abnormal-attention series is
    permuted ACROSS DATES, independently per symbol, 200 draws. Every stock
    keeps its own distribution of attention; only the TIMING dies. THIS IS THE
-   CONTROL THAT DECIDES THE HYPOTHESIS, and it is the one that fires.
-d. MATCHED BENCHMARK - top quintile minus the eligible-pool mean, so the
-   "just avoid these names" version of the claim is priced separately from
-   the long/short version.
+   CONTROL THAT DECIDES THE HYPOTHESIS, and it is the one that fires. The
+   offline selftest asserts that it kills a planted pure-event effect
+   (-23.7 -> -0.1 bps) and spares a planted pure-stock effect (-27.0 -> -26.8).
+d. MATCHED BENCHMARK - top quintile minus the eligible-pool mean, so the "just
+   avoid these names" version of the claim (-18.4 bps at h=42, t=-2.28) is
+   priced separately from the long/short version.
 
 Inference: the cross-section is collapsed to ONE spread per session before any
 statistic is taken (date clustering is then structural, as in
@@ -87,48 +93,117 @@ in H7a), because a single non-overlapping schedule is one draw of h.
 SPLIT DEFECT INHERITED FROM THE DATA (found by scout/intraday.py, re-confirmed here)
 -----------------------------------------------------------------------------------
 Alpaca's adjustment=all does NOT apply AAPL's 4:1 split of 2020-08-31 in daily
-bars: 483.84 -> 124.98, a fabricated -74.2% one-day return that lands inside
-the top attention quintile (AAPL carried 8 specific stories that session
-against a trailing median of 3). It is repaired here from the ex-date price
+bars: 483.84 -> 124.98, a fabricated -74.2% one-day return on a session AAPL
+spends in the upper half of the attention ranking (8 specific stories against
+a trailing median of 5). It is repaired here from the ex-date price
 ratio. Only events with |log ratio| > 0.30 are eligible for repair: MET's
 2017-08-07 ratio-1.122 event (the Brighthouse spin-off) trips the ratio test
 spuriously, and "repairing" it would INSERT an 11% fake jump.
 
-VERDICT: REJECTED - and rejected by the control, not by the t-statistic
-----------------------------------------------------------------------
-The registered SIGN is right. High-attention stocks underperform low-attention
-stocks at every horizon and in most variants: primary spread Q5-Q1 = -2.31 bps
-(h=1), -3.42 (h=5), -15.81 (h=21), -23.56 (h=42). Nothing reaches this repo's
-t>3 bar (best |t| = 2.19, at 16 signal x horizon cells).
+SAMPLE, AND THE EFFECTIVE INDEPENDENT SAMPLE
+--------------------------------------------
+284,001 symbol-sessions carry a price; 274,401 are eligible at h=21 after
+losing 7,099 to the 60-session warm-up and 2,501 to names delisting inside the
+window (mergers - their unfinished windows are dropped, which mildly favours
+the survivors and is disclosed rather than fixed). 464,430 attributed stories,
+349,901 of them specific, 337,791 specific AND novel. 38.1% of symbol-sessions
+carry at least one specific story, which is why the primary signal has a large
+tie mass at exactly zero and why ties are broken at random.
 
-But the DATE-SHUFFLED control reproduces almost all of it: -0.44 / -2.68 /
--10.62 / -22.26 bps against those same four numbers. Destroying every event
-date while leaving each stock's own attention distribution intact costs the
-effect 5% of its size at h=42. The timing-attributable residual is -1.87 /
--0.74 / -5.19 / -1.30 bps, and the actual spread sits at the 44th, 62nd, 31st
-and 51st percentile of the 200-draw shuffled null - i.e. squarely inside it.
+The effective independent sample is NOT 274,401. The cross-section is
+collapsed to one spread per session before any statistic is taken, so n is at
+most 2,603 sessions; at h=42 the honestly independent count is 61
+non-overlapping windows per entry phase, and there are 42 such phases.
 
-So this is not an attention-shock effect. It is a STOCK-CHARACTERISTIC effect
-wearing an event costume: names that are structurally news-bursty (they land
-in Q5 often, whatever the date) underperform names that are not, over
-2016-2026, in this 120-name large-cap universe. Barber-Odean's mechanism is
-about the arrival of attention, and the arrival is worth ~1 bp.
+KNOWN LIMITS (measured or structural, none of them fixed here)
+--------------------------------------------------------------
+1. ONE PUBLISHER. Benzinga only. Absence of a Benzinga headline is not absence
+   of news, and `source` is degenerate on this feed (news_data limit 3), so
+   "attention" here means "Benzinga attention".
+2. NO POST-2016 NAMES. The point-in-time universe buys survivorship-freedom at
+   the price of excluding every index addition after 2016-01-04 - no TSLA, no
+   NVDA-as-a-mega-cap, none of the 2020-2021 retail-attention poster children.
+   That is precisely the cohort Barber-Odean effects are loudest in, so this
+   is a real limitation on the REJECTION, not just on the sample.
+3. LARGE CAPS ONLY. 120 of the most liquid S&P 500 names. The attention
+   literature's effect sizes are down-cap; a null here is weak evidence about
+   small caps, where the mechanism has more room and costs are higher.
+4. NON-STATIONARY TAPE. Benzinga volume roughly doubles 2016->2023 and the
+   templated share moves 9% -> 21% -> 9% (news_data limit 7). The trailing
+   60-session median absorbs the slow drift by construction; it does not
+   absorb a regime change in what a "story" is.
+5. THE h=1 RESIDUAL IS NOT IDENTIFIED. Attention timing and conditional-
+   volatility timing die together under the date-shuffle, so the ~2 bps that
+   survives cannot be attributed to the attention mechanism rather than to
+   the low-volatility anomaly. Separating them needs a vol-matched control
+   this file does not build.
+6. COSTS ARE MODELLED, NOT MEASURED. 10 bps round trip on turnover; no
+   borrow cost on the short leg, no market impact, no shorting constraint.
+   All of those push the same way, and the trade already fails.
 
-Two further nails:
-- ENTRY-PHASE SPREAD. At h=42 the 42 non-overlapping schedules run from -63.9
-  to +14.9 bps and 8 of 42 have the wrong sign. A single-schedule quote here
-  would have been another H7a.
-- DIRECTION. The registered refinement ("attention + a big up move reverses
-  hardest") is rejected outright: at h=42 that cell is the BEST in the study,
-  +23.9 bps against the pool, while attention + a big DOWN move is the only
-  cell with |t| > 2.5 anywhere (-10.4 bps at h=1) - underreaction to bad news,
-  the opposite family of effect.
+VERDICT: REJECTED - by the control, not by the t-statistic
+---------------------------------------------------------
+1. THE SIGN IS RIGHT, EVERYWHERE. High-attention stocks underperform
+   low-attention stocks at all four horizons and in all four count forms.
+   Primary Q5-Q1 spread: -2.31 bps (h=1), -3.42 (h=5), -15.81 (h=21),
+   -23.56 (h=42), on 2,603 / 2,599 / 2,583 / 2,562 sessions. Nothing reaches
+   this repo's t>3 bar (best |t| = 2.92 over 32 signal x horizon cells). That
+   alone would only mean underpowered, so it is not what decides it.
 
-Untradeable regardless. Turnover is 62-78% per leg per rebalance, so at 10 bps
-round trip the registered short-top/long-bottom book nets -10.6 bps (h=1),
--10.8 (h=5), +1.0 (h=21) and +8.5 (h=42) per window - +0.12%/yr and +0.51%/yr
-at the two horizons that survive at all, before the shuffle control removes
-~90% of even that. Break-even round-trip costs: 1.79 / 2.41 / 10.70 / 15.63 bps.
+2. THE MULTI-DAY EFFECT - the one the mechanism actually predicts, "unwinds
+   over days to weeks" - IS THE CONFOUND. The date-shuffled control returns
+   -0.57 / -2.61 / -10.61 / -21.90 bps against those same four numbers, and
+   the actual spread sits at the 3rd / 37th / 12th / 44th percentile of that
+   200-draw null. Destroying every event date while leaving each stock's own
+   attention distribution intact costs the h=42 effect 7% of its size
+   (p=0.44); the timing-attributable residual is -1.74 / -0.82 / -5.19 /
+   -1.66 bps. Barber-Odean's mechanism is about the ARRIVAL of attention, and
+   the arrival is worth one to five basis points of it.
+
+   What the control leaves standing is a stock characteristic: across the 115
+   names with >=250 eligible sessions, Q5 landing frequency runs 1.4% to
+   28.0%, and the least-bursty third returned +17.1%/yr over their own
+   eligible sessions against the most-bursty third's +13.2%/yr. "Bursty" here
+   means coverage that is SPIKY relative to the name's own normal - moderate-
+   coverage value / financial / healthcare names against continuously-covered
+   mega-cap growth whose baseline is too high for anything to look abnormal.
+   Over 2016-2026 that is a style bet, and it needs no headline dates at all.
+
+3. WHAT SURVIVES IS ONE SESSION AND TWO BASIS POINTS. At h=1 the actual
+   spread DOES sit outside the shuffled null, in 3 of 4 count forms:
+   spec_log -2.31 (null -0.53+/-0.99, p=0.02), spec_diff -2.63 (p=0.01),
+   novel_log -2.81 (p=0.03), all_log -1.32 (p=0.27). Real, registered-sign,
+   and worthless: break-even round-trip cost 1.79-2.16 bps against 10 bps
+   charged, at ~130% book turnover per session. The low-volatility anomaly
+   predicts the same sign with no attention mechanism - control (a) shows Q5
+   is the conditionally high-volatility bucket next session (1.45% vs 1.32%)
+   and the date-shuffle destroys both timings together, so this file cannot
+   separate them.
+
+4. THE DIRECTION REFINEMENT IS REJECTED OUTRIGHT. "Attention + a big up move
+   reverses hardest": at h=42 that cell is the BEST in the study, +23.9 bps
+   against the pool. The only |t| > 2.5 cell anywhere is attention + a big
+   DOWN move at h=1 (-10.4 bps vs pool, t=-2.92, both halves negative) -
+   underreaction to bad news, the opposite family of effect.
+
+5. THE ENTRY PHASE OWNS THE HEADLINE ANYWAY. At h=42 the 42 non-overlapping
+   schedules run -179 to +92 bps and 15 of 42 carry the wrong sign; at h=21,
+   -63 to +34 with 6 of 21 wrong. H7a in scout/hypotheses.md is this repo
+   having quoted the luckiest of six such schedules once already.
+
+COSTS. Turnover is 62-78% per leg per rebalance (1.29-1.51 summed over the two
+legs), so at 10 bps round trip the registered short-top/long-bottom book nets
+-10.60 (h=1), -10.76 (h=5), +1.03 (h=21), +8.49 (h=42) bps per window =
+-26.7%, -5.4%, +0.12%, +0.51% a year. Break-even round-trip costs: 1.79 /
+2.41 / 10.70 / 15.63 bps. The two horizons that clear costs at all are the two
+the shuffle control says are ~93% confound.
+
+BOTH HALVES (split 2021-04-20): -2.85/-1.77, -7.40/+0.55, -20.69/-10.93,
+-18.63/-28.49 bps. One sign flip of four, at h=5 - and per house rules that is
+noise, said plainly.
+
+Per the H1b house rule, a finding that survives only without its control is not
+shippable. H15 does not survive with it.
 
 Run: python -m scout.news_attention_lab            (full study, ~3 min warm)
      python -m scout.news_attention_lab --selftest (offline, no keys, <2s)
@@ -935,35 +1010,60 @@ def main() -> None:
     _hdr("VERDICT")
     r42 = primary[primary["h"] == 42].iloc[0]
     c42 = ctrl[ctrl["h"] == 42].iloc[0]
+    c1 = ctrl[ctrl["h"] == 1].iloc[0]
+    ct = costs(primary)
     print("REJECTED - and rejected by the CONTROL, not by the t-statistic.")
     print()
-    print("The registered SIGN is right at every horizon and in every variant:")
-    print("high-attention stocks do underperform low-attention stocks. Nothing")
-    print(f"clears t>3 (best |t| = "
+    print("1. THE SIGN IS RIGHT, EVERYWHERE. High-attention stocks underperform")
+    print("   low-attention stocks at all four horizons and in all four count")
+    print(f"   forms: {', '.join(f'{v:+.1f}' for v in primary['spread'])} bps at "
+          "h=1/5/21/42. Nothing clears this repo's")
+    print(f"   t>3 bar (best |t| = "
           f"{max(res['t'].abs().max(), ds['t'].abs().max()):.2f} over "
-          f"{len(res) + len(ds)} cells), but that alone would")
-    print("only mean 'underpowered'.")
+          f"{len(res) + len(ds)} cells) - but that alone would only")
+    print("   mean underpowered, so it is not what decides the hypothesis.")
     print()
-    print("What decides it is CONTROL (c). Permuting each symbol's attention")
-    print("series across dates - destroying every event date while leaving each")
-    print(f"stock's own attention distribution intact - still returns "
-          f"{c42['shuf_mean']:+.2f} bps")
-    print(f"at h=42 against the actual {r42['spread']:+.2f}. The actual spread "
-          f"sits at the {c42['pctile']:.0f}th")
-    print("percentile of that null. The event timing is worth "
-          f"{c42['timing']:+.2f} bps.")
+    print("2. THE MULTI-DAY EFFECT - the one the mechanism actually predicts,")
+    print("   'unwinds over days to weeks' - IS THE CONFOUND. Permuting each")
+    print("   symbol's attention series across dates, which destroys every")
+    print("   event date while leaving each stock's own attention distribution")
+    print(f"   intact, still returns {c42['shuf_mean']:+.2f} bps at h=42 against "
+          f"the actual {r42['spread']:+.2f}.")
+    print(f"   The actual sits at the {c42['pctile']:.0f}th percentile of that "
+          f"null (p={c42['p_one_sided']:.2f}); the")
+    print(f"   event timing is worth {c42['timing']:+.2f} bps. Same story at h=5 "
+          f"(p={ctrl[ctrl['h'] == 5]['p_one_sided'].iloc[0]:.2f}) and")
+    print(f"   h=21 (p={ctrl[ctrl['h'] == 21]['p_one_sided'].iloc[0]:.2f}). "
+          "This is a stock-characteristic effect wearing an")
+    print("   event costume - names whose coverage is spiky relative to their")
+    print("   own normal are a value/financials tilt against mega-cap growth,")
+    print("   and 2016-2026 paid for the other side of that trade.")
     print()
-    print("H15 is therefore not an attention-shock effect. It is a stock-")
-    print("characteristic effect wearing an event costume: names that are")
-    print("structurally news-bursty underperform names that are not, in this")
-    print("120-name large-cap universe over 2016-2026. That is a DIFFERENT")
-    print("hypothesis (and a suspiciously sector-shaped one) - per the H1b")
-    print("house rule, a survived-control-free finding is not shippable.")
+    print("3. WHAT SURVIVES IS ONE SESSION AND TWO BASIS POINTS. At h=1 the")
+    print(f"   actual spread {c1['spread']:+.2f} bps DOES sit outside the "
+          f"shuffled null ({c1['shuf_mean']:+.2f}")
+    print(f"   +/- {c1['shuf_sd']:.2f}, p={c1['p_one_sided']:.2f}), in 3 of 4 "
+          "count forms. It is real and it is")
+    print(f"   worthless: break-even {ct[ct['h'] == 1]['breakeven_bps'].iloc[0]:.2f} "
+          f"bps round trip against {COST_BPS:.0f} bps charged, at ~130%")
+    print("   book turnover per session. And the low-volatility anomaly")
+    print("   explains the same sign with no attention mechanism at all.")
     print()
-    print("The direction refinement is rejected outright: the cell predicted to")
-    print("reverse hardest (attention + a big up move) is the best cell in the")
-    print("study at h=42, and the only |t|>2.5 cell anywhere is attention + a")
-    print("big DOWN move at h=1 - underreaction, not reversal.")
+    print("4. THE DIRECTION REFINEMENT IS REJECTED OUTRIGHT. 'Attention plus a")
+    print("   big up move reverses hardest' - that cell is the BEST in the")
+    print("   study at h=42 (+23.9 bps vs the pool). The only |t| > 2.5 cell")
+    print("   anywhere is attention plus a big DOWN move at h=1 (-10.4 bps),")
+    print("   which is underreaction to bad news, the opposite family.")
+    print()
+    print("5. ENTRY-PHASE SPREAD SAYS DO NOT QUOTE THE HEADLINE ANYWAY. At")
+    print(f"   h=42 the 42 non-overlapping schedules run "
+          f"{r42['ph_min']:+.0f} .. {r42['ph_max']:+.0f} bps and "
+          f"{int(r42['ph_wrongsign'])} of 42")
+    print("   carry the wrong sign. H7a in scout/hypotheses.md is this repo")
+    print("   having quoted the luckiest of six such schedules once already.")
+    print()
+    print("Per the H1b house rule: a result that only survives without its")
+    print("control is not shippable, and H15 does not survive with it.")
     print()
     print(f"[{time.time() - t0:.0f}s]")
 

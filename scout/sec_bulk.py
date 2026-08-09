@@ -49,6 +49,7 @@ import time
 import zipfile
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import requests
 
@@ -262,69 +263,127 @@ def split_factors(symbols: list[str], start: str = "2016-01-01",
     return out
 
 
-def adjust_for_splits(panel: pd.DataFrame,
-                      factors: dict[str, list[tuple[pd.Timestamp, float]]]) -> pd.DataFrame:
-    """Restate a share-count panel in TODAY'S share terms.
+def adjust_facts_for_splits(df: pd.DataFrame,
+                            factors: dict[str, list[tuple[pd.Timestamp, float]]]
+                            ) -> pd.DataFrame:
+    """Restate fact-level share counts in TODAY'S share terms.
 
-    THIS IS NOT OPTIONAL AND IT IS EASY TO MISS. XBRL share counts are the raw
-    number the company reported at the time; they are NOT split-adjusted, and
-    nothing in the SEC data hints otherwise. Measured on the unadjusted panel,
-    AAPL goes from 4.38bn shares in Feb-2020 to 16.82bn in Feb-2021 — a
-    reported +286% "issuance" that is entirely the 4:1 split of 2020-08-31.
-    NVDA does the same thing in 2024 (2.47bn -> 24.51bn, the 10:1 split).
+    THE SUBTLETY THAT MAKES OR BREAKS THIS, learned the hard way from NVDA.
+    A share count is expressed in the shares that existed WHEN THE FILING WAS
+    MADE, and companies re-report prior periods in post-split terms in later
+    filings. NVDA's own facts show it exactly:
 
-    A net-issuance signal built on the raw numbers therefore ranks every
-    company that split as the most massively dilutive stock in the market —
-    which, since splits follow big price run-ups, means it would systematically
-    short recent winners and call it an accounting anomaly. The signal would
-    not be weak; it would be an inverted momentum factor in disguise.
+        ddate 2021-01-31, filed 2021-02-26  ->   0.620bn   (pre 4:1 and 10:1)
+        ddate 2021-01-31, filed 2022-03-18  ->   2.479bn   (post 4:1)
+        ddate 2024-01-31, filed 2024-02-21  ->   2.464bn   (post 4:1, pre 10:1)
+        ddate 2024-01-31, filed 2025-02-26  ->  24.643bn   (post both)
 
-    Shares reported at t are multiplied by every split factor that took effect
-    AFTER t, putting the whole series in current-share terms."""
-    out = panel.copy()
-    for sym in out.columns:
-        for ex, f in factors.get(sym, []):
-            ts = ex.tz_localize(out.index.tz) if out.index.tz is not None else ex
-            mask = out.index < ts
-            out.loc[mask, sym] = out.loc[mask, sym] * f
+    Same period, three different correct numbers. So the adjustment a fact
+    needs is the product of every split whose ex-date falls after ITS FILING
+    DATE — not after the date you happen to be reading the panel on.
+
+    Getting that wrong is invisible and destructive. My first version adjusted
+    by the panel's observation date, which left a fact filed before a split but
+    read after it under-adjusted by exactly the split factor: NVDA printed
+    6.20bn (0.620 x 10, missing the x4) and 2.46bn (missing the x10) against a
+    true ~24.5bn, showing as -137% then +140% "issuance" in consecutive years.
+    It looked like dirty vendor data. It was arithmetic applied at the wrong
+    index."""
+    out = df.copy()
+    mult = pd.Series(1.0, index=out.index)
+    for sym, fl in factors.items():
+        m = out["ticker"] == sym
+        if not m.any():
+            continue
+        for ex, f in fl:
+            mult.loc[m & (out["filed"] < ex)] *= f
+    out["value"] = out["value"] * mult
     return out
 
 
-SHARE_TAGS = ("CommonStockSharesOutstanding",
-              "WeightedAverageNumberOfDilutedSharesOutstanding",
-              "WeightedAverageNumberOfSharesOutstandingBasic",
-              "CommonStockSharesIssued")
+SHARE_TAGS = (("CommonStockSharesOutstanding", 0),
+              ("WeightedAverageNumberOfDilutedSharesOutstanding", 4),
+              ("WeightedAverageNumberOfDilutedSharesOutstanding", 1),
+              ("WeightedAverageNumberOfSharesOutstandingBasic", 4),
+              ("WeightedAverageNumberOfSharesOutstandingBasic", 1))
+
+
+def _despike(col: pd.Series, tol: float = 0.35) -> pd.Series:
+    """Drop isolated single-observation spikes, working on DISTINCT VALUES.
+
+    Even after the segment filter a handful of stray facts survive — NVDA
+    prints 6.20bn and 2.46bn in single quarters against a stable ~24bn, which
+    is a mis-scaled or mis-tagged filing rather than a corporate event.
+
+    The subtlety that makes a naive version useless: this operates on a
+    forward-filled DAILY panel, so a bad fact is repeated for ~60 sessions and
+    its immediate neighbours are copies of itself. Comparing a point to
+    yesterday therefore never sees a spike. The series is first collapsed to
+    its distinct values (one row per change), despiked there, and then
+    re-expanded — so "neighbour" means the previous and next REPORTED value,
+    which is what the word was supposed to mean.
+
+    A value is dropped when it differs from both surrounding reports by more
+    than `tol` in log terms while those two agree with each other. A genuine
+    issuance or buyback moves the level and leaves it moved, so real step
+    changes survive."""
+    v = col.dropna()
+    if len(v) < 3:
+        return col
+    events = v[v != v.shift()]                 # one row per distinct value
+    if len(events) < 3:
+        return col
+    lv = np.log(events)
+    prev, nxt = lv.shift(1), lv.shift(-1)
+    spike = (((lv - prev).abs() > tol) & ((lv - nxt).abs() > tol)
+             & ((prev - nxt).abs() < tol)).fillna(False)
+    if not spike.any():
+        return col
+    bad_values = set(events[spike].to_numpy())
+    cleaned = v.where(~v.isin(bad_values))
+    return cleaned.reindex(col.index).ffill()
 
 
 def shares_panel(facts: pd.DataFrame, tickers: list[str], dates: pd.DatetimeIndex,
                  adjust: bool = True) -> pd.DataFrame:
-    """Split-adjusted shares outstanding, with a tag fallback chain.
+    """Split-adjusted shares outstanding, point-in-time, with a tag fallback.
 
-    No single tag covers the market: CommonStockSharesOutstanding reaches 6,861
-    tickers, and the names it misses (F and XOM among them) report under the
-    weighted-average tags instead. Each ticker takes the first tag that has
-    data for it, in SHARE_TAGS order — mixing tags WITHIN a ticker would create
-    fake issuance every time the source changed, so the choice is made once per
-    ticker and held.
+    No single tag covers the market, so each ticker takes the first tag in
+    SHARE_TAGS that has data for it. The choice is made ONCE per ticker and
+    held: switching tags mid-series manufactures fake issuance at the switch.
 
-    Implausible values are dropped rather than trusted: several filers report
-    NEGATIVE or zero counts under these tags (AT&T prints -0.35bn), which is
-    an accounting artefact and not a share count."""
-    panels = {t: pit_panel(facts, t, tickers, dates, qtrs=0) for t in SHARE_TAGS}
+    Order of operations matters. Splits are applied at the FACT level, keyed on
+    each fact's filing date (see adjust_facts_for_splits), and only then is the
+    series forward-filled onto `dates`. Adjusting the forward-filled panel
+    instead is wrong and silently so."""
+    df = facts[facts["ticker"].isin(tickers)]
+    if "segments" in df.columns:
+        df = df[df["segments"].isna() & df["coreg"].isna()]
+    df = df[df["value"] > 0]
+    if adjust:
+        df = adjust_facts_for_splits(df, split_factors(sorted(set(tickers))))
+
     out = pd.DataFrame(index=dates, columns=tickers, dtype=float)
     chosen = {}
+    tz = dates.tz
     for tk in tickers:
-        for tag in SHARE_TAGS:
-            col = panels[tag][tk] if tk in panels[tag].columns else None
-            if col is None:
+        for tag, q in SHARE_TAGS:
+            d = df[(df["ticker"] == tk) & (df["tag"] == tag) & (df["qtrs"] == q)]
+            if d.empty:
                 continue
-            col = col.where(col > 0)          # negatives/zeros are artefacts
+            # first filing of a period wins: what was knowable then, not the
+            # later restatement
+            d = (d.sort_values("filed")
+                   .drop_duplicates(subset=["ddate", "qtrs"], keep="first"))
+            ser = d.set_index("filed")["value"].sort_index()
+            ser = ser[~ser.index.duplicated(keep="last")]
+            if tz is not None:
+                ser.index = ser.index.tz_localize(tz)
+            col = ser.reindex(ser.index.union(dates)).ffill().reindex(dates)
             if col.notna().sum() > 0.3 * len(dates):
                 out[tk] = col
-                chosen[tk] = tag
+                chosen[tk] = f"{tag}(q{q})"
                 break
-    if adjust:
-        out = adjust_for_splits(out, split_factors(list(out.columns)))
     out.attrs["tag_used"] = chosen
     return out
 

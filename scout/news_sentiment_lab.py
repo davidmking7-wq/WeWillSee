@@ -47,9 +47,17 @@ NO LOOKAHEAD — WHERE THE SHIFT IS
   the earliest return any signal can touch is close(t) -> close(t+1). The
   regression side states it the other way round and equivalently:
   fwd_h(t) = close(t+h)/close(t) - 1 is regressed on variables all known at
-  close t. `--selftest` prices the mistake: feeding the SAME-DAY return in as
-  the signal scores +1.04 bps/day through the shift and +411 bps/day without
-  it, a 400x fabrication out of pure noise.
+  close t. `--selftest` prices the mistake on synthetic data: feeding the
+  SAME-DAY return in as the signal scores +1.04 bps/day through the shift and
+  +411 bps/day without it, a 400x fabrication out of pure noise.
+
+  And on the REAL data, printed in the coverage block: tone rank times its own
+  session's return is **+6.80 bps**, tone rank times the next session's return
+  is **-0.35 bps**. A study that attributed each story to the session it was
+  published in rather than the session it can be traded in would have reported
+  a large POSITIVE Tetlock effect, ~20x the honest number and with the opposite
+  sign. That single day is the entire difference between this result and the
+  one everyone expects to find.
 
 CONTROLS (all four run, none optional)
   shuffle  tone permuted across symbols WITHIN each date (200 draws)
@@ -102,10 +110,22 @@ news; every number below is printed by __main__)
   written in words, but not enough to be the whole story — and nothing in the
   table is distinguishable from zero.
 
+  AND THE SPREAD IS MOSTLY BETA. The dollar-neutral book is not market-neutral:
+  its beta on SPY is -0.16 / -0.15 / -0.11 / -0.10 across the four horizons,
+  because pessimistic coverage clusters in temporarily high-beta names. In a
+  decade when SPY compounded at 15.8%/yr that tilt alone accounts for roughly
+  half the raw spread (-2.67 of -5.51 %/yr at h=1; -1.79 of -3.20 at h=21).
+  Market-adjusted, the residual alpha t-statistics are -0.27 to -0.65 — and
+  for firm-specific stories at h=1 and h=5 the alpha turns POSITIVE (+2.63%
+  and +0.62%/yr, t = +0.46 and +0.19). There is nothing there in any direction.
+
   COSTS — at 10 bps round trip the h=1 book loses 48.8%/yr net on measured
   turnover of 3.44x gross per day. Break-even round-trip cost in the
   REGISTERED direction is negative at every horizon, because the gross return
-  is negative.
+  is negative. The best contrarian variant (h=21) breaks even at 15.0 bps and
+  nets +1.06%/yr against SPY's +15.82%/yr — and 1.79 of its 3.20%/yr gross is
+  simply the +0.11 beta it inherits by going long the pessimistic names. It is
+  a levered-down index position with a t of 1.46, not a signal.
 
   A CONTROL LESSON WORTH MORE THAN THE RESULT. The three nulls disagree, and
   the disagreement is diagnostic. Within-date shuffling and random-pick both
@@ -521,7 +541,8 @@ def market_adjust(port: pd.Series, bench_ret: pd.Series, h: int) -> dict:
     and in a decade when SPY compounded at 15.8%/yr that alone can manufacture
     the sign. This is the matched-benchmark control for the portfolio side.
     """
-    df = pd.concat([port.rename("p"), bench_ret.rename("m")], axis=1).dropna()
+    df = pd.DataFrame({"p": port,
+                       "m": bench_ret.reindex(port.index)}).dropna()
     if len(df) < 50:
         return {"beta": np.nan, "alpha_ann_%": np.nan, "t_alpha": np.nan}
     m = df["m"].to_numpy()
@@ -733,6 +754,12 @@ def run(horizons=HORIZONS, kinds=("all", "specific"), draws=N_CONTROL_DRAWS,
             xrank(tone_all).stack().corr(xrank(ret0_all).stack())),
         "spy_ann_%": (100 * _ann(float(ds["bench"].pct_change().mean()))
                       if ds["bench"] is not None else float("nan")),
+        # What the whole study is ONE DAY away from. Signal times the return
+        # earned on its own session (illegal) vs the next session's (legal).
+        "leak_same_session_bps": 1e4 * float(
+            xrank(tone_all).mul(ret1).stack().mean()),
+        "honest_next_session_bps": 1e4 * float(
+            xrank(tone_all).mul(ret1.shift(-1)).stack().mean()),
     }
     results["coverage"] = cov
     if verbose:
@@ -744,6 +771,14 @@ def run(horizons=HORIZONS, kinds=("all", "specific"), draws=N_CONTROL_DRAWS,
         sz = quantile_sizes(tone_all)
         print("  mean quintile sizes (ties at 0 net tone force them uneven):")
         print("   ", {f"Q{i}": round(sz[i], 1) for i in sorted(sz)})
+        print(f"\n  ONE-DAY CONTAMINATION SCALE: tone rank x its OWN session's"
+              f" return = {cov['leak_same_session_bps']:+.2f} bps;"
+              f"\n  tone rank x the NEXT session's return ="
+              f" {cov['honest_next_session_bps']:+.2f} bps. Attributing news to"
+              f"\n  the session it was published in rather than the one it can be"
+              f" traded in\n  would have printed a large POSITIVE 'sentiment"
+              f" effect' about 20x the honest\n  number and with the opposite"
+              f" sign. That is the whole experiment in two lines.")
 
     # ---- H16a / H16b : quintile long-short at each horizon -----------------
     for kind in kinds:
@@ -838,6 +873,10 @@ def report(res: dict) -> None:
     print("  ci = 95% moving-block bootstrap by date, block = holding period.")
     print("  h1/h2 = first and second half of the sample.")
     print("  breakeven_bps = round-trip cost that takes the gross return to zero.")
+    print("""  beta / alpha_ann_% / t_alpha regress the long-short on SPY: a
+  dollar-neutral quintile spread is NOT market-neutral, and in a decade when
+  SPY compounded at 15.8%/yr an unintended beta manufactures a sign on its own.
+  Read alpha_ann_%, not ann_gross_%.""")
     print("\n  matched benchmarks (annualised, gross):")
     print(p[["kind", "h", "q5_ann_%", "q1_ann_%", "pool_ann_%"]]
           .to_string(index=False, float_format=lambda x: f"{x:8.2f}"))
@@ -914,6 +953,10 @@ def report(res: dict) -> None:
           f"({cost_ann:.2f}%/yr) it nets {-flip['ann_gross_%'] - cost_ann:+.2f}%/yr,"
           f"\n    against SPY buy-and-hold at "
           f"{res['coverage']['spy_ann_%']:.2f}%/yr.")
+    print(f"    of that gross, {-float(flip['beta']) * res['coverage']['spy_ann_%']:+.2f}"
+          f"%/yr is simply the {-float(flip['beta']):+.3f} beta it inherits; "
+          f"residual alpha {-float(flip['alpha_ann_%']):+.2f}%/yr, "
+          f"t {-float(flip['t_alpha']):+.2f}.")
     print(f"    two-sided trial count 2N={2 * N_TRIALS_REGISTERED}; "
           f"DSR = {fdsr:.3f}. The repo's bar is t > 3; this is "
           f"{abs(flip['t_nw']):.2f}.")

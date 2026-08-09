@@ -179,10 +179,10 @@ close(t)->close(t+1) return and onward — `Wbar.shift(1) * ret1` in
 
 | # | date | hypothesis (mechanism, one sentence) | expected sign | status |
 |---|---|---|---|---|
-| H16a | 2026-08-09 | Cross-sectional net headline tone predicts forward returns: quintile long-short (Q5-Q1) is positive at 1/5/21/42 sessions, strongest early and decaying (slow diffusion of textual information). | LS > 0, monotone decay | (4 variants: h = 1, 5, 21, 42) |
-| H16b | 2026-08-09 | Restricting to SPECIFIC stories (not templated wire, <= 10 tags) sharpens the effect, because broadtape movers-lists carry no firm-specific information and only add noise. | LS(specific) >= LS(all) | (4 variants: h = 1, 5, 21, 42) |
-| H16c | 2026-08-09 | **THE DECIDING ROW.** Tone has incremental power over the same-session return: in a joint Fama-MacBeth cross-sectional regression of forward return on tone rank AND same-session return rank, the tone coefficient stays positive and significant with date-clustered (Newey-West) standard errors. | lambda_tone > 0 with t > 3 | (4 variants: h = 1, 5, 21, 42) |
-| H16d | 2026-08-09 | The tone spread survives inside each tercile of the same-session return (a double sort separates news content from price reversal). | tone spread > 0 in all 3 return terciles | (2 variants: h = 5, 21) |
+| H16a | 2026-08-09 | Cross-sectional net headline tone predicts forward returns: quintile long-short (Q5-Q1) is positive at 1/5/21/42 sessions, strongest early and decaying (slow diffusion of textual information). | LS > 0, monotone decay | **REJECTED — WRONG SIGN, AND NOT SIGNIFICANT EITHER WAY.** Q5-Q1 earns **-2.19 / -1.51 / -1.27 / -1.09 bps per day** at h = 1 / 5 / 21 / 42 (Tetlock predicts positive). Newey-West t = -0.99 / -1.15 / -1.46 / -1.33; every 95% moving-block bootstrap CI straddles zero ([-6.10, +2.27] at h=1, [-2.95, +0.53] at h=21). Both halves negative at all four horizons, so the sign is stable even though the magnitude is not distinguishable from noise. n = 2,637 dates, 142,000 symbol-sessions with news, mean cross-section 53. |
+| H16b | 2026-08-09 | Restricting to SPECIFIC stories (not templated wire, <= 10 tags) sharpens the effect, because broadtape movers-lists carry no firm-specific information and only add noise. | LS(specific) >= LS(all) | **REJECTED.** Filtering does not sharpen anything: at h=1 the spread goes to -0.17 bps (t = -0.07) and the two halves disagree in sign (+2.14 then -2.48 bps). At h=21/42 it is indistinguishable from the all-story version (-1.09 both). The cleanest reading is that the all-story spread was never carrying firm-specific information to concentrate. |
+| H16c | 2026-08-09 | **THE DECIDING ROW.** Tone has incremental power over the same-session return: in a joint Fama-MacBeth cross-sectional regression of forward return on tone rank AND same-session return rank, the tone coefficient stays positive and significant with date-clustered (Newey-West) standard errors. | lambda_tone > 0 with t > 3 | **REJECTED — AND THE PRE-REGISTERED EXPLANATION IS ALSO WRONG.** Tone is NOT reversal in a costume, because there is no reversal here to hide behind: the same-session return alone predicts nothing (lambda_ret t = +0.19 / -0.76 / -0.64 / -0.20 at h = 1/5/21/42) and its rank correlates with the tone rank at only **0.117**. Adding it therefore barely moves tone (-4.12 -> -3.59 bps/rank at h=1; -25.0 -> -20.6 at h=21). Tone simply never reaches significance on its own: t_tone = -1.84 / -1.27 / -1.40 / -1.35. H16 fails on POWER, not on confounding — a different and more honest failure than the one that was expected. |
+| H16d | 2026-08-09 | The tone spread survives inside each tercile of the same-session return (a double sort separates news content from price reversal). | tone spread > 0 in all 3 return terciles | **REJECTED — spread is negative in every cell.** h=5: -1.58 / -11.66 / -13.82 bps across the three same-session-return terciles; h=21: -37.86 / -47.50 / -35.33 bps. ~47,000 observations per cell. The sign does not depend on the price move, which corroborates H16c: this is not reversal. |
 
 Controls (nulls, not trials): (i) tone shuffled across symbols WITHIN each
 date, 200 draws; (ii) placebo — each symbol permanently assigned another
@@ -200,5 +200,70 @@ takes H16 with it — if lambda_tone loses significance once the same-session
 return is included; the whole thing is untradeable regardless of sign if the
 break-even round-trip cost is below 10 bps.
 
-Trial count: N rises by 14 (4 + 4 + 4 + 2). Control draws are nulls and do
-not count.
+### H16 results (2026-08-09) — REJECTED, plus two findings worth more than it
+
+| # | verdict |
+|---|---|
+| H16e | **POST-HOC, registered after the sign came out negative** (4 variants, h = 1/5/21/42): is the negative tone tilt just momentum or attention written in words? Adding the trailing 21-session return to the joint regression absorbs 30-45% of the tone coefficient at h=5 (-6.94 -> -4.74) and h=21 (-20.6 -> -14.0) and none of it at h=1 or h=42; log story count explains nothing (t_attn = 0.04 / -0.12 / 0.77 / 1.29). So part of it is momentum in words, not all of it — and no coefficient in the table is distinguishable from zero. |
+
+**Finding 1 — the spread is mostly BETA, and market-adjusted there is nothing
+at all.** A dollar-neutral quintile spread is not market-neutral: pessimistic
+coverage clusters in temporarily high-beta names, so the book runs beta
+**-0.16 / -0.15 / -0.11 / -0.10** on SPY. In a decade when SPY compounded at
+15.82%/yr that tilt alone is roughly half the raw spread (-2.67 of -5.51 %/yr
+at h=1; -1.79 of -3.20 at h=21). Residual alpha t-statistics are -0.52 /
+-0.44 / -0.65 / -0.63, and for firm-specific stories at h=1 and h=5 the alpha
+is POSITIVE (+2.63% and +0.62%/yr, t = +0.46 and +0.19). Rule 13 for the
+house: **regress every dollar-neutral book on the benchmark before quoting its
+sign** — dollar-neutral is not risk-neutral, and a 0.15 beta is worth 2.4%/yr
+in this sample.
+
+**Finding 2 — a within-date permutation null is the wrong control for a
+persistent signal, and it is anti-conservative by 2-3x.** The three nulls
+disagree, and the disagreement is the point. Shuffled-tone and random-pick
+nulls produce a standard error 2.26x and 2.70x TIGHTER than the Newey-West SE
+of the real series at h=21 (2.96x and 3.49x at h=42), so they score the result
+at z = -3.34 and -3.90 — apparently clearing this repo's t>3 bar — while the
+honest t is -1.46. Permuting labels within a date destroys the persistence of
+a tone tilt (sticky sector and attention exposure) and therefore the
+autocorrelation of the P&L it generates. The **placebo** null, in which every
+symbol keeps its own tone series and only the pairing is broken, reproduces
+the real width (SE ratio 1.25 at h=21) and agrees with the block bootstrap:
+z = -1.85. Rule 14: **never quote a permutation p-value without printing the
+ratio of the null's SE to the real series' Newey-West SE next to it.**
+
+**Costs.** At 10 bps round trip the h=1 book loses 48.8%/yr net on measured
+turnover of 3.44x gross per day. In the REGISTERED direction the break-even
+round-trip cost is negative at every horizon, because the gross return is
+negative.
+
+**Sign-flip footnote (NOT a result — H1b house rule).** The best contrarian
+variant (all stories, h=21) is gross Sharpe 0.416, +3.20%/yr, break-even 15.0
+bps, netting +1.06%/yr after its own turnover at 10 bps — against SPY's
++15.82%/yr. Of that 3.20%, **1.79pp is the +0.113 beta it inherits by being
+long the pessimistic names**; residual alpha +1.33%/yr at t = +0.65. Deflated
+Sharpe at the two-sided trial count 2N=36 is 0.212. A levered-down index
+position, not a signal.
+
+Trial count: N rises by **18** (H16a 4 + H16b 4 + H16c 4 + H16d 2 registered,
+H16e 4 post-hoc). Control draws are nulls and do not count. Deflated Sharpe of
+the best variant in the registered direction, at N=18: **0.027**.
+
+Data notes stamped on this round: (i) `scout/data.py` daily bars still carry
+the missing AAPL 2020-08-31 4:1 split — the lab repairs 1,173 bars from
+Alpaca's own corporate-actions feed, and any daily study in this repo that
+spans that date without a repair contains a fabricated -74.2% return; (ii)
+`intraday.unapplied_splits_close(tol=0.15)` CANNOT classify events whose log
+ratio is under 0.30 — it false-positived MET's 2017-08-07 Brighthouse spin-off
+(filed ratio 1.122, bars already adjusted, observed jump 1.0099), so this lab
+only auto-repairs ratios above exp(0.35) and prints the rest; (iii) 49% of
+symbol-sessions with news score exactly zero net tone (no lexicon word fired),
+which forces unequal quintiles — mean sizes Q1 7.2, Q2 12.9, Q3 14.7, Q4 7.7,
+Q5 10.7 — so Q1 and Q5 are the genuinely negative and genuinely positive
+names, not 20% buckets; (iv) **the one-day contamination scale, measured on
+this exact panel**: tone rank x its OWN session's return = **+6.80 bps**, tone
+rank x the NEXT session's return = **-0.35 bps**. Attributing a story to the
+session it was published in rather than the session it can be traded in would
+have produced a large POSITIVE "Tetlock effect" roughly 20x the honest number
+and with the opposite sign. Any news study in this repo that cannot point at
+its shift is presumed to be measuring that +6.80.
