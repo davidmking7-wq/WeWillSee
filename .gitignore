@@ -24,3 +24,7 @@ scout/cache_*
 scout/cache_secbulk/
 scout/cache_bars_master.pkl
 scout/cache_deals_*.pkl
+
+# agent scratch: verification scripts written next to a lab, not deliverables
+_verify_*.py
+_scratch_*.py
