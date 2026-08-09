@@ -32,7 +32,11 @@ class Cohort:
 
 
 def protocol_sha256(path: str | Path) -> str:
-    return sha256(Path(path).read_bytes()).hexdigest()
+    # The lock protects the JSON rules, not Git's platform-specific checkout
+    # line endings.  Hash canonical LF bytes so the same committed protocol
+    # verifies on Windows (CRLF) and Unix (LF).
+    canonical = Path(path).read_bytes().replace(b"\r\n", b"\n")
+    return sha256(canonical).hexdigest()
 
 
 def load_locked_protocol(path: str | Path = DEFAULT_PROTOCOL) -> dict[str, Any]:
