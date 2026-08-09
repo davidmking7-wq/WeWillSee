@@ -1204,6 +1204,29 @@ def run(refresh: bool = False, draws: int = DRAWS) -> dict:
     primary = out["RESID_3_ew"]
     res["primary"] = primary["label"]
 
+    hdr("2b. CONSTRUCTION vs SELECTION on this panel (the Round 4 structural finding)")
+    ew_pool = primary["pool"]
+    dv_pool = out["RESID_3_dv"]["pool"]
+    spy = primary["bench"]
+    sel = primary["spread"]["mean_bps"]
+    con = dv_pool["mean_bps"] - ew_pool["mean_bps"]
+    print(f"  the SAME {primary['median_pool']} names, only the weighting changed:")
+    print(f"    equal-weight pool        {ew_pool['mean_bps']} bps/window  "
+          f"beta {ew_pool['beta']}  alpha {ew_pool['alpha_bps']} (t {ew_pool['alpha_t']})")
+    print(f"    dollar-volume-weighted   {dv_pool['mean_bps']} bps/window  "
+          f"beta {dv_pool['beta']}  alpha {dv_pool['alpha_bps']} (t {dv_pool['alpha_t']})")
+    print(f"    SPY                      {spy['mean_bps']} bps/window")
+    print(f"  WEIGHTING is worth {con:.1f} bps/window; the best SELECTION spread in "
+          f"this lab is {sel} bps.")
+    print(f"  Construction : selection = {abs(con / max(abs(sel), 1e-9)):.1f} : 1 — "
+          f"Round 4's finding, reproduced on a panel it never touched.")
+    res["construction_vs_selection"] = {
+        "ew_pool_bps": ew_pool["mean_bps"], "dv_pool_bps": dv_pool["mean_bps"],
+        "spy_bps": spy["mean_bps"], "weighting_bps": round(con, 1),
+        "selection_bps": sel,
+        "ratio": round(abs(con / max(abs(sel), 1e-9)), 2)}
+    _reg("construction vs selection: EW pool vs DV-weighted pool vs SPY")
+
     hdr("3. CONTROLS")
     c1 = null_random_bucket(panel, 3, draws)
     _reg("control: random bucket assignment")

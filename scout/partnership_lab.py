@@ -199,6 +199,16 @@ def describe(r: np.ndarray, mkt: np.ndarray, cost_yr: float = 0.0) -> dict:
     p = B.perf(r, mkt, cost_yr=cost_yr)
     if p:
         p["cost_yr_pct"] = cost_yr * 100
+        # A book that is a deterministic multiple of the market (SPY on SPY,
+        # or SPY levered by a constant) has a zero-variance residual, so its
+        # alpha t-statistic is a division by floating-point dust and can print
+        # as 1e15. It carries no information and is blanked rather than shown.
+        m = np.isfinite(r) & np.isfinite(mkt)
+        if m.sum() > 2:
+            rho = np.corrcoef(r[m], mkt[m])[0, 1]
+            if np.isfinite(rho) and abs(rho) > 1 - 1e-9:
+                p["t_alpha"] = float("nan")
+                p["degenerate_vs_market"] = True
     return p
 
 

@@ -586,18 +586,22 @@ def summarize(r: np.ndarray, bench: np.ndarray, label: str,
 
 
 def breakeven_cost(gross: np.ndarray, turn_day: np.ndarray,
-                   target_sharpe: float, hi: float = 400.0) -> float:
+                   target_sharpe: float, lim: float = 500.0) -> float:
     """Round-trip cost (bps) at which this book's Sharpe equals the target.
-    Negative means it is already below the target at ZERO cost."""
+
+    Searched over NEGATIVE costs too, and that is the point: a book already
+    below SPY at zero cost has no break-even, and reporting `nan` would hide
+    HOW far below it is. A negative value is the per-round-trip SUBSIDY the
+    book would need to draw level — i.e. cost is not what is beating it."""
     def sh(c):
         x = gross - np.nan_to_num(turn_day) * c / 1e4
         return growth.sharpe(x[np.isfinite(x)])
-    if sh(0.0) <= target_sharpe:
-        return float("nan")
-    lo, h = 0.0, hi
+    lo, h = -lim, lim
+    if sh(lo) < target_sharpe:
+        return float("-inf")
     if sh(h) > target_sharpe:
         return float(h)
-    for _ in range(60):
+    for _ in range(80):
         m = 0.5 * (lo + h)
         if sh(m) > target_sharpe:
             lo = m
@@ -606,12 +610,77 @@ def breakeven_cost(gross: np.ndarray, turn_day: np.ndarray,
     return round(0.5 * (lo + h), 1)
 
 
-def phase_dispersion(bk: dict, cost_bps: float = COST_BPS) -> dict:
-    """RULE 9. Each of the 42 sleeves is a genuinely separate entry schedule."""
+def block_sharpe(x: np.ndarray, block: int = H) -> float:
+    """Sharpe measured on NON-OVERLAPPING `block`-session compounded returns.
+
+    Reported alongside the daily Sharpe purely so this lab's numbers can be
+    laid next to H30's, which were computed on 42-session window returns.
+    Sharpe is not horizon-invariant when returns are autocorrelated, so the
+    two are different statistics of the same book and neither is 'the' answer;
+    what matters is that every arm here is measured the same way (Rule 17)."""
+    v = x[np.isfinite(x)]
+    n = (len(v) // block) * block
+    if n < block * 4:
+        return float("nan")
+    w = (1 + v[:n].reshape(-1, block)).prod(axis=1) - 1
+    return round(growth.sharpe(w, periods_per_year=TD_YEAR / block), 3)
+
+
+def sharpe_diff_test(x: np.ndarray, y: np.ndarray, block: int = H,
+                     reps: int = 2000, seeds=(1, 2, 3, 4, 5)) -> dict:
+    """Is Sharpe(x) - Sharpe(y) distinguishable from zero on the SAME days?
+
+    Two estimators, because the headline of this lab is a difference of Sharpe
+    ratios and a difference of means is not the same test:
+      (i)  Memmel's (2003) correction to Jobson-Korkie, the analytic standard
+           error of a Sharpe difference for two CORRELATED series;
+      (ii) a moving-block bootstrap (block 42) resampling both series jointly,
+           which drops the iid-normal assumption.
+    RULE 16: the bootstrap is re-seeded `len(seeds)` times and the Monte-Carlo
+    standard deviation of the resulting t is reported, so a t sitting inside
+    its own simulation noise cannot be quoted as if it were evidence."""
+    ok = np.isfinite(x) & np.isfinite(y)
+    a, b = x[ok], y[ok]
+    n = len(a)
+    if n < 250:
+        return {}
+    sa, sb = a.mean() / a.std(ddof=1), b.mean() / b.std(ddof=1)
+    rho = float(np.corrcoef(a, b)[0, 1])
+    var = (2 * (1 - rho) + 0.5 * (sa ** 2 + sb ** 2 - 2 * sa * sb * rho ** 2)) / n
+    d_ann = (sa - sb) * math.sqrt(TD_YEAR)
+    t_jk = (sa - sb) / math.sqrt(var) if var > 0 else float("nan")
+
+    nb = n // block
+    ts = []
+    for sd in seeds:
+        rng = np.random.default_rng(SEED + sd)
+        d = np.empty(reps)
+        starts = rng.integers(0, n - block, size=(reps, nb))
+        for r in range(reps):
+            idx = (starts[r][:, None] + np.arange(block)[None, :]).ravel()
+            aa, bb = a[idx], b[idx]
+            d[r] = (aa.mean() / aa.std(ddof=1) - bb.mean() / bb.std(ddof=1))
+        s = float(d.std(ddof=1))
+        ts.append((sa - sb) / s if s > 0 else float("nan"))
+    ts = np.array(ts)
+    return {"sharpe_diff_ann": round(d_ann, 3), "corr": round(rho, 3),
+            "t_memmel": round(float(t_jk), 2),
+            "t_block_boot": round(float(ts.mean()), 2),
+            "t_boot_mc_sd": round(float(ts.std(ddof=1)), 3)}
+
+
+def phase_dispersion(bk: dict, common: np.ndarray | None = None,
+                     cost_bps: float = COST_BPS) -> dict:
+    """RULE 9. Each of the 42 sleeves is a genuinely separate entry schedule.
+
+    Restricted to the same `common` days every pooled number uses, so the
+    pooled Sharpe and the phase mean are statistics of the SAME sample."""
     sh, cg = [], []
     sl, td = bk["sleeves"], bk["turn_day"]
     for ph in range(sl.shape[0]):
         v = sl[ph] - np.nan_to_num(td) * cost_bps / 1e4
+        if common is not None:
+            v = np.where(common, v, np.nan)
         v = v[np.isfinite(v)]
         if len(v) < 200:
             continue
@@ -678,8 +747,7 @@ def _row(s: dict, be: float, turn_yr: float):
           f"{s.get('vol_pct', float('nan')):>7.2f}{s.get('sharpe', float('nan')):>8.3f}"
           f"{s.get('beta', float('nan')):>7.2f}{s.get('alpha_ann_pct', float('nan')):>11.2f}"
           f"{s.get('alpha_t_nw') if s.get('alpha_t_nw') is not None else float('nan'):>7.2f}"
-          f"{s.get('maxdd_pct', float('nan')):>8.1f}{turn_yr:>9.2f}"
-          f"{be if np.isfinite(be) else float('nan'):>8.1f}")
+          f"{s.get('maxdd_pct', float('nan')):>8.1f}{turn_yr:>9.2f}{be:>8.1f}")
 
 
 def _print_diff(d: dict) -> None:
@@ -717,7 +785,7 @@ def run(mode: str = "pit500", guard: bool = True, draws: int = RAND_DRAWS,
     out = {"mode": mode, "guard": guard, "cost_bps": COST_BPS,
            "panel": {k: p[k] for k in ("n_split_repairs", "n_stale_killed",
                                        "n_day_dirty", "cap_info",
-                                       "dropped_classes")}}
+                                       "dropped_classes", "cap_coverage_by_year")}}
     variants = 0
 
     # -------------------------------------------------- (a) decomposition
@@ -742,26 +810,44 @@ def run(mode: str = "pit500", guard: bool = True, draws: int = RAND_DRAWS,
         x = np.where(mask, bench, np.nan)
         return x
 
-    spy_s = summarize(_spy(common), bench, "SPY (cap-weighted index)")
-    rsp_s = summarize(np.where(common, ewb, np.nan), bench,
-                      "RSP (S&P 500 equal weight ETF)")
+    spy_net = _spy(common)
+    spy_s = summarize(spy_net, bench, "SPY (cap-weighted index)")
+    spy_s["block42_sharpe"] = block_sharpe(spy_net)
+    rsp_net = np.where(common, ewb, np.nan)
+    rsp_s = summarize(rsp_net, bench, "RSP (S&P 500 equal weight ETF)")
+    rsp_s["block42_sharpe"] = block_sharpe(rsp_net)
+    rsp_s["vs_spy"] = sharpe_diff_test(rsp_net, spy_net)
     _hdr()
     _row(spy_s, float("nan"), 0.0)
-    _row(rsp_s, breakeven_cost(np.where(common, ewb, np.nan),
-                               np.zeros_like(ewb), spy_s["sharpe"]), 0.0)
+    _row(rsp_s, breakeven_cost(rsp_net, np.zeros_like(ewb), spy_s["sharpe"]), 0.0)
     rows = {"SPY": spy_s, "RSP": rsp_s}
+    nets = {"SPY": spy_net, "RSP": rsp_net}
     for name, b in books.items():
         g = np.where(common, b["gross"], np.nan)
         td = np.where(common, b["turn_day"], np.nan)
         s = summarize(g, bench, name, td)
+        nets[name] = g - np.nan_to_num(td) * COST_BPS / 1e4
+        s["block42_sharpe"] = block_sharpe(nets[name])
         turn_yr = float(np.nansum(td)) / (len(g[np.isfinite(g)]) / TD_YEAR)
         be = breakeven_cost(g, td, spy_s["sharpe"])
         _row(s, be, turn_yr)
         s["breakeven_bps_vs_spy"] = be
         s["turnover_oneway_per_yr"] = round(turn_yr, 3)
-        s["phase"] = phase_dispersion(b)
+        s["phase"] = phase_dispersion(b, common)
+        s["vs_spy"] = sharpe_diff_test(nets[name], spy_net)
         rows[name] = s
     out["decomposition"] = rows
+    print(f"\n  same books on NON-OVERLAPPING 42-SESSION returns (H30's units), "
+          f"and equal-thirds Sharpe:")
+    print(f"{'book':<38}{'daily Sh':>10}{'42-td Sh':>10}{'halves':>16}"
+          f"{'thirds':>26}{'CAGR thirds %':>28}")
+    for k, s in rows.items():
+        if "sharpe" not in s:
+            continue
+        halves = "%.3f/%.3f" % (s["sharpe_h1"], s["sharpe_h2"])
+        print(f"{k:<38}{s['sharpe']:>10.3f}{s.get('block42_sharpe', float('nan')):>10.3f}"
+              f"{halves:>16}{str(s['sharpe_thirds']):>26}"
+              f"{str(s['cagr_thirds_pct']):>28}")
 
     print("\n  CONSTRUCTION COST, isolated (same holdings, only the weights differ):")
     diffs = []
@@ -776,6 +862,7 @@ def run(mode: str = "pit500", guard: bool = True, draws: int = RAND_DRAWS,
                                 rows[f"{tag} equal"]["sharpe"], 3)
         d["cagr_gap_pct"] = round(rows[f"{tag} cap"]["cagr_pct"] -
                                   rows[f"{tag} equal"]["cagr_pct"], 2)
+        d["sharpe_test"] = sharpe_diff_test(nets[f"{tag} cap"], nets[f"{tag} equal"])
         diffs.append(d)
         print(f"    {d['pair']:<44} Sharpe {d['sharpe_gap']:+.3f}   "
               f"CAGR {d['cagr_gap_pct']:+.2f}pp/yr   beta(diff) {d.get('beta')}   "
@@ -788,12 +875,24 @@ def run(mode: str = "pit500", guard: bool = True, draws: int = RAND_DRAWS,
                   "turn_day": np.zeros_like(ewb)}, "SPY", "RSP", bench)
     d["sharpe_gap"] = round(spy_s["sharpe"] - rsp_s["sharpe"], 3)
     d["cagr_gap_pct"] = round(spy_s["cagr_pct"] - rsp_s["cagr_pct"], 2)
+    d["sharpe_test"] = sharpe_diff_test(spy_net, rsp_net)
     diffs.append(d)
     print(f"    {'SPY - RSP  [EXTERNAL, tradeable, fee-inclusive]':<44} "
           f"Sharpe {d['sharpe_gap']:+.3f}   CAGR {d['cagr_gap_pct']:+.2f}pp/yr   "
           f"beta(diff) {d.get('beta')}   alpha {d.get('alpha_ann_pct')}%/yr  "
           f"t {d.get('alpha_t_nw')}   thirds {d['thirds_bps_d']}")
     out["construction_cost"] = diffs
+    print("\n  IS THE SHARPE GAP ITSELF SIGNIFICANT? (Memmel-corrected "
+          "Jobson-Korkie, and a block-42 bootstrap re-seeded 5x — Rule 16)")
+    print(f"{'pair':<46}{'dSharpe':>9}{'corr':>7}{'t Memmel':>10}"
+          f"{'t boot':>8}{'boot MC sd':>12}")
+    for d in diffs:
+        st = d.get("sharpe_test") or {}
+        if not st:
+            continue
+        print(f"{d['pair']:<46}{st['sharpe_diff_ann']:>9.3f}{st['corr']:>7.3f}"
+              f"{st['t_memmel']:>10.2f}{st['t_block_boot']:>8.2f}"
+              f"{st['t_boot_mc_sd']:>12.3f}")
 
     # ------------------------------------------------------ (b/c) schemes
     print(f"\n{'=' * 92}\n(b)(c) WEIGHTING SCHEMES on the SAME top-N momentum "
@@ -803,7 +902,7 @@ def run(mode: str = "pit500", guard: bool = True, draws: int = RAND_DRAWS,
     mom_books, sweep = {}, []
     print(f"{'book':<30}{'CAGR%':>8}{'vol%':>7}{'Sharpe':>8}{'beta':>7}"
           f"{'alpha%/yr':>11}{'t(NW)':>7}{'maxDD%':>8}{'turn/yr':>9}{'BE bps':>8}"
-          f"{'vs SPY':>9}")
+          f"{'vs SPY':>9}{'t(dSh)':>8}{'42td Sh':>9}{'thirds Sharpe':>26}")
     for n in sizes:
         for sc in schemes:
             b = book(p, "mom", sc, n)
@@ -816,17 +915,49 @@ def run(mode: str = "pit500", guard: bool = True, draws: int = RAND_DRAWS,
             s["breakeven_bps_vs_spy"] = be
             s["turnover_oneway_per_yr"] = round(turn_yr, 3)
             s["sharpe_minus_spy"] = round(s["sharpe"] - spy_s["sharpe"], 3)
-            s["phase"] = phase_dispersion(b)
+            s["phase"] = phase_dispersion(b, common)
             s["p_exponent"] = P_OF_SCHEME.get(sc)
+            s["size"], s["scheme"] = n, sc
+            netm = g - np.nan_to_num(td) * COST_BPS / 1e4
+            s["block42_sharpe"] = block_sharpe(netm)
+            s["vs_spy"] = sharpe_diff_test(netm, spy_net)
             mom_books[(n, sc)] = {"b": b, "s": s}
             sweep.append(s)
             print(f"{s['label']:<30}{s['cagr_pct']:>8.2f}{s['vol_pct']:>7.2f}"
                   f"{s['sharpe']:>8.3f}{s['beta']:>7.2f}{s['alpha_ann_pct']:>11.2f}"
                   f"{(s['alpha_t_nw'] if s['alpha_t_nw'] is not None else float('nan')):>7.2f}"
                   f"{s['maxdd_pct']:>8.1f}{turn_yr:>9.2f}"
-                  f"{(be if np.isfinite(be) else float('nan')):>8.1f}"
-                  f"{s['sharpe_minus_spy']:>+9.3f}")
+                  f"{be:>8.1f}"
+                  f"{s['sharpe_minus_spy']:>+9.3f}"
+                  f"{s['vs_spy'].get('t_block_boot', float('nan')):>8.2f}"
+                  f"{s['block42_sharpe']:>9.3f}"
+                  f"{str(s['sharpe_thirds']):>26}")
     out["scheme_sweep"] = sweep
+    # DEFLATED SHARPE at the repo's running trial count. The exploratory bar
+    # (RESEARCH-AGENDA "Correction to the significance bar") is t > 3 AND a
+    # deflated Sharpe at the true running N; the registry stands above 700 and
+    # this lab adds its own variants on top.
+    best = max(sweep, key=lambda s: s["sharpe"])
+    bd = mom_books[(best["size"], best["scheme"])]["b"]
+    bx = np.where(common, bd["gross"], np.nan) - \
+        np.nan_to_num(np.where(common, bd["turn_day"], np.nan)) * COST_BPS / 1e4
+    bx = bx[np.isfinite(bx)]
+    z = (bx - bx.mean()) / bx.std(ddof=1)
+    sk, ku = float((z ** 3).mean()), float((z ** 4).mean())
+    sr_d = float(bx.mean() / bx.std(ddof=1))
+    spy_d = float(spy_net[np.isfinite(spy_net)].mean() /
+                  spy_net[np.isfinite(spy_net)].std(ddof=1))
+    n_reg = 700 + variants
+    dsr0 = growth.deflated_sharpe(sr_d, n_reg, len(bx), sk, ku)
+    dsr_spy = growth.deflated_sharpe(sr_d, n_reg, len(bx), sk, ku,
+                                     sr_benchmark=spy_d)
+    out["deflated"] = {"best_book": best["label"], "n_trials": n_reg,
+                       "dsr_vs_zero": round(dsr0, 4),
+                       "dsr_vs_spy": round(dsr_spy, 4),
+                       "skew": round(sk, 3), "kurtosis": round(ku, 2)}
+    print(f"\n  DEFLATED SHARPE of the best book ({best['label']}) at the "
+          f"registry's running N = {n_reg}: DSR vs zero {dsr0:.4f}, "
+          f"DSR vs SPY's own Sharpe {dsr_spy:.4f}  (skew {sk:.2f}, kurt {ku:.1f})")
 
     # ---------------------------------------- CONTROL: random pick, same scheme
     print(f"\n  CONTROL — RANDOM PICK of the same size from the same gated pool, "

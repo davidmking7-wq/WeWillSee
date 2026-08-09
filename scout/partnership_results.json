@@ -13,7 +13,7 @@
   "guarded_prints": 251,
   "pool_mean": 219.76839339339338,
   "n_variants": 112,
-  "runtime_s": 21.8,
+  "runtime_s": 16.9,
   "n_trials_registry_before": 420
  },
  "variants": [
@@ -238,7 +238,8 @@
   "alpha": 0.0,
   "t_alpha": 0.0,
   "n": 2663,
-  "cost_yr_pct": 0.0
+  "cost_yr_pct": 0.0,
+  "degenerate_vs_market": true
  },
  "spy_halves": {
   "H1": {
@@ -249,9 +250,10 @@
    "maxdd": -33.79381911340269,
    "beta": 1.0000000000000004,
    "alpha": -8.948128505562867e-15,
-   "t_alpha": -2.076576242735514,
+   "t_alpha": NaN,
    "n": 1331,
-   "cost_yr_pct": 0.0
+   "cost_yr_pct": 0.0,
+   "degenerate_vs_market": true
   },
   "H2": {
    "cagr": 14.003910904223392,
@@ -261,9 +263,10 @@
    "maxdd": -24.496061940995894,
    "beta": 0.9999999999999986,
    "alpha": 1.9625196882584038e-14,
-   "t_alpha": 1.8694344364209006,
+   "t_alpha": NaN,
    "n": 1332,
-   "cost_yr_pct": 0.0
+   "cost_yr_pct": 0.0,
+   "degenerate_vs_market": true
   }
  },
  "spy_thirds": {
@@ -275,9 +278,10 @@
    "maxdd": -19.325047138954133,
    "beta": 0.9999999999999999,
    "alpha": -1.2359555881456257e-15,
-   "t_alpha": -0.9904804397420418,
+   "t_alpha": NaN,
    "n": 887,
    "cost_yr_pct": 0.0,
+   "degenerate_vs_market": true,
    "span": [
     1,
     887
@@ -291,9 +295,10 @@
    "maxdd": -33.793819113402726,
    "beta": 1.0000000000000004,
    "alpha": -8.54812716604258e-15,
-   "t_alpha": -1.5841121214594178,
+   "t_alpha": NaN,
    "n": 888,
    "cost_yr_pct": 0.0,
+   "degenerate_vs_market": true,
    "span": [
     888,
     1775
@@ -307,9 +312,10 @@
    "maxdd": -18.755704542060148,
    "beta": 1.0000000000000007,
    "alpha": -1.242200371105897e-14,
-   "t_alpha": -1.9323642115375366,
+   "t_alpha": NaN,
    "n": 888,
    "cost_yr_pct": 0.0,
+   "degenerate_vs_market": true,
    "span": [
     1776,
     2663
@@ -1495,15 +1501,15 @@
   }
  },
  "control_random_hedged": {
-  "n": 100,
-  "sharpe": -0.291503867452453,
-  "alpha": -1.5896132139371255,
-  "beta": -0.028118154424151002,
-  "cagr": -2.2575010614134476,
-  "sharpe_p05": -0.3487136598797188,
-  "sharpe_p50": -0.2912186631259903,
-  "sharpe_p95": -0.24181449716725756,
-  "mom_hedged_percentile": 86.0
+  "n": 60,
+  "sharpe": -0.2903810836305132,
+  "alpha": -1.5809915698154067,
+  "beta": -0.02822626272570606,
+  "cagr": -2.250906382700728,
+  "sharpe_p05": -0.34994127019821536,
+  "sharpe_p50": -0.28831314205503156,
+  "sharpe_p95": -0.24160765942721138,
+  "mom_hedged_percentile": 85.0
  },
  "combos": {
   "mom_hedged@k0.00": {
@@ -1515,9 +1521,10 @@
     "maxdd": -33.79381911340275,
     "beta": 1.0000000000000007,
     "alpha": -1.7857451019252968e-14,
-    "t_alpha": -3.8292872693281668,
+    "t_alpha": NaN,
     "n": 2285,
-    "cost_yr_pct": 0.0
+    "cost_yr_pct": 0.0,
+    "degenerate_vs_market": true
    },
    "eff": {
     "effective_bets": 1.014341098009921,
@@ -1725,9 +1732,10 @@
     "maxdd": -33.79381911340275,
     "beta": 1.0000000000000007,
     "alpha": -1.7857451019252968e-14,
-    "t_alpha": -3.8292872693281668,
+    "t_alpha": NaN,
     "n": 2285,
-    "cost_yr_pct": 0.0
+    "cost_yr_pct": 0.0,
+    "degenerate_vs_market": true
    },
    "eff": {
     "effective_bets": 1.0224579432003555,
@@ -1935,9 +1943,10 @@
     "maxdd": -42.858538686819806,
     "beta": 1.0000000000000013,
     "alpha": -2.559315974015026e-14,
-    "t_alpha": -2.38147653089986,
+    "t_alpha": NaN,
     "n": 2276,
-    "cost_yr_pct": 0.0
+    "cost_yr_pct": 0.0,
+    "degenerate_vs_market": true
    },
    "eff": {
     "effective_bets": 1.0092963372072916,
@@ -2145,9 +2154,10 @@
     "maxdd": -33.79381911340271,
     "beta": 1.0000000000000009,
     "alpha": -1.474747138744872e-14,
-    "t_alpha": -2.4709657925807775,
+    "t_alpha": NaN,
     "n": 2537,
-    "cost_yr_pct": 0.0
+    "cost_yr_pct": 0.0,
+    "degenerate_vs_market": true
    },
    "eff": {
     "effective_bets": 1.0009515123720443,
@@ -2355,9 +2365,10 @@
     "maxdd": -33.79381911340275,
     "beta": 1.0000000000000007,
     "alpha": -1.7857451019252968e-14,
-    "t_alpha": -3.8292872693281668,
+    "t_alpha": NaN,
     "n": 2285,
-    "cost_yr_pct": 0.0
+    "cost_yr_pct": 0.0,
+    "degenerate_vs_market": true
    },
    "eff": {
     "effective_bets": 1.000000128231902,
@@ -3103,7 +3114,8 @@
    "alpha": 0.0,
    "t_alpha": 0.0,
    "n": 2285,
-   "cost_yr_pct": 0.0
+   "cost_yr_pct": 0.0,
+   "degenerate_vs_market": true
   },
   "sharpe_test": {
    "diff": -0.07512057134297867,
@@ -3326,9 +3338,10 @@
     "maxdd": -33.79381911340271,
     "beta": 1.0000000000000018,
     "alpha": -3.0888700823372625e-14,
-    "t_alpha": -2.348706434140493,
+    "t_alpha": NaN,
     "n": 2135,
-    "cost_yr_pct": 0.0
+    "cost_yr_pct": 0.0,
+    "degenerate_vs_market": true
    },
    "base_scoped": {
     "cagr": 12.75876227921373,
@@ -3454,9 +3467,10 @@
     "maxdd": -33.793819113402726,
     "beta": 1.000000000000001,
     "alpha": -2.5990754079774226e-14,
-    "t_alpha": -2.69950981912698,
+    "t_alpha": NaN,
     "n": 1883,
-    "cost_yr_pct": 0.0
+    "cost_yr_pct": 0.0,
+    "degenerate_vs_market": true
    },
    "base_scoped": {
     "cagr": 14.911017630480238,
@@ -3582,9 +3596,10 @@
     "maxdd": -33.79381911340271,
     "beta": 1.0000000000000018,
     "alpha": -3.0888700823372625e-14,
-    "t_alpha": -2.348706434140493,
+    "t_alpha": NaN,
     "n": 2135,
-    "cost_yr_pct": 0.0
+    "cost_yr_pct": 0.0,
+    "degenerate_vs_market": true
    },
    "base_scoped": {
     "cagr": 12.75876227921373,
@@ -3710,9 +3725,10 @@
     "maxdd": -33.793819113402726,
     "beta": 1.000000000000001,
     "alpha": -2.5990754079774226e-14,
-    "t_alpha": -2.69950981912698,
+    "t_alpha": NaN,
     "n": 1883,
-    "cost_yr_pct": 0.0
+    "cost_yr_pct": 0.0,
+    "degenerate_vs_market": true
    },
    "base_scoped": {
     "cagr": 14.911017630480238,
@@ -3838,9 +3854,10 @@
     "maxdd": -33.79381911340273,
     "beta": 1.0000000000000009,
     "alpha": -2.4943196906970417e-14,
-    "t_alpha": -3.2373787502206874,
+    "t_alpha": NaN,
     "n": 1861,
-    "cost_yr_pct": 0.0
+    "cost_yr_pct": 0.0,
+    "degenerate_vs_market": true
    },
    "base_scoped": {
     "cagr": 14.618378742378123,
@@ -3966,9 +3983,10 @@
     "maxdd": -24.691995573589075,
     "beta": 1.0000000000000002,
     "alpha": -8.177969034852071e-15,
-    "t_alpha": -4.276113538318925,
+    "t_alpha": NaN,
     "n": 1609,
-    "cost_yr_pct": 0.0
+    "cost_yr_pct": 0.0,
+    "degenerate_vs_market": true
    },
    "base_scoped": {
     "cagr": 16.17118486516358,
@@ -4114,9 +4132,10 @@
      "maxdd": -44.25250253970279,
      "beta": 1.3782093842842962,
      "alpha": -1.8910469214214525,
-     "t_alpha": -1020131750867975.4,
+     "t_alpha": NaN,
      "n": 2663,
-     "cost_yr_pct": 0.0
+     "cost_yr_pct": 0.0,
+     "degenerate_vs_market": true
     }
    },
    "causal": {

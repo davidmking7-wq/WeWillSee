@@ -48,6 +48,22 @@ DATA DEFECTS GUARDED (all three named in BACKTEST-REPORT.md)
    start of the run; this is the single most dangerous defect here because a
    delisted target is exactly the case that manufactures it.
 
+WHAT IT MEASURED (2026-08-09, 448 deals, 2016-02-04..2026-08-03)
+-----------------------------------------------------------------
+The MECHANISM is real and large; the RETURN is not.
+
+  sleeve   6.68%/yr, vol 9.29%, Sharpe 0.718, beta 0.271, corr 0.511,
+           market-adjusted alpha +2.39%/yr at NW t 1.02, max DD -16.5%
+  SPY      15.82%/yr, vol 17.54%, Sharpe 0.901, max DD -33.8%
+  placebo  the SAME names 250 sessions EARLIER: beta 1.054, alpha -1.54%
+
+The announcement converts a beta-1.05 stock into a beta-0.27 asset, and the
+sleeve lost 8.3% while SPY lost 33.5% in the COVID crash. But alpha is +2.4%/yr
+at t = 1.02, it is zero at 38 bps/side of slippage, deflated Sharpe is 0.21 at
+N = 730, and adding the sleeve to a SPY book raises Sharpe by +0.049 gross,
++0.006 at 25 bps/side and +0.000 at 50. VERDICT: REJECTED as a tradeable edge;
+the low beta is the finding, and it is not free.
+
 Run:
     python -m scout.workout_lab --stage index     # SEC quarterly form indexes
     python -m scout.workout_lab --stage tickers   # ticker out of the filing text
@@ -420,7 +436,8 @@ def fetch_corpactions(symbols: list[str], verbose: bool = True) -> dict:
 # ------------------------------------------------------------- price guards
 
 def clean_series(px: pd.Series, splits: list[dict] | None,
-                 merger_date: pd.Timestamp | None) -> pd.Series:
+                 merger_date: pd.Timestamp | None, freeze_run: int = 6,
+                 gap_days: int = 15) -> pd.Series:
     """Apply the three documented guards. Returns a truncated, repaired close series."""
     s = px.dropna()
     if s.empty:
@@ -436,16 +453,27 @@ def clean_series(px: pd.Series, splits: list[dict] | None,
     v = s.values
     run, start = 1, 0
     cut = None
-    for i in range(1, len(v)):
+    for i in range(1, len(v)) if freeze_run else ():
         if v[i] == v[i - 1]:
             run += 1
-            if run >= 6:
+            if run >= freeze_run:
                 cut = start
                 break
         else:
             run, start = 1, i
     if cut is not None:
         s = s.iloc[:cut + 1]
+    if len(s) < 2:
+        return s
+
+    # (2b) reused ticker without a merger corporate action: when a ticker is
+    # retired and later re-issued to a different company there is a long hole in
+    # the tape first. Truncate at the first gap of >= `gap_days` calendar days.
+    if gap_days:
+        holes = s.index.to_series().diff().dt.days
+        big = np.where(holes.values > gap_days)[0]
+        if len(big):
+            s = s.iloc[:int(big[0])]
     if len(s) < 2:
         return s
 
@@ -487,9 +515,31 @@ def build_deals(verbose: bool = True) -> pd.DataFrame:
     return deals.reset_index()
 
 
-def load_prices(symbols: list[str], verbose: bool = True) -> dict:
+def load_px(symbols: list[str], verbose: bool = True) -> dict:
+    """Bars through the SHARED cache, then snapshot the slice this lab needs.
+
+    ~80 of the extracted tickers do not exist at the data vendor at all (dead
+    OTC names, foreign lines). `bars.get` re-requests anything it has never
+    seen, so those are asked for on every single run and eventually the whole
+    request returns nothing and raises. The master cache is still the source of
+    truth and is populated by the first call; this only avoids re-asking for
+    tickers the vendor has already refused."""
     from . import bars
-    px = bars.get(sorted(set(symbols)) + ["SPY", "IWM"], START, END, verbose=verbose)
+    if PX_PKL.exists():
+        px = pickle.load(open(PX_PKL, "rb"))
+        if set(symbols) <= set(px["_asked"]):
+            if verbose:
+                print(f"  prices: lab snapshot, {px['close'].shape}")
+            return px
+    want = sorted(set(symbols) | {"SPY"})
+    try:
+        px = bars.get(want, START, END, verbose=verbose)
+    except RuntimeError:
+        store = pd.read_pickle(bars.MASTER)
+        have = [s for s in want if s in store["close"].columns]
+        px = bars.get(have, START, END, verbose=verbose)
+    px["_asked"] = want
+    pickle.dump(px, open(PX_PKL, "wb"))
     return px
 
 
@@ -558,8 +608,28 @@ def sharpe(r: np.ndarray, ppy: int = 252) -> float:
 
 # --------------------------------------------------------------- deal universe
 
-SPAC_NAME = re.compile(r"\bacquisition (corp|co|company|holdings|inc)\b"
+SPAC_NAME = re.compile(r"\bacquisition (?:corp|co|company|holdings|inc)\b"
                        r"|\bcapital corp\b.*\bacquisition\b", re.I)
+
+
+def ticker_is_namelike(name: str, ticker: str | None) -> bool:
+    """Is `ticker` a letter-subsequence of the filer's own company name?
+
+    US tickers are overwhelmingly built from the issuer's name (AMNB <-
+    AMericaN Bankshares), so this is a cheap and OUTCOME-BLIND precision test
+    that removes the systematic failure of the text extractor: in a
+    stock-for-stock deal the ACQUIRER's symbol is quoted on the target's cover
+    page ("Parent common stock trades under FHN"), and the acquirer's symbol
+    is not a subsequence of the target's name. It costs real deals (a ticker
+    unrelated to the name) and that cost is reported."""
+    if not isinstance(ticker, str) or not ticker or not isinstance(name, str):
+        return False
+    letters = re.sub(r"[^A-Z]", "", name.upper())
+    i = 0
+    for ch in letters:
+        if i < len(ticker) and ch == ticker[i]:
+            i += 1
+    return i == len(ticker)
 
 
 def deal_universe(verbose: bool = True) -> pd.DataFrame:
@@ -587,6 +657,8 @@ def deal_universe(verbose: bool = True) -> pd.DataFrame:
                                             "issuer_hits", "spac_hits"]] = np.nan
     d["is_spac"] = (d["name"].str.contains(SPAC_NAME, na=False) |
                     (d["spac_hits"].fillna(0) > 50))
+    d["namelike"] = [ticker_is_namelike(n, t)
+                     for n, t in zip(d["name"], d["ticker"])]
     if verbose:
         print(f"  deal universe: {len(d):,} deal-clusters, "
               f"{d.ticker.notna().sum():,} with a ticker, "
@@ -598,7 +670,9 @@ def deal_universe(verbose: bool = True) -> pd.DataFrame:
 
 def build_book(deals: pd.DataFrame, close: pd.DataFrame, vol: pd.DataFrame,
                ca: dict, entry_offset: int = 1, max_hold: int = 252,
-               min_dv: float = 1e6, min_px: float = 1.0,
+               min_dv: float = 1e6, min_px: float = 1.0, freeze_run: int = 6,
+               use_ca_rate: bool = False, gap_days: int = 15,
+               premium_band: tuple | None = (0.85, 3.0),
                verbose: bool = True) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Per-deal outcomes and the daily equal-weight sleeve.
 
@@ -615,7 +689,8 @@ def build_book(deals: pd.DataFrame, close: pd.DataFrame, vol: pd.DataFrame,
             continue
         mg = ca.get("mergers", {}).get(sym)
         mdate = pd.Timestamp(mg["date"]).tz_localize(dates.tz) if mg else None
-        s = clean_series(close[sym], ca.get("splits", {}).get(sym), mdate)
+        s = clean_series(close[sym], ca.get("splits", {}).get(sym), mdate,
+                         freeze_run=freeze_run, gap_days=gap_days)
         if len(s) < 30:
             per_deal.append({**r, "drop": "short_series"})
             continue
@@ -630,6 +705,26 @@ def build_book(deals: pd.DataFrame, close: pd.DataFrame, vol: pd.DataFrame,
             per_deal.append({**r, "drop": "illiquid", "dv20": float(dv),
                              "px_t0": px0})
             continue
+        # price-level sanity. An adjusted close of 635,895 (Telaria/RUBI) or
+        # 6,710 (FFIE) is a reused ticker whose NEW owner later reverse-split,
+        # rescaling the old company's whole history. No US common trades there.
+        if not (0.5 <= px0 <= 2000):
+            per_deal.append({**r, "drop": "price_level", "px_t0": px0})
+            continue
+        pre60 = pre.iloc[-60:]
+        if float(pre60.max() / max(pre60.min(), 1e-9)) > 6:
+            per_deal.append({**r, "drop": "prewindow_range", "px_t0": px0})
+            continue
+        # the workout definition itself: a stated terminal price that is a sane
+        # multiple of the market price ON THE FILING DATE. Both numbers are
+        # known at t0. It also throws out extraction garbage, where an exchange
+        # RATIO of 1.0 was read as a $1.00 cash price.
+        prem = (float(r["deal_px"]) / px0) if pd.notna(r.get("deal_px")) else np.nan
+        if premium_band is not None and pd.notna(r.get("deal_px")):
+            if not (premium_band[0] <= prem <= premium_band[1]):
+                per_deal.append({**r, "drop": "premium_band", "px_t0": px0,
+                                 "prem_ratio": prem})
+                continue
         post = s[s.index > t0]
         if len(post) < entry_offset + 2:
             per_deal.append({**r, "drop": "no_post_bars"})
@@ -639,8 +734,22 @@ def build_book(deals: pd.DataFrame, close: pd.DataFrame, vol: pd.DataFrame,
         hold = post.iloc[ei:ei + max_hold + 1]
         exit_date, exit_px = hold.index[-1], float(hold.iloc[-1])
         n_td = len(hold) - 1
+        if use_ca_rate and mg and mg.get("rate") and n_td < max_hold:
+            # variant only: settle a completed CASH merger at the cash actually
+            # paid rather than the last tape print. Deliberately NOT the
+            # headline: `rate` exists only for deals that closed, so preferring
+            # it improves exactly the completed subset.
+            try:
+                exit_px = float(mg["rate"])
+            except (TypeError, ValueError):
+                pass
         if n_td < 2:
             per_deal.append({**r, "drop": "no_holding_period"})
+            continue
+        # a 10x range inside a one-year merger window is a split/spin-off/reuse
+        # artifact, not a deal outcome: the worst real break loses ~80%.
+        if float(hold.max() / max(hold.min(), 1e-9)) > 10:
+            per_deal.append({**r, "drop": "window_range"})
             continue
         ret = exit_px / entry_px - 1.0
         # descriptive only, never used for selection: did the tape end?
@@ -655,8 +764,7 @@ def build_book(deals: pd.DataFrame, close: pd.DataFrame, vol: pd.DataFrame,
                          "ann": (1 + ret) ** (252 / max(n_td, 1)) - 1,
                          "dv20": float(dv), "px_t0": px0,
                          "completed": completed, "censored": censored,
-                         "merger_ca": bool(mg),
-                         "premium": (r["deal_px"] / px0 - 1) if pd.notna(r.get("deal_px")) else np.nan})
+                         "merger_ca": bool(mg), "premium": prem - 1.0})
         series[f"{sym}|{r['cik']}|{r['t0'].date()}"] = hold.pct_change().iloc[1:]
 
     pd_df = pd.DataFrame(per_deal)
@@ -674,7 +782,7 @@ def sleeve_returns(book: pd.DataFrame) -> pd.Series:
 
 # ------------------------------------------------------------------ experiment
 
-def describe(r: pd.Series, bench: pd.Series, label: str, lag: int = 5) -> dict:
+def describe(r: pd.Series, bench: pd.Series, label: str, lag: int = 10) -> dict:
     r = r.reindex(bench.index).fillna(0.0)
     ab = ols_alpha_beta(r.values, bench.values, lag=lag)
     mu, se, t = nw_t(r.values, lag)
@@ -759,26 +867,104 @@ def stage_tickers_fallback(idx: pd.DataFrame, verbose: bool = True) -> dict:
     return cache
 
 
+def stage_tickers_tender(idx: pd.DataFrame, verbose: bool = True) -> dict:
+    """Third pass, aimed squarely at tender offers.
+
+    An SC 14D9 cover page never states a trading symbol, so a target whose only
+    merger document is a 14D9 has no ticker and would drop out — and tender
+    offers are the FAST, high-completion end of the deal distribution, so
+    losing them is a real distortion. The bidder's SC TO-T ('Offer to
+    Purchase') does state it, and EDGAR indexes the TO-T under the SUBJECT
+    company's CIK, so it is reachable in one search per target."""
+    cache = pickle.load(open(TICK_PKL, "rb"))
+    need = sorted({int(c) for c, v in cache.items() if not v.get("ticker")})
+    if verbose:
+        print(f"  tender fallback: {len(need):,} CIKs still without a ticker")
+    names = idx.sort_values("date").groupby("cik")["name"].first().to_dict()
+
+    def work(cik):
+        try:
+            u = ("https://efts.sec.gov/LATEST/search-index?q=%22Offer+to+Purchase%22"
+                 f"&forms=SC+TO-T&ciks={cik:010d}")
+            r = requests.get(u, headers=UA, timeout=60)
+            hits = r.json()["hits"]["hits"] if r.status_code == 200 else []
+            if not hits:
+                return cik, None
+            h = sorted(hits, key=lambda x: x["_source"]["file_date"])[0]
+            acc, doc = h["_id"].split(":", 1)
+            url = (f"https://www.sec.gov/Archives/edgar/data/{cik}/"
+                   f"{acc.replace('-', '')}/{doc}")
+            return cik, _extract_features(_head_text(url), names.get(cik, ""))
+        except Exception:
+            return cik, None
+
+    fixed = 0
+    with cf.ThreadPoolExecutor(max_workers=6) as ex:
+        for cik, res in ex.map(work, need):
+            if res and res.get("ticker"):
+                old = cache[cik]
+                res["target_hits"] = max(res.get("target_hits", 0) or 0,
+                                         old.get("target_hits", 0) or 0)
+                cache[cik] = res
+                fixed += 1
+    pickle.dump(cache, open(TICK_PKL, "wb"))
+    if verbose:
+        print(f"  tender fallback: recovered {fixed:,}")
+    return cache
+
+
 def run_experiment(min_dv: float = 1e6, max_hold: int = 252,
-                   entry_offset: int = 1, verbose: bool = True) -> dict:
+                   entry_offset: int = 1, require_cash: bool = True,
+                   require_8k: bool = True, ann_lag: tuple = (0, 120),
+                   premium_band: tuple = (0.8, 2.5),
+                   verbose: bool = True) -> dict:
     from . import bars, growth
 
     deals = deal_universe(verbose=verbose)
-    sel = deals[deals["ticker"].notna() & (~deals["is_spac"])].copy()
-    # the ONLY content filter: the filing must say the filer's own shares are
-    # being converted into merger consideration (i.e. the filer is the target).
-    sel = sel[(sel["target_hits"].fillna(0) >= 1) | sel["target_hits"].isna()]
-    syms = sorted(sel["ticker"].unique())
+    d = deals[deals["ticker"].notna() & (~deals["is_spac"])].copy()
+    steps = [("start", len(d))]
+    # Every filter below is a property of the FILING or of pre-t0 prices.
+    # None of them can see whether the deal closed.
+    d = d[(d["target_hits"].fillna(0) >= 1) | d["target_hits"].isna()]
+    steps.append(("filer's own shares convert (target, not acquirer)", len(d)))
+    d = d[(d["issuer_hits"].fillna(0) == 0)]
+    steps.append(("not a share-ISSUANCE proxy (drops acquirer-side)", len(d)))
+    d = d[d["namelike"]]
+    steps.append(("ticker is a subsequence of the filer's name", len(d)))
+    if require_cash:
+        d = d[d["deal_px"].notna()]
+        steps.append(("a fixed per-share cash price in the text", len(d)))
+    if require_8k:
+        ann = stage_announce(sorted(d["cik"].unique().tolist()), verbose=False)
+        a0, lag = [], []
+        for _, r in d.iterrows():
+            hits = (ann.get(int(r["cik"])) or {}).get("hits") or []
+            ds = sorted(pd.Timestamp(h["date"]) for h in hits)
+            ds = [x for x in ds if x <= r["t0"]]
+            a0.append(ds[-1] if ds else pd.NaT)
+        d = d.assign(ann_date=a0)
+        d["lag_days"] = (d["t0"] - d["ann_date"]).dt.days
+        d = d[d["lag_days"].between(*ann_lag)]
+        steps.append((f"a merger 8-K {ann_lag[0]}-{ann_lag[1]}d before the proxy", len(d)))
+    sel = d.copy()
     if verbose:
-        print(f"  candidate deals {len(sel):,}, symbols {len(syms):,}")
+        print("  selection funnel (all filters known at t0):")
+        for k, v in steps:
+            print(f"    {v:6,d}  {k}")
+    syms = sorted(sel["ticker"].unique())
 
-    px = bars.get(syms + ["SPY"], START, END, verbose=verbose)
+    px = load_px(syms, verbose=verbose)
     close, vol = px["close"], px["volume"]
     ca = fetch_corpactions([s for s in syms if s in close.columns], verbose=verbose)
 
     pdl, book = build_book(sel, close, vol, ca, entry_offset=entry_offset,
-                           max_hold=max_hold, min_dv=min_dv, verbose=verbose)
+                           max_hold=max_hold, min_dv=min_dv,
+                           premium_band=premium_band, verbose=verbose)
     live = pdl[pdl["drop"].isna()].copy()
+    for c in ("completed", "censored", "merger_ca"):
+        live[c] = live[c].astype(bool)
+    for c in ("ret", "ann", "n_td", "dv20", "px_t0", "entry_px", "exit_px"):
+        live[c] = pd.to_numeric(live[c], errors="coerce")
     spy = close["SPY"].pct_change().reindex(close.index).fillna(0.0)
     sleeve = sleeve_returns(book)
     return {"deals": deals, "sel": sel, "per_deal": pdl, "live": live,
@@ -855,6 +1041,24 @@ def placebo_control(live: pd.DataFrame, close: pd.DataFrame,
     return book_from_windows(windows, close)
 
 
+def announcement_dates(sel: pd.DataFrame, verbose: bool = True) -> pd.DataFrame:
+    """Secondary anchor: the target's own merger 8-K.
+
+    THIS SPEC HAS A HOLE AND IT IS STATED RATHER THAN HIDDEN. A deal that dies
+    between announcement and the first proxy never generates a proxy, so it is
+    absent from the sample while its (usually bad) return would have been
+    inside an announcement-anchored book. The proxy-anchored spec has no such
+    hole, which is why it is the primary."""
+    s = sel.copy()
+    s["t0_filing"] = s["t0"]
+    s["t0"] = s["ann_date"]
+    keep = s[s["t0"].notna()].copy()
+    if verbose:
+        print(f"  announcement anchor: {len(keep):,}/{len(s):,} deals; median lag "
+              f"announcement -> proxy {keep['lag_days'].median():.0f} days")
+    return keep
+
+
 def fmt(d: dict) -> str:
     return (f"{d['label'][:44]:<44} ret {d['ann_ret_pct']:7.2f}%  vol {d['ann_vol_pct']:6.2f}%"
             f"  SR {d['sharpe']:6.3f}  beta {d['beta_spy']:6.3f}  rho {d['corr_spy']:6.3f}"
@@ -884,6 +1088,12 @@ def report(res: dict, n_trials: int, verbose: bool = True) -> dict:
     P(f"  FINAL SAMPLE                 {len(live):,} deals, "
       f"{live.entry_date.min().date()} .. {live.entry_date.max().date()}")
     P(f"  forms: {live.form.value_counts().to_dict()}")
+    known_breaks = ["RAD", "TRCO", "TGNA", "FHN", "ACI", "ROG", "NXPI", "SPWH",
+                    "PACB", "BATL", "USM", "CBRL"]
+    got = [t for t in known_breaks if t in set(live["ticker"])]
+    P(f"  SURVIVORSHIP PROOF — famous BROKEN/BLOCKED deals present in the sample: "
+      f"{got}")
+    out["broken_deals_present"] = got
     P(f"  completed {int(live.completed.sum()):,} | not completed within the cap "
       f"{int((~live.completed).sum()):,} | still open at data end {int(live.censored.sum()):,}")
     out["sample"] = {"filings": int(len(idx_all)), "clusters": int(len(d)),
@@ -1011,12 +1221,17 @@ def report(res: dict, n_trials: int, verbose: bool = True) -> dict:
         rows.append({"bps": bps, **row})
         P("  " + fmt(row))
     xs = np.array([r["bps"] for r in rows], float)
-    ys = np.array([r["ann_ret_pct"] for r in rows], float)
-    be_ret = float(np.interp(0.0, -ys[::-1], xs[::-1])) if ys[0] > 0 > ys[-1] else (
-        float("inf") if ys[-1] > 0 else 0.0)
-    ya = np.array([r["alpha_ann_pct"] for r in rows], float)
-    be_alpha = float(np.interp(0.0, -ya[::-1], xs[::-1])) if ya[0] > 0 > ya[-1] else (
-        float("inf") if ya[-1] > 0 else 0.0)
+
+    def breakeven(ys: np.ndarray) -> float:
+        # ys decreases in bps, so -ys increases and is a valid np.interp xp
+        if ys[0] <= 0:
+            return 0.0
+        if ys[-1] > 0:
+            return float("inf")
+        return float(np.interp(0.0, -ys, xs))
+
+    be_ret = breakeven(np.array([r["ann_ret_pct"] for r in rows], float))
+    be_alpha = breakeven(np.array([r["alpha_ann_pct"] for r in rows], float))
     P(f"  BREAK-EVEN cost: total return zero at {be_ret:.0f} bps/side; "
       f"market-adjusted alpha zero at {be_alpha:.0f} bps/side")
     out["costs"] = rows
@@ -1082,7 +1297,110 @@ def report(res: dict, n_trials: int, verbose: bool = True) -> dict:
     out["capacity"] = {"median_dv_musd": float(dv.median() / 1e6),
                        "p10_dv_musd": float(dv.quantile(.10) / 1e6),
                        "book_capacity_musd": float(nlive.mean() * 0.05 * dv.median() / 1e6)}
+
+    # ------------------------------- does it help a portfolio that owns SPY?
+    P("\n" + "=" * 118)
+    P("THE ONLY QUESTION THAT MATTERS HERE — does a low-beta sleeve improve a book that already owns SPY?")
+    P("=" * 118)
+    ss, sy = describe(sleeve, spy, "x")["sharpe"], out["spy"]["sharpe"]
+    rho = base["corr_spy"]
+    corr = [[1.0, rho], [rho, 1.0]]
+    best = growth.best_long_only_sharpe([sy, ss], corr)
+    P(f"  SPY Sharpe {sy:.3f} | sleeve Sharpe {ss:.3f} | correlation {rho:.3f}")
+    P(f"  best long-only risk-weighted combination: {best:.3f}  "
+      f"(gain over SPY alone {best - sy:+.3f})")
+    for bps in (10, 25, 50):
+        sn = describe(sleeve - cost_drag(book, bps), spy, "x")["sharpe"]
+        b2 = growth.best_long_only_sharpe([sy, sn], corr)
+        P(f"  net of {bps:3d} bps/side: sleeve {sn:.3f} -> combination {b2:.3f} "
+          f"({b2 - sy:+.3f} vs SPY)")
+        out[f"combo_{bps}bps"] = float(b2)
+    out["combo_gross"] = float(best)
+    out["combo_gain_gross"] = float(best - sy)
     return out
+
+
+def variants(res: dict, verbose: bool = True) -> list[dict]:
+    """Every specification actually run, reported whether it helps or not."""
+    close, vol, ca, spy, sel = (res["close"], res["vol"], res["ca"],
+                                res["spy"], res["sel"])
+    rows = []
+
+    def run(label, **kw):
+        selx = kw.pop("sel", sel)
+        if len(selx) == 0:
+            if verbose:
+                print(f"  {label[:44]:<44} EMPTY — no deals meet this spec")
+            return None
+        pdl, bk = build_book(selx, close, vol, ca, verbose=False, **kw)
+        l = pdl[pdl["drop"].isna()].copy()
+        if len(l):
+            l["ret"] = pd.to_numeric(l["ret"], errors="coerce")
+        s = sleeve_returns(bk)
+        d = describe(s, spy, label)
+        d["n_deals"] = int(len(l))
+        d["mean_deal_pct"] = 100 * float(l["ret"].mean()) if len(l) else np.nan
+        d["break_rate_pct"] = 100 * float((l["ret"] < -0.10).mean()) if len(l) else np.nan
+        d["deal_skew"] = float(l["ret"].skew()) if len(l) else np.nan
+        rows.append(d)
+        if verbose:
+            print("  " + fmt(d) + f"  n={d['n_deals']:4d} deal {d['mean_deal_pct']:+6.2f}%"
+                  f" brk {d['break_rate_pct']:4.1f}% skew {d['deal_skew']:+5.2f}")
+        return d
+
+    if verbose:
+        print("\n" + "=" * 118)
+        print("EVERY VARIANT RUN")
+        print("=" * 118)
+    run("V1  PRIMARY  proxy anchor, +1, 252td, $1M, freeze6")
+    run("V2  liquidity $10M (retail-tradeable)", min_dv=1e7)
+    run("V3  liquidity $50M", min_dv=5e7)
+    run("V4  no liquidity screen", min_dv=0.0, min_px=0.0)
+    run("V5  max hold 63 td", max_hold=63)
+    run("V6  max hold 126 td", max_hold=126)
+    run("V7  max hold 504 td", max_hold=504)
+    run("V8  freeze guard 10 (looser)", freeze_run=10)
+    run("V9  NO freeze guard", freeze_run=0)
+    run("V10 cash settled at the CA rate", use_ca_rate=True)
+    run("V11 SC 14D9 tender offers only", sel=sel[sel.form == "SC 14D9"])
+    run("V12 proxy forms only (no tenders)", sel=sel[sel.form != "SC 14D9"])
+    px_ok = sel["deal_px"].notna()
+    run("V13 a per-share cash price in the text", sel=sel[px_ok])
+    run("V14 no cash price found in the text", sel=sel[~px_ok])
+    run("V15 2016-2020 entries only",
+        sel=sel[sel.t0 < "2021-01-01"])
+    run("V16 2021-2026 entries only",
+        sel=sel[sel.t0 >= "2021-01-01"])
+    run("V17 no premium-band guard", premium_band=None)
+    run("V18 tight premium band 1.00-1.15", premium_band=(1.0, 1.15))
+    run("V19 wide spreads only, 1.15-2.5", premium_band=(1.15, 2.5))
+    run("V20 NO reused-ticker gap guard", gap_days=0)
+    if "ann_date" in sel.columns:
+        s2 = sel.copy()
+        s2["t0"] = s2["ann_date"]
+        run("V21 ANNOUNCEMENT (8-K) anchor, not the proxy", sel=s2)
+    return rows
+
+
+def spec_variants(n_start: int = 21, verbose: bool = True) -> list[dict]:
+    """Variants that change the SAMPLE, so the whole pipeline is re-run."""
+    rows = []
+    specs = [("S1 no cash-price requirement", dict(require_cash=False)),
+             ("S2 no 8-K requirement", dict(require_8k=False)),
+             ("S3 8-K lag window 0-365d", dict(ann_lag=(0, 365))),
+             ("S4 8-K lag window 0-60d", dict(ann_lag=(0, 60))),
+             ("S5 liquidity $10M", dict(min_dv=1e7))]
+    for i, (label, kw) in enumerate(specs):
+        r = run_experiment(verbose=False, **kw)
+        s = r["sleeve"]
+        l = r["live"]
+        d = describe(s, r["spy"], f"{label}")
+        d["n_deals"] = int(len(l))
+        d["mean_deal_pct"] = 100 * float(l["ret"].mean())
+        rows.append(d)
+        if verbose:
+            print("  " + fmt(d) + f"  n={d['n_deals']:4d} deal {d['mean_deal_pct']:+6.2f}%")
+    return rows
 
 
 def main():
@@ -1098,11 +1416,33 @@ def main():
         stage_tickers(stage_index(verbose=False))
     if args.stage in ("fallback", "all"):
         stage_tickers_fallback(stage_index(verbose=False))
+    if args.stage in ("tender", "all"):
+        stage_tickers_tender(stage_index(verbose=False))
     if args.stage in ("measure", "all"):
         res = run_experiment(min_dv=args.min_dv, max_hold=args.max_hold)
         out = report(res, n_trials=args.n_trials)
+        out["variants"] = variants(res)
+        print("\n" + "=" * 118)
+        print("SPEC VARIANTS (whole pipeline re-run)")
+        print("=" * 118)
+        out["spec_variants"] = spec_variants()
         RESULTS.write_text(json.dumps(out, indent=1, default=str))
         print(f"\nwrote {RESULTS}")
+    if args.stage == "announce":
+        res = run_experiment(min_dv=args.min_dv, max_hold=args.max_hold)
+        sel2 = announcement_dates(res["sel"])
+        pdl, bk = build_book(sel2, res["close"], res["vol"], res["ca"])
+        s = sleeve_returns(bk)
+        l = pdl[pdl["drop"].isna()]
+        print("\nANNOUNCEMENT (8-K) ANCHOR — secondary spec, hole stated in the docstring")
+        print("  " + fmt(describe(s, res["spy"], "workout sleeve, 8-K anchor")))
+        print(f"  n={len(l)} deals, mean/deal {100*l['ret'].mean():+.2f}%, "
+              f"median hold {l['n_td'].median():.0f} td, "
+              f"break rate {100*(l['ret'] < -0.10).mean():.1f}%")
+        for row in split_stats(s, res["spy"], 2, "half "):
+            print("  " + fmt(row))
+        for row in split_stats(s, res["spy"], 3, "third "):
+            print("  " + fmt(row))
 
 
 if __name__ == "__main__":

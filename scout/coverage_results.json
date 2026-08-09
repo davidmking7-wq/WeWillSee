@@ -2409,6 +2409,14 @@
   }
  },
  "primary": "RESID 3-bucket ew",
+ "construction_vs_selection": {
+  "ew_pool_bps": 260.6,
+  "dv_pool_bps": 352.4,
+  "spy_bps": 247.3,
+  "weighting_bps": 91.8,
+  "selection_bps": 25.5,
+  "ratio": 3.6
+ },
  "controls": {
   "random_bucket": {
    "draws": 200,
@@ -2431,7 +2439,24 @@
    "lo_bps": 68.1,
    "hi_bps": 80.4
   },
-  "live_on_stale_subset_bps": 50.9
+  "live_on_stale_subset_bps": 50.9,
+  "persistent_shuffle_spread": {
+   "draws": 200,
+   "mean_bps": -2.3,
+   "sd_bps": 47.6,
+   "lo_bps": -86.8,
+   "hi_bps": 98.9
+  },
+  "persistent_shuffle_low_vs_spy": {
+   "draws": 200,
+   "mean_bps": 10.4,
+   "sd_bps": 29.0,
+   "lo_bps": -41.5,
+   "hi_bps": 62.7
+  },
+  "z_spread_vs_persistent_null": 0.58,
+  "z_low_leg_vs_persistent_null": 0.94,
+  "min_detectable_bps_at_2sd": 95.2
  },
  "within_size": {
   "small ADV": {
@@ -4072,6 +4097,18 @@
     283.7
    ]
   },
+  "null_persistent_longonly": {
+   "draws": 200,
+   "mean_bps": -31.6,
+   "sd_bps": 61.5,
+   "lo_bps": -155.4,
+   "hi_bps": 92.3
+  },
+  "z_against_persistent_null": {
+   "interaction": 2.08,
+   "interaction_sector_neutral": 1.08,
+   "long_only": 3.11
+  },
   "sharpe_ann": 0.601,
   "deflated_sharpe": 0.09
  },
@@ -5234,9 +5271,12 @@
   "RESID 3-bucket dv",
   "RESID 5-bucket ew",
   "RESID 5-bucket dv",
+  "construction vs selection: EW pool vs DV-weighted pool vs SPY",
   "control: random bucket assignment",
   "control: signal shuffled across symbols",
   "control: >=1yr stale coverage snapshot (H15's date shuffle)",
+  "control: PERSISTENT symbol shuffle of the level sort",
+  "control: PERSISTENT symbol shuffle, LOW leg vs SPY",
   "RESID terciles within small ADV",
   "RESID terciles within mid ADV",
   "RESID terciles within large ADV",
@@ -5263,6 +5303,7 @@
   "interaction, Rule 9 entry-phase decomposition",
   "interaction, leave-one-symbol-out jackknife",
   "long-only: winners inside the LOW-coverage tercile vs SPY",
+  "control: long-only form under a PERSISTENT symbol shuffle",
   "Rule 9 entry-phase decomposition",
   "RESID terciles EW, MONTHLY formation",
   "RESID terciles EW, ALL headlines (no templated filter)",
@@ -5271,6 +5312,6 @@
   "RESID terciles EW, >=12 stories/yr floor (G4)",
   "RESID terciles EW, GUARDS G2/G3 OFF (defect audit)"
  ],
- "n_variants": 47,
- "runtime_min": 1.7
+ "n_variants": 51,
+ "runtime_min": 2.4
 }
