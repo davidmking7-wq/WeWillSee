@@ -151,3 +151,64 @@ cannot be harvested early. Bigger is available only in increments — a
 disciplined year of the ranked program above might add 2–6 points a year
 on top of the current engine, each increment fought for with the method
 in section 1. Anyone offering more than that is selling something.
+
+## Correction to the significance bar (2026-08-09, at the user's challenge)
+
+Section 1 rule 3 of this document says **"t > 3 (not 2) for anything standalone
+(Harvey-Liu)"**. That rule has been applied bluntly across Round 3 — including
+to results it was never meant for — and the user was right to push back on it.
+This section corrects it.
+
+**What the rule is actually for.** Harvey-Liu's argument is about MULTIPLE
+TESTING. The finance literature has tested thousands of factors, so a t of 2
+inside that search space is close to meaningless: at a 5% false-positive rate,
+800 tests throw off roughly 40 spurious "discoveries" by chance alone. Round 3
+ran ~800 variants. In that context t = 2 genuinely is noise.
+
+**What it is not for.** The multiple-testing penalty applies to the SEARCH that
+produced a number, not to every number. A hypothesis with a strong external
+prior, registered before anyone looked, is a CONFIRMATORY test and does not
+inherit the search cost of the exploratory sweep running alongside it.
+
+### The corrected rule
+
+**The bar scales with how much search produced the number.**
+
+| regime | what it looks like | bar |
+|---|---|---|
+| **Confirmatory** | strong external evidence base, pre-registered, one or a few specifications | t ~ 2 with consistent halves, consistent entry phases, and Rule 13 satisfied is meaningful evidence |
+| **Exploratory** | found by sweeping, or the Nth variant of a family | t > 3 AND a deflated Sharpe computed at the true running N |
+
+Report, for every claim: the t-statistic, the number of variants YOU ran, and
+which regime the claim is in. Do not reject a confirmatory result solely for
+failing t > 3, and do not accept an exploratory one solely for passing t = 2.
+
+### Worked example, and why this matters here
+
+**Cross-sectional momentum** (Jegadeesh-Titman 1993; replicated across 40+
+countries and 200+ years; and independently in this repo's own v3/v4
+train/holdout protocol) measured **+132.8 bps per 42 sessions gated, t = 2.04,
+positive in both halves**, market-adjusted, in H25. Under a blanket t > 3 that
+is "rejected". Under the corrected rule it is a confirmatory test clearing its
+bar, and it is the strongest live result in this repo.
+
+**Headline news tone**, the 800th variant of a within-sample sweep, at t = 2
+would be noise. Same number, different evidentiary weight, because a different
+amount of searching produced it.
+
+The blanket rule caused momentum to be under-reported for a full round while
+fourteen exploratory hypotheses were being correctly rejected. That is the cost
+of a bar that does not distinguish between the two.
+
+### What does NOT change
+
+Rules 13-17 all stand and none of them are significance thresholds — they are
+about whether the number means what it appears to mean:
+risk-adjust before believing a sort (13); quote the permutation SE against the
+Newey-West SE (14); controls can leak too (15); a bootstrap t inside its own
+Monte-Carlo noise has not cleared anything (16); give every arm of a comparison
+the same machinery (17). A confirmatory result still has to survive all five,
+plus the equal-thirds era check that killed H22 and the entry-phase pooling of
+Rule 9.
+
+Momentum at t = 2.04 is promoted to "the live candidate", not to "shipped".
