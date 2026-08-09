@@ -92,22 +92,38 @@ need t > 3 and a deflated Sharpe at the running N (>700).**
 Rule 13 caught its own author's next mistake one level down — H29 adjusted the
 levels and forgot that a *difference* of two beta-laden sorts is beta-laden.
 
-## In flight when this was written
+## Round 5 results (complete)
 
-Round 5, four hypotheses, results not yet in:
+- **H32 workouts — REJECTED, but the first non-beta source found here.**
+  448 announced deals. Sleeve 6.68%/yr, Sharpe 0.718, **beta 0.271** (t~7
+  against 1.0), maxDD -16.5% vs SPY's -33.8%; COVID crash -8.28% vs -33.48%.
+  The placebo settles causation — same tickers 250 sessions earlier have beta
+  1.054. All three equal thirds positive; 7 of 7 entry offsets positive.
+  **Rejected because:** alpha t = 1.02, correlation to SPY is 0.511 (not ~0),
+  and break-even on ALPHA is 38 bps/side — added to SPY it is +0.049 Sharpe
+  gross, +0.006 at 25 bps, +0.000 at 50 bps. Buffett claimed 10-20%/yr largely
+  uncorrelated; measured 6.7%/yr at rho 0.51 — sixty years of competition.
+  **UNVERIFIED: all three verifiers died on the spend limit.**
+- **H33 coverage — REJECTED** (51 variants). Not priced: +25.5 bps, t 0.53,
+  thirds [-65.3, +166.7, -25.1]. The Hong-Lim-Stein interaction died four ways.
+  **But it reproduced the structural finding independently: weighting the same
+  102 names is worth +91.8 bps/window against a best selection spread of
+  +25.5 — construction beats selection 3.6 : 1.**
+- **H34 partnership — REJECTED** (112 variants). At rho 0.511 the combination
+  cannot reach a landslide.
+- **H31 construction — NEVER RAN** (spend limit). See below.
 
-- **H31** `construction_lab.py` — does cap-weighting recover the -0.216?
-- **H32** `workout_lab.py` — Buffett's Workouts: merger arb as a portfolio of
-  independent binary events, the one structure never tried here.
-- **H33** `coverage_lab.py` — Lynch's neglect edge: coverage LEVEL as a priced
-  characteristic (H15 killed the *change*, which is this hypothesis's premise).
-- **H34** `partnership_lab.py` — core + uncorrelated sleeve, levered by
-  drawdown-constrained Kelly. If H32 fails, this reports what Sharpe an
-  uncorrelated sleeve would have needed — quantifying what we do not have.
+## THE NEXT ACTION, and it is the only one that matters
 
-All lab modules are committed. Results land in the workflow journals, which are
-NOT in the repo; if the session was lost, re-run the modules directly —
-`scout/bars.py` means they start in seconds now.
+**Run `python -m scout.construction_lab`.** It is committed and ready.
+
+It asks whether cap-weighting recovers the -0.216 Sharpe construction handicap.
+That question is now supported by TWO independent measurements — Round 4's
+-0.216 (construction) against +0.030 (selection), and H33's 3.6 : 1 on a panel
+Round 4 never touched. It is the largest measured effect in the project, it
+requires no signal, and it has never been tested.
+
+Everything else in five rounds has been optimising the smaller layer.
 
 ## The honest bottom line
 
