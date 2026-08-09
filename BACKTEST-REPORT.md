@@ -1893,3 +1893,178 @@ where the beta genuinely collapses (0.271, t~7, placebo-confirmed) even though
 its alpha does not clear.
 
 The next action is unchanged and now doubly supported: **run H31.**
+
+## H31 — the construction test, finally run. The handicap is real and it is NOT beta.
+
+Run directly rather than by agent: `construction_lab.py` had already been written
+(56 KB) before its agent died on a spend limit. Its self-test is the strongest
+validation in this repo — it checks its own weighting engine against REAL
+TRADEABLE ETFs (cap-weighted book vs SPY: correlation 0.9934, tracking error
+2.21%/yr; equal-weighted vs RSP: 0.9975, 1.33%/yr) and proves no lookahead by
+permuting every return after t and confirming the book before t is bit-identical
+across 2,184 days.
+
+### (a) The decomposition — identical holdings, identical windows, pit500
+
+| book | CAGR | vol | **Sharpe** | beta | alpha%/yr | maxDD |
+|---|---|---|---|---|---|---|
+| full universe **cap** | 16.63 | 18.77 | **0.914** | 1.03 | +0.83 | -32.8 |
+| **SPY** | **15.31** | 18.15 | **0.876** | 1.00 | 0.00 | -33.8 |
+| gated pool **cap** | 14.64 | 17.49 | **0.869** | 0.91 | +0.77 | -32.0 |
+| full universe **equal** | 12.82 | 18.77 | 0.737 | 0.96 | -1.50 | -38.8 |
+| **gated pool equal** *(what this repo was doing)* | **11.16** | 16.67 | **0.719** | 0.83 | **-1.22** | -36.5 |
+| RSP (equal-weight ETF) | 11.88 | 18.64 | 0.696 | 0.96 | -2.21 | -39.0 |
+
+**Cap-weighting the SAME holdings is worth +0.150 Sharpe and +3.48 pp/yr of
+CAGR.** Round 4 estimated the handicap at -0.216; measured directly it is
+-0.150 on pit500 and -0.160 on sp1500. Confirmed.
+
+**And the difference is not beta — which is what makes it the first structural
+finding here to survive Rule 13.** On the pairwise difference: beta **0.077**,
+alpha 2.01%/yr, t 1.02, halves **+1.95 / +0.61**, thirds **[2.19, 0.82, 0.82]** —
+every sub-period positive.
+
+### The external validation, and it is the most convincing number in five rounds
+
+| difference | Sharpe | CAGR | beta of the diff | alpha | t |
+|---|---|---|---|---|---|
+| gated pool cap − gated pool equal *(our books)* | **+0.150** | +3.48pp | 0.077 | 2.01% | 1.02 |
+| **SPY − RSP** *(two real, tradeable, fee-inclusive ETFs)* | **+0.180** | +3.43pp | 0.043 | 2.26% | 1.05 |
+
+**The lab's internal measurement and the external market agree to within 0.03 of
+Sharpe and 0.05pp of CAGR.** This is not a backtest artifact — it is the
+documented cap-versus-equal-weight gap of the last decade, and anyone can verify
+it by pulling up two tickers. Nothing else in this repo has an out-of-sample
+check that clean.
+
+### (b) On the momentum books, both universes
+
+| pair | ann pp | beta | alpha%/yr | t | halves | thirds |
+|---|---|---|---|---|---|---|
+| mom30 cap − mom30 equal *(pit500)* | +5.20 | **0.06** | +4.14 | 1.51 | +2.46/+1.56 | all + |
+| mom30 cap − mom30 equal *(sp1500)* | +5.06 | **0.02** | +4.79 | 1.24 | +1.46/+2.46 | all + |
+| mom30 div0.76 − equal *(pit500)* | +3.91 | 0.05 | +3.13 | 1.57 | +1.98/+1.07 | all + |
+| mom30 **invvol** − equal *(pit500)* | **-0.41** | -0.04 | +0.14 | 0.30 | mixed | mixed |
+
+Two universes, four halves, six thirds — **every one positive, with a difference
+beta of 0.02-0.06.** Inverse-volatility weighting, the scheme the alpha-stack
+round leaned on, is the one that does NOT help.
+
+### (c) But it does not get you past SPY
+
+| pair | ann pp | alpha%/yr | t |
+|---|---|---|---|
+| mom30 **equal** − SPY *(pit500)* | **-2.73** | -2.34 | -0.78 |
+| mom30 **cap** − SPY *(pit500)* | +2.32 | +1.71 | **0.46** |
+| mom30 cap − SPY *(sp1500)* | +6.59 | +3.81 | **0.72** |
+
+**Cap-weighting turns a book that LOSES to SPY into one that insignificantly
+beats it.** The gated pool cap-weighted (0.869) is still a hair below SPY
+(0.876). And `full universe cap` at 0.914 beats SPY — but that is just a broader
+cap-weighted index, i.e. the answer is "own more of the market", not "select".
+
+**Verdict: the construction finding is CONFIRMED and is the only non-beta
+structural result in five rounds. It is a fix that recovers roughly SPY, not one
+that beats it.** 53 variants per universe.
+
+## H32 verification — 1 of 3 upheld. Dead, and the autopsy is the best in the round.
+
+### The mechanical error that changes every number
+
+**There is no risk-free rate anywhere in the lab.** `sharpe()` runs on raw
+returns and `ols_alpha_beta` regresses raw sleeve on raw SPY, so the reported
+"alpha" is a raw-return intercept, not Jensen's alpha. For every other
+hypothesis in this repo beta is ~1 and the bias `rf x (1 - beta)` is ~0. **For
+the first beta-0.27 sleeve it is maximal.**
+
+| at rf = 2.24%/yr | as reported | corrected |
+|---|---|---|
+| sleeve Sharpe | 0.718 | **0.479** |
+| SPY Sharpe | 0.901 | 0.774 |
+| alpha | +2.39%/yr, t 1.02 | **+0.76%/yr, t 0.33** |
+| break-even on alpha | 38 bps/side | **~12 bps/side** |
+| **added to a SPY book, GROSS** | **+0.049 Sharpe** | **+0.006** |
+| added at 10/25/50 bps | +0.027 / +0.006 / +0.000 | **+0.000 everywhere** |
+
+The sleeve adds nothing to a book that owns SPY **even before costs**. The
+card's "the edge survives plausible costs by a factor of 2-3" is false; at its
+own quoted 5-15 bps the Jensen alpha is +0.14% to -0.2%.
+
+### The kill shot: the return is 18 bidding wars, not a merger spread
+
+| cohort | n | share | mean | contribution |
+|---|---|---|---|---|
+| pinned core (-10% to +15%) | 409 | 91.3% | +1.78% | +1.624 pp |
+| **topping bids (>+15%)** | **18** | **4.0%** | **+36.71%** | **+1.475 pp** |
+| breaks (<-10%) | 21 | 4.7% | -29.26% | -1.371 pp |
+| | | | | **+1.728%** |
+
+**Spread capture NET of breaks is +0.253% per deal — about +0.78%/yr gross,
+which is LESS than the 0.22% round-trip these same names quote.** Drop the 18
+topping bids and the sleeve goes 6.68%/yr -> **2.82%/yr**, alpha +2.39%
+(t 1.02) -> **-1.08% (t -0.46)**.
+
+The pre-registered mechanism — "the residual discount is payment for bearing
+deal-break risk" — **earns zero**. What the sleeve actually captured was a
+handful of competing-bidder auctions.
+
+And the skew was backwards: the reported +1.00 is manufactured by those same 18
+deals. **Remove the top 10 and it flips to -4.41** — the short-put shape
+Mitchell-Pulvino describes all along.
+
+### The era story was the rate cycle
+
+| | third 1 | third 2 | third 3 |
+|---|---|---|---|
+| average risk-free rate | 1.23% | 1.05% | 4.43% |
+| reported raw alpha | 1.69% | 1.50% | 5.02% |
+
+**Rank-identical, correlation +1.000.** In excess terms the halves are +0.74%
+and +0.72% and the "second half carries two-thirds of the alpha" pattern
+vanishes entirely. Merger spreads widen with rates because the spread must cover
+carry; the raw number rises, the excess return does not.
+
+### What survived, and it is worth keeping
+
+The survivorship lens could not kill the sample and said so explicitly. The
+population IS announcements — `stage_index` reads SEC quarterly full-index
+form.idx for PREM14A/DEFM14A/SC 14D9 and never touches Alpaca for selection; all
+43 quarters are present with no holes; the filters are outcome-blind (completion
+rate 56.7% kept vs 53.4-57.4% dropped); the genuine breaks ARE in the book and
+priced a full year past the break (BATL -80.2%, ROG -56.2%, TASK -52.7%).
+
+**And the beta collapse is real, not a stale-price artifact.** The standard kill
+is Dimson lead-lag betas, and they never recover toward 1.0:
+
+| lags | ±0 | ±1 | ±2 | ±3 | ±5 |
+|---|---|---|---|---|---|
+| summed beta | 0.271 | 0.220 | 0.261 | 0.254 | **0.317** |
+
+Only 9.6% of 36,533 deal-days are exactly-zero returns, and the placebo re-run
+with the sleeve's own guards is identical to four decimals. **A merger target is
+genuinely pinned to a fixed cash price; that is a real risk property.** It is
+just not a source of return.
+
+Also found, and it matters for anyone reusing this: **3-5% of the book holds the
+wrong company.** `T` holds AT&T (the ACQUIRER) for Time Warner, `E` holds Eni
+S.p.A. (an Italian ADR — a breach of the US-equities-only scope rule), `LEN`
+holds Lennar acquirer-side, and `CPPL` is used for two different companies. The
+ticker matcher passes 1-2 character tickers trivially. These are ordinary beta-1
+names held a full year, so they push beta UP and alpha DOWN — they degrade the
+finding rather than manufacture it, but the sample is dirtier than the 96.7%
+hand-count implies.
+
+## Five rounds, closed
+
+**18 hypotheses registered, 17 reported, 0 shipped, 7 headlines retracted or
+killed.** Nothing beats SPY.
+
+**The single positive result of the entire effort** is that portfolio
+construction — cap-weighting instead of equal-weighting the same holdings — is
+worth **+0.15 Sharpe and +3.5 pp/yr**, carries a difference beta of 0.02-0.08,
+is positive in every half and every third of both universes, and is confirmed
+out-of-sample by two real ETFs (SPY vs RSP: +0.18 Sharpe, +3.43 pp/yr). It is
+the one thing here that is not beta, not survivorship, and not one lucky regime.
+
+It also does not beat the market. It recovers you to roughly SPY from a book
+that was losing to it by 2.7 pp/yr.
