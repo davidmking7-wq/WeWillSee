@@ -1,0 +1,240 @@
+{
+  "schema_version": "1.0.0",
+  "protocol_id": "H33-LOW-COVERAGE-MOMENTUM-LONGONLY-LOCKED-V1",
+  "lock": {
+    "status": "LOCKED_BEFORE_EXTERNAL_DATA_FETCH",
+    "lock_date": "2026-08-10",
+    "locked_at_utc": "2026-08-09T21:32:04Z",
+    "mutable_fields": [],
+    "hash_algorithm": "sha256",
+    "hash_sidecar": "preregistration_h33_locked_v1.sha256"
+  },
+  "origin": {
+    "discovery_artifact": "scout/coverage_results.json:interaction_attack.long_only_low_cov_winners",
+    "discovery_rule_source": "scout/coverage_lab.py:247-324,892-1037",
+    "discovery_summary_for_context_only": {
+      "forward_42_session_excess_return_bps": 159.4,
+      "newey_west_t": 2.56,
+      "market_adjusted_alpha_bps": 188.7,
+      "market_adjusted_alpha_t": 3.07,
+      "persistent_shuffle_z": 3.11
+    },
+    "prior_exploratory_trials_disclosed": 740,
+    "confirmatory_rule_count": 1,
+    "why_this_rule": "It was the strongest still-unconfirmed finding, survived the repo's persistent-label null, and has a simple mechanism. It remains a candidate, not a proven edge."
+  },
+  "hypothesis": {
+    "plain_language": "Among otherwise eligible companies, stocks receiving unusually little media attention for their trading activity should react more slowly to information. The recent winners in that low-attention group should outperform the whole eligible market over the next 42 trading sessions.",
+    "direction": "selected_portfolio_alpha_is_positive",
+    "single_rule_only": true
+  },
+  "rule": {
+    "calendar": "primary_exchange_sessions_for_the_stage",
+    "signal_cutoff": "after_official_close_on_signal_session_t",
+    "entry": "next_primary_exchange_session_open_t_plus_1",
+    "exit": "open_42_primary_exchange_sessions_after_entry_t_plus_43",
+    "formation_frequency": "every_primary_exchange_session",
+    "coverage_proxy": {
+      "field": "unique_gdelt_documents_mentioning_company",
+      "lookback_sessions": 252,
+      "window_end": "t_minus_1",
+      "transform": "log1p",
+      "source_lock": "GDELT_GKG_ORGANIZATION_MENTIONS",
+      "deduplication": "one_count_per_unique_source_document_per_company_per_calendar_day",
+      "session_attribution": "Convert publication time to the primary exchange timezone and assign each document to the first exchange session whose official close is at or after publication; weekend and holiday documents therefore enter the next exchange session. mentions.csv date is this attributed session date."
+    },
+    "liquidity_adjustment": {
+      "field": "dollar_volume_usd",
+      "lookback_sessions": 252,
+      "window_end": "t_minus_1",
+      "transform": "log",
+      "method": "per-date OLS residual of log1p(coverage) on intercept plus log(mean dollar volume)"
+    },
+    "neglect_bucket": {
+      "sort": "coverage_residual_ascending_then_company_id_ascending",
+      "bucket_count": 3,
+      "selected_bucket": "bottom_third",
+      "boundary_rule": "first floor(N/3) rows after stable sort"
+    },
+    "momentum": {
+      "formula": "close_total_return[t-21] / close_total_return[t-252] - 1",
+      "lookback_sessions": 252,
+      "skip_recent_sessions": 21,
+      "sort": "momentum_ascending_then_company_id_ascending",
+      "bucket_count_within_neglect_bucket": 3,
+      "selected_bucket": "top_third",
+      "boundary_rule": "rows from floor(2*M/3) through M-1 after stable sort"
+    },
+    "portfolio": {
+      "side": "long_only",
+      "weights": "equal_weight_selected_names_at_entry",
+      "minimum_full_eligible_pool": 90,
+      "minimum_selected_names": 10,
+      "holding_sessions": 42,
+      "overlapping_cohorts": 42,
+      "capital_interpretation": "one forty-second of strategy capital enters each session once all cohorts are live",
+      "round_trip_cost_bps": 20.0,
+      "cost_application": "subtract 0.0020 once from each selected cohort return",
+      "cash_return": 0.0,
+      "leverage": 1.0,
+      "shorting": false
+    },
+    "benchmark": {
+      "name": "same-date eligible-universe equal-weight gross cohort",
+      "definition": "equal-weight open-to-open 42-session return of every fully eligible company on signal date t",
+      "cost_bps": 0.0,
+      "reason": "A deliberately hard, free passive counterfactual that is available in every country and does not mix currencies or ETF launch dates."
+    }
+  },
+  "eligibility": {
+    "required_on_signal_date": [
+      "point_in_time_member_is_true",
+      "company_id_is_permanent_not_ticker",
+      "252_complete_prior_sessions_for_mentions_dollar_volume_and_close_total_return",
+      "valid_next_open_and_valid_exit_open",
+      "delisting_or_acquisition_value_carried_into_total_return_series",
+      "entity_alias_map_frozen_before_mentions_are_counted_or_returns_are_viewed"
+    ],
+    "excluded": [
+      "funds_etfs_etns_closed_end_funds",
+      "preferred_shares_warrants_rights",
+      "duplicate_share_classes_except_the_most_liquid_class",
+      "companies_without_audited_entity_mapping"
+    ],
+    "missing_exit_policy": "DATA_GATE_FAILURE_DO_NOT_DROP_THE_COMPANY_OR_FORMATION"
+  },
+  "stages": [
+    {
+      "order": 1,
+      "stage_id": "unseen_us_companies",
+      "purpose": "cross-sectional replication on companies absent from discovery",
+      "signal_start": "2017-01-03",
+      "signal_end": "2025-12-31",
+      "universe": "point-in-time S&P 1500 constituents excluding every company in the discovery liquid-120 and its successor/security aliases",
+      "discovery_exclusion_definition": "Recreate the discovery set exactly as the 120 highest median 2016 daily dollar-volume securities among point-in-time S&P 500 members on 2016-01-04, matching scout/news_data.py liquid_universe(); map those securities to permanent company IDs and exclude them for the entire stage.",
+      "country": "US",
+      "minimum_valid_formations": 1000,
+      "minimum_effective_nonoverlap_blocks": 20
+    },
+    {
+      "order": 2,
+      "stage_id": "older_us_pre2016",
+      "purpose": "time replication before the discovery sample",
+      "signal_start": "2014-04-01",
+      "signal_end": "2015-12-31",
+      "universe": "point-in-time S&P 1500 constituents",
+      "country": "US",
+      "minimum_valid_formations": 300,
+      "minimum_effective_nonoverlap_blocks": 8,
+      "known_power_limit": "The free GDELT GKG history makes this a short pre-2016 window; failure is still a failure, while a pass cannot stand alone."
+    },
+    {
+      "order": 3,
+      "stage_id": "international_uk",
+      "purpose": "geographic replication on companies absent from the US discovery set",
+      "signal_start": "2017-01-03",
+      "signal_end": "2025-12-31",
+      "universe": "point-in-time FTSE 350 constituents, ordinary primary listings only",
+      "country": "GB",
+      "minimum_valid_formations": 1000,
+      "minimum_effective_nonoverlap_blocks": 20
+    },
+    {
+      "order": 4,
+      "stage_id": "future_paper_us",
+      "purpose": "untouched forward observation only; no capital is authorized by this protocol",
+      "signal_start": "2026-08-11",
+      "signal_end": null,
+      "universe": "point-in-time S&P 1500 constituents excluding the frozen discovery liquid-120 company IDs",
+      "country": "US",
+      "minimum_valid_formations": 756,
+      "minimum_effective_nonoverlap_blocks": 18,
+      "interims": [252, 504],
+      "interim_policy": "record_only_no_decision_no_retuning",
+      "final_after_sessions": 756
+    }
+  ],
+  "data_contract": {
+    "directory_layout": "DATA_ROOT/STAGE_ID/{prices.csv,mentions.csv,membership.csv,metadata.json}",
+    "prices_csv": {
+      "primary_key": ["date", "company_id"],
+      "required_columns": ["date", "company_id", "open_total_return", "close_total_return", "dollar_volume_usd"],
+      "notes": "Open and close must be a consistent split-, distribution-, FX-, and delisting-adjusted total-return series in USD. Dollar volume must use the contemporaneous unadjusted traded price and volume, converted to USD."
+    },
+    "mentions_csv": {
+      "primary_key": ["date", "company_id"],
+      "required_columns": ["date", "company_id", "mention_count"],
+      "notes": "A missing row is treated as zero only after metadata certifies complete archive coverage for that date. Counts must use the frozen company alias map."
+    },
+    "membership_csv": {
+      "primary_key": ["date", "company_id"],
+      "required_columns": ["date", "company_id", "eligible"],
+      "notes": "Point-in-time membership only. It must include dead, acquired, renamed, and later-removed members."
+    },
+    "metadata_json_required_true": [
+      "point_in_time_membership",
+      "dead_and_delisted_companies_included",
+      "delisting_returns_included",
+      "prices_total_return_adjusted",
+      "prices_usd_converted",
+      "gdelt_archive_days_complete",
+      "entity_alias_map_frozen_before_return_join",
+      "data_fetched_after_protocol_lock",
+      "no_discovery_returns_used_in_entity_mapping"
+    ],
+    "metadata_json_required_strings": [
+      "price_source",
+      "membership_source",
+      "mention_source",
+      "entity_alias_map_sha256",
+      "prepared_at_utc"
+    ],
+    "discovery_exclusion_stages": ["unseen_us_companies", "future_paper_us"],
+    "discovery_exclusion_additional_true": ["discovery_company_ids_excluded"],
+    "discovery_exclusion_additional_strings": ["discovery_company_ids_sha256"]
+  },
+  "public_data_plan_and_limits": {
+    "mentions": "Use the free GDELT GKG archive. This is a media-mention proxy, not historical analyst coverage and not the Benzinga feed used in discovery. GDELT source volume, languages, entity recognition, and geographic coverage change through time; UK results may partly measure English-language coverage.",
+    "prices": "Stooq or another free daily source can populate a proxy run, but free feeds often omit dead tickers, delisting proceeds, point-in-time index membership, dividends, or trustworthy adjusted opens. A result is confirmatory only if every metadata quality gate is independently documented; otherwise the runner labels it DATA_INCONCLUSIVE.",
+    "membership": "Historical point-in-time S&P 1500 and FTSE 350 membership with permanent identifiers is the main free-data blocker. Current constituent lists are forbidden because they create survivorship bias.",
+    "entity_mapping": "Company-name aliases, renames, subsidiaries, and common-word names can create false zero or false positive mention counts. The alias file must be frozen and hashed before it is joined to returns.",
+    "conclusion_limit": "Even a full pass validates this GDELT proxy implementation of the rule; it does not prove that analyst neglect or the original Benzinga signal is causal."
+  },
+  "statistics": {
+    "observation": "one_42_session_cohort_return_per_signal_date",
+    "overlap_adjustment": "Newey-West HAC with lag 41",
+    "primary_model": "selected_net_cohort_return = alpha + beta * benchmark_gross_cohort_return + error",
+    "annualization_factor": 6.0,
+    "primary_metrics": ["annualized_alpha", "hac_alpha_t"],
+    "supporting_metrics": ["annualized_mean_active_return", "hac_active_t", "beta", "chronological_half_1_active", "chronological_half_2_active", "selected_name_count"],
+    "stage_pass_all_required": {
+      "annualized_alpha_min": 0.02,
+      "hac_alpha_t_min": 2.0,
+      "annualized_mean_active_return_min": 0.0,
+      "chronological_half_1_annualized_active_min": 0.0,
+      "chronological_half_2_annualized_active_min": 0.0,
+      "data_quality_gate": "PASS",
+      "minimum_valid_formations_from_stage": true,
+      "minimum_effective_nonoverlap_blocks_from_stage": true
+    },
+    "stage_decision": "PASS only if every threshold is met; otherwise FAIL after a valid data-quality gate, or DATA_INCONCLUSIVE if the data gate is not met.",
+    "historical_family_decision": "CONFIRMED only if all three historical stages PASS. One or more valid FAIL results means REJECT_GENERALITY. Any DATA_INCONCLUSIVE stage means INCONCLUSIVE and may not be replaced by another universe.",
+    "multiple_testing": "The 740 discovery trials are disclosed selection debt. Because the exact rule is locked and each new panel is untouched, this protocol runs one confirmatory rule, not 740 new variants. The three historical panels are mandatory replications, not a menu; none may be omitted after viewing results."
+  },
+  "no_retuning": {
+    "rule": "No parameter, field, source proxy, universe, date, cost, benchmark, threshold, exclusion, missing-data treatment, or statistic may change after any external data is fetched or any result is viewed.",
+    "forbidden": [
+      "alternative_coverage_windows",
+      "alternative_momentum_windows_or_skips",
+      "alternative_bucket_counts_or_cutoffs",
+      "value_or_market_cap_weighting",
+      "sector_neutral_or_beta_hedged_variants",
+      "alternative_holding_periods_or_entry_prices",
+      "different_costs",
+      "dropping_bad_years_markets_or_companies_after_results",
+      "substituting_a_new_data_provider_after_a_valid_failure",
+      "promoting_any_supporting_metric_to_primary"
+    ],
+    "unexpected_data_problem": "Stop and label DATA_INCONCLUSIVE. Amendments require a new protocol ID and count as a new trial; this V1 result remains in the record."
+  }
+}
