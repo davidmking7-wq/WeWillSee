@@ -210,9 +210,24 @@ def load_bars(force: bool = False, verbose: bool = True) -> dict[str, pd.DataFra
     return {"close": close, "volume": volume, "repairs": repairs}
 
 
+#: An unapplied-split test can only separate "applied" from "not applied" when
+#: the split's log ratio is bigger than twice the classifier tolerance.
+#: intraday.unapplied_splits_close uses tol=0.15, so ANY event under
+#: exp(0.30) ~= 1.35 is unresolvable and must never be auto-repaired. Measured
+#: false positive: MET's 2017-08-07 Brighthouse spin-off is filed as a
+#: forward_split of ratio 1.122; the bars ARE adjusted (MET goes 35.48 ->
+#: 35.83, +1.0%) yet |log(1.0099) + log(1.122)| = 0.125 < 0.15, so the test
+#: flags it. Repairing it would have divided 401 MET closes by 1.122.
+MIN_REPAIR_LOG_RATIO = 0.35
+
+
 def repair_splits(close: pd.DataFrame, volume: pd.DataFrame,
                   verbose: bool = True) -> tuple[pd.DataFrame, pd.DataFrame, list]:
-    """Back-adjust any split Alpaca's bar pipeline failed to apply."""
+    """Back-adjust any split Alpaca's bar pipeline failed to apply.
+
+    Only unambiguous events are touched — see MIN_REPAIR_LOG_RATIO. Ambiguous
+    ones are printed, not silently applied and not silently dropped.
+    """
     if SPLIT_AUDIT_JSON.exists():
         events = {k: [{"ex_date": pd.Timestamp(e["ex_date"]),
                        "ratio": e["ratio"], "kind": e["kind"]} for e in v]
@@ -224,7 +239,7 @@ def repair_splits(close: pd.DataFrame, volume: pd.DataFrame,
             {k: [{"ex_date": str(e["ex_date"].date()), "ratio": e["ratio"],
                   "kind": e["kind"]} for e in v] for k, v in events.items()},
             indent=1))
-    repairs = []
+    repairs, ambiguous = [], []
     for sym, evs in events.items():
         if sym not in close.columns:
             continue
@@ -233,7 +248,11 @@ def repair_splits(close: pd.DataFrame, volume: pd.DataFrame,
         bad = intraday.unapplied_splits_close(s, evs)
         for b in bad:
             if b.get("applied") is not False:
-                continue                       # ambiguous -> leave it alone
+                continue                       # jump not at the split ratio
+            if abs(math.log(b["ratio"])) < MIN_REPAIR_LOG_RATIO:
+                ambiguous.append({"symbol": sym, "ex_date": str(b["ex_date"].date()),
+                                  "ratio": b["ratio"], "jump": b["jump"]})
+                continue
             ex = pd.Timestamp(b["ex_date"])
             mask = close.index.tz_localize(None).normalize() < ex
             close.loc[mask, sym] = close.loc[mask, sym] / b["ratio"]
@@ -247,6 +266,10 @@ def repair_splits(close: pd.DataFrame, volume: pd.DataFrame,
                       f"ratio {r['ratio']:.0f} -> {r['n_bars']:,} bars rescaled")
         else:
             print("  split audit: nothing unapplied")
+        for a in ambiguous:
+            print(f"  split audit AMBIGUOUS (not repaired): {a['symbol']} "
+                  f"{a['ex_date']} filed ratio {a['ratio']:.3f}, observed jump "
+                  f"{a['jump']:.4f} — ratio too small for the 0.15 classifier")
     return close, volume, repairs
 
 
