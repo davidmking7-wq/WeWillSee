@@ -41,7 +41,9 @@ BACKTEST_SPREAD_BPS = 5.0
 BACKTEST_SLIPPAGE_BPS = 5.0
 BACKTEST_COMMISSION_BPS = 0.0
 BACKTEST_MISSING_LEG_POLICY = "total_loss"
-BACKTEST_MAX_MISSING_SYMBOL_FRACTION = 0.0  # confirmatory fetches fail closed
+# A provider may lack one mapped ticker in a 500-name request. Keep the gap
+# tiny, persist the exact missing name, and fail closed above 0.20%.
+BACKTEST_MAX_MISSING_SYMBOL_FRACTION = 0.002
 
 SCOUT_DIR = ROOT / "scout"
 UNIVERSE_CSV = SCOUT_DIR / "universe.csv"
