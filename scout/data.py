@@ -139,6 +139,7 @@ def daily_ohlcv(
     for i in range(0, len(symbols), CHUNK):
         chunk = symbols[i:i + CHUNK]
         chunk_record = {
+            "phase": "batch",
             "chunk_number": i // CHUNK + 1,
             "requested_symbols": chunk,
             "attempts": 0,
@@ -182,6 +183,53 @@ def daily_ohlcv(
         metadata["status"] = "failed_closed_no_data"
         raise MarketDataFetchError("no market data returned at all", metadata)
     allbars = pd.concat(frames, ignore_index=True)
+    _update_coverage(metadata, allbars)
+
+    # Large provider batches can occasionally omit a valid symbol without an
+    # HTTP error. Retry every omitted name on its own before treating it as a
+    # real coverage gap. This recovered DOW in the 2026-08-10 clean run.
+    for recovery_number, symbol in enumerate(metadata["missing_symbols"], 1):
+        recovery_record = {
+            "phase": "missing_symbol_recovery",
+            "recovery_number": recovery_number,
+            "requested_symbols": [symbol],
+            "attempts": 0,
+            "errors": [],
+            "completed": False,
+        }
+        metadata["chunks"].append(recovery_record)
+        for attempt in range(1, max_attempts + 1):
+            recovery_record["attempts"] = attempt
+            try:
+                req = StockBarsRequest(
+                    symbol_or_symbols=[symbol], timeframe=TimeFrame.Day,
+                    start=start, end=end, adjustment=Adjustment.ALL,
+                    feed=DataFeed.SIP,
+                )
+                recovered = client.get_stock_bars(req).df
+                recovery_record["completed"] = True
+                recovery_record["returned_row_count"] = int(len(recovered))
+                if not recovered.empty:
+                    allbars = pd.concat(
+                        [allbars, recovered.reset_index()], ignore_index=True,
+                    )
+                break
+            except Exception as exc:
+                recovery_record["errors"].append({
+                    "attempt": attempt,
+                    "type": type(exc).__name__,
+                    "message": _safe_error_message(exc),
+                })
+                if attempt < max_attempts and retry_backoff_seconds:
+                    time.sleep(retry_backoff_seconds * (2 ** (attempt - 1)))
+        if not recovery_record["completed"]:
+            _update_coverage(metadata, allbars)
+            metadata["status"] = "failed_closed_recovery_error"
+            raise MarketDataFetchError(
+                f"market-data recovery for {symbol} failed after "
+                f"{max_attempts} attempts; no partial dataset was returned",
+                metadata,
+            )
     _update_coverage(metadata, allbars)
     if not metadata["threshold_passed"]:
         metadata["status"] = "failed_closed_missing_symbol_threshold"

@@ -77,7 +77,7 @@ def test_daily_fetch_fails_closed_after_chunk_retries(monkeypatch):
 
 
 def test_daily_fetch_fails_closed_when_declared_symbol_coverage_is_missing(monkeypatch):
-    _patch_client(monkeypatch, [_provider_frame(["AAA"])])
+    _patch_client(monkeypatch, [_provider_frame(["AAA"]), _provider_frame(["AAA"])])
 
     with pytest.raises(data.MarketDataFetchError) as caught:
         data.daily_ohlcv(
@@ -91,6 +91,22 @@ def test_daily_fetch_fails_closed_when_declared_symbol_coverage_is_missing(monke
         "name": "BACKTEST_MAX_MISSING_SYMBOL_FRACTION",
         "max_missing_symbol_fraction": config.BACKTEST_MAX_MISSING_SYMBOL_FRACTION,
     }
+
+
+def test_daily_fetch_recovers_a_symbol_omitted_from_a_large_batch(monkeypatch):
+    client = _patch_client(
+        monkeypatch, [_provider_frame(["AAA"]), _provider_frame(["BBB"])],
+    )
+
+    bars = data.daily_ohlcv(
+        ["AAA", "BBB"], 5, max_attempts=1, retry_backoff_seconds=0,
+        max_missing_fraction=0,
+    )
+
+    assert client.calls == 2
+    assert bars["metadata"]["missing_symbols"] == []
+    assert bars["metadata"]["returned_symbol_count"] == 2
+    assert bars["metadata"]["chunks"][1]["phase"] == "missing_symbol_recovery"
 
 
 def test_load_bars_rejects_legacy_cache_without_coverage(monkeypatch, tmp_path):
