@@ -501,15 +501,23 @@ def book(panel: dict, kind: str, scheme: str, size: int | None = None,
         for k, t in enumerate(dates):
             t_end = dates[k + 1] if k + 1 < len(dates) else min(t + rebal, n_t - 1)
             sel = _select(panel, t, kind, size, rng)
-            if len(sel) == 0:
-                prev_w, prev_sel = None, None
-                continue
-            w = weights_for(scheme, CAP[t][sel], VOL[t][sel])
-            if w.sum() <= 0:
-                prev_w, prev_sel = None, None
-                continue
-            # ---- cost of moving from the drifted book to the target book
-            if prev_sel is not None:
+            w = (weights_for(scheme, CAP[t][sel], VOL[t][sel]) if len(sel)
+                 else np.array([]))
+            if len(sel) == 0 or w.sum() <= 0:
+                # NOTHING PASSES. Hold the existing book rather than emitting a
+                # hole. This matters more than it looks: the v5 gates empty out
+                # in exactly the sessions after a crash, so dropping those
+                # segments would delete the recovery days from EVERY book's
+                # sample and inflate every level in the table. Measured on the
+                # first version of this file: 102 of 2,352 PIT-500 sessions
+                # vanished that way and SPY's own compounded CAGR read 12.14%
+                # against a true 15.23% buy-and-hold over the same span.
+                if prev_sel is None:
+                    continue                       # nothing held yet: no book
+                sel, w = prev_sel, prev_w
+                turns[ph, t + 1] = 0.0
+            elif prev_sel is not None:
+                # ---- cost of moving from the drifted book to the target book
                 names = np.union1d(prev_sel, sel)
                 a = np.zeros(len(names)); b = np.zeros(len(names))
                 a[np.searchsorted(names, prev_sel)] = prev_w
@@ -1106,15 +1114,25 @@ def selftest(mode: str = "pit500") -> int:
         _check(lab, c > 0.95, f"corr {c:.4f}, tracking error {100 * te:.2f}%/yr, "
                               f"CAGR gap {100 * d:+.2f}pp")
 
-    # 3. a one-name 'book' of the benchmark reproduces it (shift check)
-    q = dict(p)
-    i = None
+    # 3. the traded matrix is finite everywhere (a NaN would silently poison a
+    #    cumprod and take a whole sleeve with it)
     _check("panel has no NaN in the traded return matrix",
            np.isfinite(p["R"]).all())
 
-    # 4. the shift: shuffling FUTURE returns must not change a past weight
-    _check("weights read row t, returns read t+1..t_next (see book(): "
-           "seg = R[t+1:t_end+1])", True)
+    # 4. THE SHIFT, tested rather than asserted: destroying every return
+    #    strictly AFTER the last rebalance must not move any earlier day of the
+    #    book. If a weight could see the future, this would change the series.
+    q = {k: (v.copy() if isinstance(v, np.ndarray) else v) for k, v in p.items()}
+    cut = q["R"].shape[0] - 3 * H
+    rng2 = np.random.default_rng(7)
+    q["R"][cut:] = rng2.permutation(q["R"][cut:].ravel()).reshape(q["R"][cut:].shape)
+    a = book(p, "mom", "cap", 30)["gross"][:cut - H]
+    b = book(q, "mom", "cap", 30)["gross"][:cut - H]
+    ok = np.isfinite(a) & np.isfinite(b)
+    _check("no lookahead: permuting all returns after t leaves the book before "
+           "t bit-identical",
+           bool(ok.sum() > 500 and np.array_equal(a[ok], b[ok])),
+           f"{int(ok.sum())} days compared")
     print(f"\n{'ALL CHECKS PASSED' if _FAILS == 0 else str(_FAILS) + ' CHECK(S) FAILED'}")
     return _FAILS
 

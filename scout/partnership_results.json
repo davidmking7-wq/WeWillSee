@@ -13,7 +13,7 @@
   "guarded_prints": 251,
   "pool_mean": 219.76839339339338,
   "n_variants": 112,
-  "runtime_s": 16.9,
+  "runtime_s": 19.5,
   "n_trials_registry_before": 420
  },
  "variants": [
@@ -1501,15 +1501,15 @@
   }
  },
  "control_random_hedged": {
-  "n": 60,
-  "sharpe": -0.2903810836305132,
-  "alpha": -1.5809915698154067,
-  "beta": -0.02822626272570606,
-  "cagr": -2.250906382700728,
-  "sharpe_p05": -0.34994127019821536,
-  "sharpe_p50": -0.28831314205503156,
-  "sharpe_p95": -0.24160765942721138,
-  "mom_hedged_percentile": 85.0
+  "n": 100,
+  "sharpe": -0.291503867452453,
+  "alpha": -1.5896132139371255,
+  "beta": -0.028118154424151002,
+  "cagr": -2.2575010614134476,
+  "sharpe_p05": -0.3487136598797188,
+  "sharpe_p50": -0.2912186631259903,
+  "sharpe_p95": -0.24181449716725756,
+  "mom_hedged_percentile": 86.0
  },
  "combos": {
   "mom_hedged@k0.00": {

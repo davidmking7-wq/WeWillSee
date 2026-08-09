@@ -1758,3 +1758,138 @@ four of the five were beta or overlap in disguise.
 **Round 4 score: 2 registered, 2 reported, 0 surviving verification.
 The W_HIGH recommendation is retracted. `config.W_HIGH` should NOT be changed
 on this evidence.**
+
+## Round 5 — Buffett's Workouts and Lynch's neglect edge
+
+Designed from what Buffett and Lynch actually did in their prime, rather than
+from what they are remembered for. Buffett's Partnership (1957-1969, ~29.5%/yr,
+never a down year) ran three buckets, and the "Workouts" bucket — mergers,
+tenders, liquidations — was ~30% of capital, returned 10-20%/yr *largely
+independent of the market*, and was levered with borrowed money. That is why the
+partnership beat the index in down years. Lynch used "no analyst coverage" as an
+explicit buying criterion.
+
+Both are structurally unlike anything this repo had tested: four rounds of
+ranking correlated large-caps on price characteristics, which produced beta four
+separate times.
+
+**Result: 3 of 4 tested, all rejected. H31 never ran (spend limit).**
+
+### H32 — the first return source found here that is NOT beta
+
+448 deals assembled from ANNOUNCEMENTS (`scout/deals.py`), 2016-2026, including
+every deal that broke.
+
+| | sleeve | SPY |
+|---|---|---|
+| return | 6.68%/yr | 15.82%/yr |
+| volatility | 9.29% | 17.54% |
+| Sharpe | 0.718 | 0.901 |
+| **beta** | **0.271** | 1.00 |
+| max drawdown | **-16.5%** | -33.8% |
+| alpha | +2.39%/yr, **t 1.02** | — |
+
+**The beta collapse is real and it is the finding.** t on beta is ~7 against
+1.0. The placebo settles causation: the SAME tickers held 250 sessions EARLIER
+have beta 1.054 and alpha -1.54%. It is the event, not the names.
+
+It also behaves like insurance, as the mechanism predicts: 80.8% win rate,
+mean +1.73% per deal, but 4.7% of deals lost more than 10%, loss given break
+-29.3%, worst -80.2%. And in the COVID crash the sleeve fell **-8.28% against
+SPY's -33.48%** — with deal breaks NOT clustering (3.0% break rate among the 33
+deals live into it).
+
+It passes checks that killed earlier claims. Equal thirds: **all three positive**
+(+4.24 / +5.25 / +10.54%/yr) — the H22 test a median split would have hidden.
+Entry-offset sweep at 1/2/3/5/8/13/21 sessions: positive at 7 of 7, with
+per-deal return decaying monotonically +1.52% -> +0.92%, exactly what a
+converging spread should do. Newey-West lag sensitivity checked explicitly after
+the H29 disaster: t stable at 0.97-1.15 across lags 0 to 42, residual
+autocorrelation -0.084, so there is no mechanical overlap to inflate it.
+
+**Why it is still rejected.** Three numbers:
+
+1. **The alpha is not significant.** t = 1.02 at every lag; the
+   difference-of-books alphas are t 0.70-0.75.
+2. **"Largely independent of the market" is not what the data says.**
+   Correlation to SPY is **0.511**, not ~0. Beta 0.271 is a genuine and large
+   collapse, but a sleeve at rho 0.51 is a low-beta equity sleeve, not an
+   uncorrelated return source — and uncorrelated is what the growth equation
+   needs.
+3. **Costs eat it.** Break-even on total return is 106 bps/side, but break-even
+   on ALPHA is **38 bps/side**. Added to a book that already owns SPY:
+
+| slippage | combined Sharpe | gain |
+|---|---|---|
+| gross | 0.950 | +0.049 |
+| 10 bps/side | 0.928 | +0.027 |
+| 25 bps/side | 0.907 | +0.006 |
+| 50 bps/side | 0.901 | **+0.000** |
+
+**Buffett claimed 10-20%/yr largely uncorrelated. Measured here: 6.7%/yr at
+rho 0.51.** That gap is itself the most informative number in the round — it is
+what sixty years of competition does to a documented edge, and it is exactly the
+post-publication decay McLean-Pontiff predict. The mechanism survived. The
+magnitude did not.
+
+**Unverified.** All three adversarial verifiers for H32 died on the spend limit.
+Treat every number above as un-attacked, which in this repo has meant roughly a
+one-in-three chance of not surviving.
+
+### H33 — Lynch's neglect edge, rejected, but it reproduced the structural finding
+
+The coverage sort is not degenerate (p10 68.7 vs p90 661.2 stories, 7.5x) and
+H15's premise is confirmed — coverage rank autocorrelation is 0.995 at 21 td,
+0.914 at 252 td, so it IS a static characteristic. It is simply not priced:
+primary spread +25.5 bps/window, NW t 0.53, CI [-71.6, +116.0], Rule 13 on the
+difference gives beta -0.003 and alpha t 0.55. Equal thirds [-65.3, +166.7,
+-25.1] — the middle third carries everything. Across 51 variants the bucket
+count and the weighting scheme flip the sign.
+
+The Hong-Lim-Stein interaction (momentum stronger where coverage is thinnest)
+was the one live cell — +216.1 bps, t 2.59, both halves stable, all 42 entry
+calendars positive — and it died four separate ways: the persistent-shuffle null
+cuts it to z 2.08; sector-demeaning halves it; **the same cut on the raw story
+count gives +13.2 bps at t 0.14**; and an arbitrary persistent split on dollar
+volume manufactures -180.8 bps, showing these 120 names routinely produce
+±200 bps from any stable partition. Deflated Sharpe at N=740: 0.09.
+
+**But it independently reproduced Round 4's structural finding on a dataset
+Round 4 never touched.** Same 102 names, only the weighting changed:
+
+| book | return/window | alpha | t |
+|---|---|---|---|
+| equal-weight pool | +260.6 bps | +25.9 | 0.84 |
+| **dollar-volume weighted** | **+352.4 bps** | **+59.1** | **2.66** |
+| SPY | +247.3 bps | — | — |
+
+**Weighting is worth +91.8 bps/window. The best SELECTION spread anywhere in 51
+variants is +25.5 bps. Construction beats selection 3.6 : 1.**
+
+### H34 — the Partnership structure, rejected
+
+112 variants. With H32's sleeve at rho 0.511 rather than ~0, the combination
+cannot reach a landslide: the growth equation needs uncorrelated sources, and
+this one is half-correlated. Leverage on a sleeve whose alpha carries t = 1.02
+magnifies an unmeasured quantity.
+
+### H31 — never ran
+
+The construction test — does cap-weighting recover the -0.216 Sharpe handicap —
+**failed on the spend limit and has no result.** It is the single most important
+untested question in this repo, it is now supported by two independent
+measurements (Round 4's -0.216 vs +0.030, and H33's 3.6 : 1), and
+`scout/construction_lab.py` is committed and ready to run.
+
+## The state after five rounds
+
+**17 hypotheses registered, 16 reported, 0 shipped, 6 headlines retracted or
+killed.** Nothing beats SPY.
+
+The most valuable thing Round 5 produced is not a strategy — it is the second
+independent measurement that **portfolio construction is worth several times
+what selection is**, and the discovery that merger arbitrage is the one place
+where the beta genuinely collapses (0.271, t~7, placebo-confirmed) even though
+its alpha does not clear.
+
+The next action is unchanged and now doubly supported: **run H31.**
