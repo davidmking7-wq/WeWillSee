@@ -201,13 +201,58 @@ SCOPE OF THE REJECTION (what it is NOT evidence about)
 2. NO POST-2016 NAMES. The point-in-time universe buys survivorship-freedom by
    excluding every index addition after 2016-01-04.
 3. ONE PUBLISHER. Absence of a Benzinga headline is not absence of news.
-4. NOT TESTED, AND DELIBERATELY NOT ADDED AFTER SEEING THIS NULL: Nagel's
-   central conditioning is on the PRICE of liquidity - reversal pays most when
-   VIX is high and market makers are constrained. Running it now would be
-   hunting a variant after a null result, so it is left as a registry row for
-   a future lab rather than a table in this one.
+4. Nagel's central conditioning - the PRICE of liquidity - was left out of the
+   first pass on purpose, because running it right after a null would have been
+   hunting a variant. It was then registered on its own in scout/hypotheses.md
+   and run as H21g/H21h; see the next section.
 
-Run: python -m scout.reversal_lab             (full study, ~1 min warm)
+H21g / H21h - NAGEL'S CENTRAL CONDITIONING (registered separately, run second)
+------------------------------------------------------------------------------
+The open question the first pass could not answer: "no reversal on average" is
+consistent with a real premium in constrained states averaged against a
+calm-state zero, in which case the unconditional test had no power by
+construction. So the spread is re-cut by the PRICE of liquidity - SPY's
+trailing 21-session realised volatility, annualised, known at close(t-1), in
+terciles by an EXPANDING quantile with a 252-session burn-in. (VIX is the
+literature's regressor; it is an index rather than a US equity, and this user's
+scope is US equities only, so realised vol is the equity-only analogue - and it
+is this repo's own crash-flag definition. The expanding cut matters: a
+full-sample quantile is the exact lookahead scout/backtest.py had to fix.)
+Conditioning is on the DATE, so the quintile ranking is bit-identical to
+H21a/H21b and only the dates the mean runs over change.
+
+  state      SPY vol   spread    t     halves         beta   alpha (Rule 13)
+  low  vol   7.04%    +12.85   +0.88  +13.76/+11.94  -0.07  +13.84 (t=+0.94)
+  mid  vol  11.43%     -4.11   -0.35  -14.35/ +6.11  +0.24  -12.45 (t=-1.09)
+  high vol  22.87%    +17.63   +0.76  +12.92/+22.35  +0.41   +3.05 (t=+0.14)
+
+H21g REJECTED. High minus low is +4.79 bps, SE 27.29, t = +0.18 - the
+registered sign and nothing else - the ordering is NOT monotone (mid-vol is
+negative, the same U that H21c found), and the registered "flips sign across
+halves" condition fires (-0.84 then +10.41). Normalising by each state's own
+cross-sectional dispersion preserves the ordering (+0.0291 low, +0.0487 high),
+but a preserved ordering on a t=0.18 contrast is a preserved coin flip. Rule 13
+then REVERSES it: the high-vol book is beta +0.41 to SPY and the low-vol book
+-0.07, so market-adjusted the state Nagel predicts should pay most pays least.
+
+H21h does not fire either of its pre-registered failure conditions and is still
+not a result, for two reasons already written into this repo's rule list. The
+quiet-minus-news difference by state is -22.93 / +10.05 / +30.31 bps, monotone
+in the registered direction, and the high-vol halves are +31.33/+29.30 with a
+news-label-shuffle p of 0.030. But (i) Rule 14: that null's SD is 0.63x the
+block bootstrap's, so p=0.030 is anti-conservative and the honest number is
++30.31 bps [-9.66, +73.69], t = +1.43 on 114 independent weekly windows; and
+(ii) Rule 15: 90% of the high-vol scorable dates fall in 2018-2022 (2023:11,
+2024:9, 2025:23, 2026:13), so the two "halves" are two slices of the same five
+years. The long-only quiet high-vol book - the best-looking book in the whole
+file at +27.27 bps, break-even 29.41 bps against 10 charged - has halves of
++7.37 then +47.16 and the same calendar concentration.
+
+Net effect on the verdict: the mixture defence is tested and fails, so H21 is
+now rejected against the mechanism's own preferred conditioning rather than in
+spite of it.
+
+Run: python -m scout.reversal_lab             (full study, ~3 min warm)
      python -m scout.reversal_lab --selftest  (offline, no keys, <5s)
 """
 from __future__ import annotations
@@ -241,6 +286,8 @@ CTRL_REPS = 200             # permutation draws, every control
 SEED = 20260809
 STALE_RUN = 10              # identical consecutive closes that retire a ticker
 EXTREME_1D = 0.45           # |1-day return| flagged as a possible bad print
+VOL_LB = 21                 # H21g: SPY realised-vol window, this repo's crash-flag length
+VOL_BURN = 252              # sessions before the expanding vol quantile is trusted
 
 BARS_CACHE = config.SCOUT_DIR / "cache_reversal_bars.pkl"
 
@@ -402,6 +449,54 @@ def dollar_volume_rank(close: pd.DataFrame, volume: pd.DataFrame,
                        lookback: int = LOOKBACK) -> pd.DataFrame:
     """Trailing mean dollar volume, known at close(t-1)."""
     return (close * volume).rolling(lookback, min_periods=lookback // 2).mean().shift(1)
+
+
+def vol_state(spy: pd.Series, lookback: int = VOL_LB, burn: int = VOL_BURN):
+    """H21g/H21h's state variable: which tercile of ITS OWN HISTORY the market's
+    trailing realised volatility sits in at close(t-1).
+
+    Nagel's regressor is VIX. VIX is an index rather than a US equity, and this
+    user's scope is US equities only, so the equity-only analogue is used: SPY's
+    trailing `lookback`-session realised volatility, annualised - the same
+    definition this repo's crash flag already carries.
+
+    The tercile cut is an EXPANDING quantile over sessions 0..t-1, never a
+    full-sample one. A full-sample quantile is lookahead, and it is the exact
+    bug scout/backtest.py had to fix in the v4 harness (the crash-flag q80 was
+    computed on the whole tape). `burn` sessions are left unclassified (-1)
+    so the first cut is taken on a real distribution rather than on 30 days.
+
+    Returns (state int8 per date, annualised vol per date)."""
+    r = spy.pct_change()
+    sig = r.rolling(lookback).std().shift(1) * math.sqrt(252)
+    v = sig.to_numpy()
+    st = np.full(len(v), -1, dtype=np.int8)
+    for i in range(burn, len(v)):
+        if not np.isfinite(v[i]):
+            continue
+        past = v[:i][np.isfinite(v[:i])]
+        if len(past) < burn // 2:
+            continue
+        lo, hi = np.percentile(past, [100 / 3, 200 / 3])
+        st[i] = 0 if v[i] <= lo else (1 if v[i] <= hi else 2)
+    return st, sig
+
+
+def cs_dispersion(fwd: np.ndarray, elig: np.ndarray) -> np.ndarray:
+    """Per-date cross-sectional SD of the forward return over the eligible pool.
+
+    The registered honesty diagnostic for H21g: a high-volatility state inflates
+    EVERY cross-sectional spread mechanically, so a raw-bps ordering across vol
+    states proves nothing on its own. Dividing the spread by this makes the
+    comparison scale-free."""
+    y = np.where(elig & np.isfinite(fwd), fwd, np.nan)
+    n = np.isfinite(y).sum(1)
+    out = np.full(y.shape[0], np.nan)
+    ok = n >= 2                     # ddof=1 is undefined on a 1-name row
+    if ok.any():
+        with np.errstate(invalid="ignore"):
+            out[ok] = np.nanstd(y[ok], axis=1, ddof=1)
+    return out
 
 
 def eligibility(close: pd.DataFrame, h: int, form: int = FORM,
@@ -749,12 +844,18 @@ def date_shuffle_control(sig: np.ndarray, elig: np.ndarray, fwd: np.ndarray,
 
 def news_shuffle_control(lab: np.ndarray, fwd: np.ndarray, grp: np.ndarray,
                          q: int, rng: np.random.Generator,
-                         reps: int = CTRL_REPS) -> np.ndarray:
+                         reps: int = CTRL_REPS,
+                         date_mask: np.ndarray | None = None) -> np.ndarray:
     """CONTROL (d), the one that decides H21b: the news/no-news assignment
     permuted across symbols WITHIN each date, preserving the per-date group
     sizes exactly. Every date keeps the same number of quiet names and the same
     price ranking; only WHICH names were quiet dies. If the real difference sits
-    inside this null, the conditioning is decoration."""
+    inside this null, the conditioning is decoration.
+
+    `date_mask` scores the null on a SUBSET of dates (H21h's volatility states).
+    The permutation still runs on every date, so each draw keeps the same
+    machinery; only the dates the mean is taken over change - which is exactly
+    what the real in-state statistic does."""
     out = np.empty(reps)
     for r in range(reps):
         g = grp.copy()
@@ -767,7 +868,8 @@ def news_shuffle_control(lab: np.ndarray, fwd: np.ndarray, grp: np.ndarray,
         for gi in (0, 1):
             cells, _, cnt = cell_means(lab, fwd, q, g == gi)
             d.append(rev_spread(cells, cnt, q))
-        out[r] = _nanmean(d[0] - d[1])
+        dd = d[0] - d[1]
+        out[r] = _nanmean(dd if date_mask is None else np.where(date_mask, dd, np.nan))
     return out
 
 
@@ -931,6 +1033,33 @@ def selftest() -> int:
     check("break-even = gross / summed turnover",
           abs(c["breakeven_bps"] - 20.0 / 1.8) < 1e-9
           and abs(c["net_bps"] - (20.0 - 18.0)) < 1e-9)
+
+    # 11. H21g's state variable. The expanding quantile is the one place a
+    # lookahead could re-enter, so it gets the same treatment as the shift:
+    # a vol spike planted LATE must not reclassify anything BEFORE it.
+    n = 1200
+    idx = pd.bdate_range("2016-01-01", periods=n)
+    rr = rng.normal(0, 0.005, n)
+    rr[1000:1100] *= 8.0                      # a volatility crisis, late
+    spy_a = pd.Series(100 * np.exp(np.cumsum(rr)), index=idx)
+    st_a, sg = vol_state(spy_a, burn=252)
+    spy_b = spy_a.copy()                      # same tape, crisis made bigger
+    rr2 = rr.copy()
+    rr2[1000:1100] *= 4.0
+    spy_b = pd.Series(100 * np.exp(np.cumsum(rr2)), index=idx)
+    st_b, _ = vol_state(spy_b, burn=252)
+    check("expanding vol quantile is causal: a later crisis cannot "
+          "reclassify earlier dates", bool((st_a[:1000] == st_b[:1000]).all()))
+    check("vol state is known at close(t-1): a one-session jump moves the "
+          "state no earlier than t", bool(np.isnan(sg.iloc[0])
+                                          and sg.index[0] == idx[0]))
+    hi_share = float((st_a[st_a >= 0] == 2).mean())
+    check("expanding terciles are roughly balanced, not degenerate",
+          0.15 < hi_share < 0.55, f"high-vol share {hi_share:.2f}")
+    d = cs_dispersion(np.array([[0.01, 0.03, np.nan], [0.0, 0.0, 0.0]]),
+                      np.ones((2, 3), bool))
+    check("cross-sectional dispersion ignores NaNs and is zero on a flat row",
+          abs(d[1]) < 1e-12 and abs(d[0] - np.std([0.01, 0.03], ddof=1)) < 1e-12)
 
     print(f"\n{'ALL CHECKS PASSED' if not fails else f'{fails} CHECK(S) FAILED'}")
     return 1 if fails else 0
@@ -1336,6 +1465,165 @@ def main() -> None:
         p_two=float(2 * min((nsh_top >= act_top).mean(),
                             (nsh_top <= act_top).mean())))
 
+    # ------------------------------- H21g/H21h the PRICE of liquidity
+    _hdr("H21g/H21h NAGEL'S CENTRAL CONDITIONING: the PRICE of liquidity")
+    print("Registered in scout/hypotheses.md BEFORE this run. The H21 round")
+    print("closed by naming this as the one form of the mechanism it had NOT")
+    print("tested; this is that row, not a variant found after a null.")
+    print("\nMECHANISM: the reversal return is the FEE for absorbing uninformed")
+    print("order flow, and a fee is set by the supplier's constraint - when")
+    print("volatility is high, market-maker capacity is impaired and the price")
+    print("of immediacy rises. The theory does not predict a CONSTANT reversal;")
+    print("it predicts one that is large when volatility is high and absent")
+    print("when it is low. An unconditional average of that mixture has no")
+    print("power by construction, which is how H21a's +6.95 bps should be read.")
+    print("\nSTATE: SPY trailing 21-session realised volatility, annualised,")
+    print("known at close(t-1), cut into terciles by an EXPANDING quantile with")
+    print("a 252-session burn-in. VIX is the literature's regressor but is an")
+    print("index, not a US equity; realised vol is the equity-only analogue and")
+    print("is this repo's own crash-flag definition. The expanding cut matters:")
+    print("a full-sample quantile is the exact lookahead backtest.py had to fix.")
+    print("Conditioning is on the DATE, so the quintile ranking is bit-identical")
+    print("to H21a/H21b - the per-date spread series is simply subset.\n")
+
+    st, sigser = vol_state(spy)
+    k5 = ukeep[H_PRIMARY]
+    sp_all = k5["spread"]
+    disp = cs_dispersion(k5["fwd"], k5["elig"])
+    d_qn = spreads["quiet"] - spreads["news"]
+    spym5 = (spy.shift(-H_PRIMARY) / spy - 1.0).to_numpy()
+    runs = int((np.diff(st[st >= 0]) != 0).sum() + 1)
+    print(f"burn-in leaves {int((st < 0).sum()):,} of {len(st):,} sessions "
+          f"unclassified; the state changes {runs} times, i.e. it is persistent")
+    print("(a masked series is bootstrapped after NaN-compression, so a block")
+    print("can straddle a gap - disclosed, and mild because states run long).\n")
+
+    def _state_mask(s):
+        return (st == s)
+
+    vrows = []
+    for s, nm in ((0, "low vol"), (1, "mid vol"), (2, "high vol")):
+        m = _state_mask(s)
+        x = np.where(m, sp_all, np.nan)
+        xn = np.where(m & np.isfinite(disp) & (disp > 0), sp_all / disp, np.nan)
+        dq = np.where(m, d_qn, np.nan)
+        sub = np.repeat(m[:, None], close.shape[1], axis=1)
+        r = summarize(x, H_PRIMARY, rng, state=nm)
+        r.update(beta_alpha(x, spym5, H_PRIMARY, rng))
+        r["spy_vol"] = float(np.nanmean(np.where(m, sigser.to_numpy(), np.nan)) * 100)
+        r["cs_disp"] = float(np.nanmean(np.where(m, disp, np.nan)) * 100)
+        r["norm"] = _nanmean(xn)
+        r["diff_qn"] = _nanmean(dq) * 1e4
+        r["n_diff"] = int(np.isfinite(dq).sum())
+        _d1, _d2 = halves(dq)
+        r["dh1"], r["dh2"] = _d1 * 1e4, _d2 * 1e4
+        r["turn"] = (turnover(k5["lab"], 0, H_PRIMARY, sub)
+                     + turnover(k5["lab"], N_Q - 1, H_PRIMARY, sub))
+        r["breakeven"] = r["mean"] / r["turn"] if r["turn"] else float("nan")
+        vrows.append(r)
+    vol = pd.DataFrame(vrows)
+    print("H21g UNCONDITIONAL reversal by volatility state (bps per 5-session hold):")
+    print(vol[["state", "n_dates", "spy_vol", "cs_disp", "mean", "lo", "hi", "t",
+               "half1", "half2", "norm", "beta", "alpha", "t_alpha"]]
+          .to_string(index=False, float_format=_fmt))
+    print("\nspy_vol = mean annualised SPY realised vol in the state (%);")
+    print("cs_disp = mean cross-sectional SD of the 5-session forward return (%);")
+    print("norm    = THE REGISTERED HONESTY DIAGNOSTIC, mean(spread/dispersion),")
+    print("          unitless. A high-vol state inflates every spread")
+    print("          mechanically, so a raw-bps ordering proves nothing on its")
+    print("          own: if the raw ordering appears and the normalised one")
+    print("          does not, this is volatility scaling, not a price of")
+    print("          liquidity, and it must be reported as such.")
+
+    hi_m, lo_m = _state_mask(2), _state_mask(0)
+    x_hi = np.where(hi_m, sp_all, np.nan)
+    x_lo = np.where(lo_m, sp_all, np.nan)
+    b_hi = block_boot(x_hi, H_PRIMARY, BOOT_REPS, rng)
+    b_lo = block_boot(x_lo, H_PRIMARY, BOOT_REPS, rng)
+    se_hl = math.sqrt(b_hi["se"] ** 2 + b_lo["se"] ** 2)
+    d_hl = (b_hi["mean"] - b_lo["mean"]) * 1e4
+    nh1 = _nanmean(np.where(hi_m & (disp > 0), sp_all / disp, np.nan))
+    nl1 = _nanmean(np.where(lo_m & (disp > 0), sp_all / disp, np.nan))
+    print(f"\nH21g CONTRAST high minus low: {d_hl:+.2f} bps, SE {se_hl * 1e4:.2f}, "
+          f"t = {d_hl / (se_hl * 1e4):+.2f}")
+    print("  (the two states are DISJOINT date sets, so this is not a paired")
+    print("   series - the SE combines the two independent block bootstraps.)")
+    print(f"  normalised high {nh1:+.4f} vs low {nl1:+.4f} -> "
+          f"difference {nh1 - nl1:+.4f}")
+
+    print("\nH21h THE JOINT FORM: H21b's quiet-minus-news DIFFERENCE, by state")
+    print(vol[["state", "n_diff", "diff_qn", "dh1", "dh2"]]
+          .to_string(index=False, float_format=_fmt))
+    print("n_diff = dates on which BOTH legs are scorable IN THAT STATE - the")
+    print("Rule 15 coverage number, printed before the return number.")
+    print("\nRULE 15, the check that killed H21e's t=2.54 cell: WHEN are the")
+    print("high-vol scorable dates? Volatility clusters, and the quiet group")
+    print("thins as Benzinga coverage grows, so this cell can easily be one")
+    print("slice of the calendar wearing a t-statistic.")
+    hcov = pd.Series(np.isfinite(np.where(hi_m, d_qn, np.nan)), index=close.index)
+    print("  high-vol scorable dates by year: "
+          + "  ".join(f"{y}:{int(v)}" for y, v in
+                      hcov.groupby(close.index.year).sum().items()))
+    print("  high-vol state dates by year   : "
+          + "  ".join(f"{y}:{int(v)}" for y, v in
+                      pd.Series(hi_m, index=close.index)
+                      .groupby(close.index.year).sum().items()))
+    nsh_hi = news_shuffle_control(aux["lab"], aux["fwd"], grp_news, N_Q,
+                                  np.random.default_rng(SEED + 77),
+                                  date_mask=hi_m)
+    dhi = _nanmean(np.where(hi_m, d_qn, np.nan))
+    b_dhi = block_boot(np.where(hi_m, d_qn, np.nan), H_PRIMARY, BOOT_REPS, rng)
+    act_hi = dhi
+    print(f"\nhigh-vol quiet-minus-news, the HONEST statistic first: "
+          f"{b_dhi['mean'] * 1e4:+.2f} bps "
+          f"[{b_dhi['lo'] * 1e4:+.2f}, {b_dhi['hi'] * 1e4:+.2f}], "
+          f"block-bootstrap t = {b_dhi['t']:+.2f}, n = {b_dhi['n']:,} dates "
+          f"= {b_dhi['n'] // H_PRIMARY} independent weekly windows")
+    print(f"control (d) IN THE HIGH-VOL STATE: actual {dhi * 1e4:+.2f} bps   "
+          f"null {nsh_hi.mean() * 1e4:+.2f} +/- {nsh_hi.std(ddof=1) * 1e4:.2f}   "
+          f"SE ratio {nsh_hi.std(ddof=1) / max(b_dhi['se'], 1e-12):.2f}   "
+          f"pctile {float((nsh_hi < act_hi).mean()) * 100:.0f}   "
+          f"p2 {2 * min((nsh_hi >= act_hi).mean(), (nsh_hi <= act_hi).mean()):.3f}")
+    print("Rule 14: the permutation null's SD is the SE ratio times the block")
+    print("bootstrap's, so where that ratio is below 1 the permutation p-value")
+    print("is ANTI-CONSERVATIVE and the block-bootstrap t is the one to read.")
+
+    print("\nH21g COSTS IN-STATE (a premium that exists only when volatility is")
+    print("high must clear 10 bps in THOSE sessions, not on the pooled average):")
+    print(vol[["state", "mean", "turn", "breakeven"]]
+          .to_string(index=False, float_format=_fmt))
+    print("\nand the LONG-ONLY quiet book - the only form this user could trade -")
+    print("restricted to high-vol sessions, against the same eligible-pool")
+    print("benchmark H21d uses (one leg, so half the round trips):")
+    cq, pq, nq = cell_means(aux["lab"], aux["fwd"], N_Q, grp_news == 0)
+    lo_q_hi = np.where(hi_m & (nq[:, 0] >= MIN_CELL), cq[:, 0] - pq, np.nan)
+    b_lq = block_boot(lo_q_hi, H_PRIMARY, BOOT_REPS, rng)
+    t_lq = turnover(aux["lab"], 0, H_PRIMARY,
+                    (grp_news == 0) & np.repeat(hi_m[:, None], close.shape[1], 1))
+    lh1, lh2 = halves(lo_q_hi)
+    print(f"  losers-minus-pool, quiet, high vol: {b_lq['mean'] * 1e4:+.2f} bps "
+          f"[{b_lq['lo'] * 1e4:+.2f}, {b_lq['hi'] * 1e4:+.2f}], t = {b_lq['t']:+.2f}, "
+          f"n = {b_lq['n']:,} dates, halves {lh1 * 1e4:+.2f}/{lh2 * 1e4:+.2f}")
+    print(f"  turnover {t_lq:.2f} -> break-even round trip "
+          f"{b_lq['mean'] * 1e4 / t_lq:.2f} bps against {COST_BPS:.0f} charged, "
+          f"net {b_lq['mean'] * 1e4 - t_lq * COST_BPS:+.2f} bps/hold")
+    out["vol_longonly_quiet_high"] = dict(
+        mean=float(b_lq["mean"] * 1e4), lo=float(b_lq["lo"] * 1e4),
+        hi=float(b_lq["hi"] * 1e4), t=float(b_lq["t"]), n=int(b_lq["n"]),
+        half1=float(lh1 * 1e4), half2=float(lh2 * 1e4), turn=float(t_lq),
+        breakeven=float(b_lq["mean"] * 1e4 / t_lq) if t_lq else float("nan"))
+    out["vol_state"] = vol.to_dict("records")
+    out["vol_contrast"] = dict(high_minus_low_bps=d_hl, se_bps=se_hl * 1e4,
+                               t=d_hl / (se_hl * 1e4) if se_hl else float("nan"),
+                               norm_high=nh1, norm_low=nl1,
+                               diff_high_actual=float(dhi * 1e4),
+                               diff_high_lo=float(b_dhi["lo"] * 1e4),
+                               diff_high_hi=float(b_dhi["hi"] * 1e4),
+                               diff_high_t=float(b_dhi["t"]),
+                               diff_high_n=int(b_dhi["n"]),
+                               diff_high_null_mean=float(nsh_hi.mean() * 1e4),
+                               diff_high_null_sd=float(nsh_hi.std(ddof=1) * 1e4))
+
     # ------------------------------------------------- registered variants
     _hdr("REGISTERED VARIANTS: the one-day gap, and the news window")
     print("NO-SKIP uses close(t)/close(t-5)-1, i.e. the formation window ends at")
@@ -1488,18 +1776,35 @@ def main() -> None:
           f"diff {liq.set_index('subset').loc['top-liquidity half', 'diff']:+.2f}")
     print(f"H21f break-even round trip, long/short all names: "
           f"{cost.iloc[0]['breakeven_bps']:.2f} bps against {COST_BPS:.0f} charged")
+    vv = vol.set_index("state")
+    print(f"H21g reversal by SPY-vol state (Nagel's own conditioning): "
+          + " -> ".join(f"{vv.loc[s, 'mean']:+.2f}"
+                        for s in ("low vol", "mid vol", "high vol"))
+          + f"; high minus low {d_hl:+.2f} bps, t={d_hl / (se_hl * 1e4):+.2f}; "
+          f"market-adjusted alpha {vv.loc['low vol', 'alpha']:+.2f} (low) vs "
+          f"{vv.loc['high vol', 'alpha']:+.2f} (high) - Rule 13 reverses it")
+    print(f"H21h quiet-minus-news by vol state: "
+          + " -> ".join(f"{vv.loc[s, 'diff_qn']:+.2f}"
+                        for s in ("low vol", "mid vol", "high vol"))
+          + f"; high-vol cell {b_dhi['mean'] * 1e4:+.2f} bps "
+          f"[{b_dhi['lo'] * 1e4:+.2f}, {b_dhi['hi'] * 1e4:+.2f}], t={b_dhi['t']:+.2f}, "
+          f"and 90% of its dates are 2018-2022 (Rule 15)")
     print("\nRegistered failure conditions: H21b fails if the difference sits")
     print("inside the news-label-shuffle null or flips sign across halves;")
-    print("H21f fails if break-even is under 10 bps. Read them off the tables.")
-    print("\nTRIAL COUNT: 16 pre-registered variants (4 unconditional horizons,")
+    print("H21f fails if break-even is under 10 bps; H21g fails if high-minus-low")
+    print("is negative, flips sign across halves, or is absent once normalised by")
+    print("cross-sectional dispersion. Read them off the tables.")
+    print("\nTRIAL COUNT: 18 pre-registered variants (4 unconditional horizons,")
     print("4 news-conditioned horizons, within-group terciles, abnormal-news")
     print("terciles, long-only, 2 liquidity subsets + the bottom tercile,")
-    print("no-skip, the t-5..t news window, the extreme-print rerun). Controls")
-    print("are nulls and do not count. The MIN_CELL grid is a coverage")
-    print("diagnostic reported in full, not a search. Best |t| anywhere is 2.54,")
-    print("in the cell that is measured on 31 independent windows; this repo's")
-    print("standalone bar is t > 3 (Harvey-Liu) and at 16 trials that is if")
-    print("anything generous.")
+    print("no-skip, the t-5..t news window, the extreme-print rerun, plus H21g")
+    print("and H21h registered separately in scout/hypotheses.md BEFORE this")
+    print("run). Controls are nulls and do not count. The MIN_CELL grid, the")
+    print("in-state cost rows and the Rule 15 year-coverage prints are")
+    print("diagnostics required by existing house rules, reported in full, not")
+    print("a search. Best |t| anywhere is 2.5, in the cell that is measured on")
+    print("31 independent windows; this repo's standalone bar is t > 3")
+    print("(Harvey-Liu) and at 18 trials that is if anything generous.")
 
     (config.SCOUT_DIR / "reversal_results.json").write_text(
         json.dumps(out, indent=1, default=str))

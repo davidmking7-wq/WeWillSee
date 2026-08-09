@@ -9,8 +9,7 @@ announced - the drift is the market finishing a job it started too slowly.
 
 Testable consequence: rank announcements by standardised unexpected earnings and
 the top decile must out-drift the bottom decile over the following 5-63 sessions,
-in the SAME direction as the surprise, and by more than the announcement-day
-price reaction alone explains.
+in the SAME direction as the surprise.
 
 WHY THIS IS NOT A REPEAT OF H2b
 -------------------------------
@@ -19,7 +18,107 @@ scout/hypotheses.md H2b rejected drift sorted on the two-day PRICE REACTION
 variable, and the literature's variable has always been the surprise. The repo
 had no fundamental data when H2b ran; it does now (scout/sec_bulk.py). The
 price-reaction sort is re-run HERE as a control that must reproduce H2b's null,
-and it does (below).
+and it does.
+
+VERDICT: REJECTED - the surprise is real, large, and PRICED ON THE ANNOUNCEMENT
+-------------------------------------------------------------------------------
+Every number below is from `python -m scout.sue_lab`, 431 s, output kept in
+scout/cache_sue_lastrun.txt. Deciles, equal weight per event, market-adjusted
+against SPY over each event's identical calendar window, forward returns
+winsorised at their own 1%/99% (the unwinsorised number is printed beside every
+headline), circular moving-block bootstrap over SESSIONS with block = holding
+period, 2,000 draws. n = 41,378 ranked events at h=21 out of 42,119 usable, on
+2,026 distinct entry sessions, 1,389 firms, 2017-01..2026-05.
+
+1. THE SIGNAL IS NOT BROKEN - THE POSITIVE CONTROL IS EMPHATIC. Mean two-day
+   announcement reaction by SUE decile, in bps:
+
+       D1     D2     D3     D4     D5     D6     D7     D8     D9    D10
+     -117.0  -89.4  -24.3  +10.4  +42.8  +92.1  +91.6 +117.7 +143.3 +186.1
+
+   monotone but for one adjacent pair, D10-D1 = +303.1 bps at t = +15.43. A
+   seasonal-random-walk surprise computed from GAAP net income sorts the
+   announcement-day move about as cleanly as anything in this repo sorts
+   anything. Any rejection below is a statement about the market, not about a
+   dead signal - which is the only thing that makes a null worth reading.
+
+2. AND THE MARKET PAYS IT ALL AT ONCE. Event-time CAR from close(a-1),
+   market-adjusted, deciles formed the literature's way:
+
+       decile   (-1,+1)   (-1,+5)  (-1,+21)  (-1,+42)  (-1,+63)
+       D10       +179.1    +175.6    +217.1    +145.9    +187.8
+       D1        -134.1    -126.2    -134.4    -189.9    -164.3
+       D10-D1    +313.2    +301.8    +351.5    +335.8    +352.1
+
+   **89% of the entire 63-session D10-D1 spread is already paid by close(a+1).**
+   The remaining ~39 bps over three months is the drift Bernard-Thomas
+   predicts, and it is inside every error bar in this file. That table is the
+   whole result.
+
+3. THE STRICT POINT-IN-TIME SORT MEASURES NOTHING. Entry = close of the session
+   AFTER the later of the 8-K and the 10-Q, D10-D1 market-adjusted:
+
+       h= 5   +11.11 bps  [ -18.11,  +38.39]  t=+0.77  halves +24.23/ -1.67
+       h=21    -2.46 bps  [ -74.66,  +65.34]  t=-0.07  halves -34.07/+28.64
+       h=42   +21.19 bps  [ -70.71, +113.04]  t=+0.45  halves -19.06/+61.09
+       h=63    -1.58 bps  [-115.57, +106.85]  t=-0.03  halves -73.55/+69.58
+
+   No horizon reaches |t| = 1, the sign flips across halves at three of four
+   horizons, and the decile profile is not monotone at any of them (at h=21 the
+   worst decile is D5 at -31.2 and D1 is the second BEST at +7.3). Unwinsorised:
+   +8.81 / -16.59 / +17.45 / -3.16. Not market-adjusted: +8.47 / -22.84 / +4.49
+   / -17.43. Rule 13 finds nothing to strip - trailing 252-session beta is
+   1.04-1.10 across all ten deciles, so the market adjustment moves the answer
+   by a few bps and cannot be hiding anything.
+
+4. THE ONE CELL WITH THE REGISTERED SIGN IS INSIDE ITS OWN NULL. Entering right
+   after the 8-K instead (the literature-faithful specification, which assumes
+   the press release carried the net income the 10-Q later tagged - median 1
+   session earlier, p75 8, p90 17) gives -7.00 / +51.36 / +27.66 / +27.12 bps,
+   and the h=21 cell is the only one in the study that is positive in both
+   halves (+44.20/+57.84) at a t worth reading (+1.57). The firm-level
+   date-shuffle - each firm's own SUEs permuted across that firm's own
+   announcement dates, so every firm keeps its own surprise distribution and
+   only the pairing of surprise to quarter dies - returns **+27.88 +- 17.40 bps,
+   p = 0.085**. Fifty-four percent of the one positive cell survives destroying
+   its timing entirely. At h=63 the shuffle returns **+81.16** against a real
+   +27.12: the static "which firms have big surprises" component is three times
+   the timed effect. Same shape on the strict spec (h=63 real -1.58, shuffle
+   +79.49 +- 33.23, p = 0.995). This is H15's failure mode reached through
+   accounting data.
+
+5. THE H2b CONTROL REPRODUCES H2b EXACTLY, so the pipeline agrees with the
+   established repo result before it is allowed to disagree with anything.
+   Mid/small caps, 42 sessions, raw end return: reaction >= +5% ends +1.88%
+   (n=6,483), reaction <= -5% ends +1.94% (n=5,725), difference -0.06pp; H2b
+   recorded "end identically, ~+1.7-2.4% both". Reaction deciles D10-D1 are
+   -11.34 / +45.23 / +80.12 / +41.60 bps, |t| <= 1.82. And SUE correlates with
+   the two-day reaction at rank 0.118 - the two sorts really are different
+   variables, which is what made this test worth running.
+
+6. IT IS NOT DOWN-CAP HERE, WHICH IS THE OPPOSITE OF THE DOCUMENTED PATTERN.
+   Strict spec, h=21 by liquidity tercile of 20-day median dollar volume: LOW
+   -15.78, MID -13.99, HIGH +14.22; at h=63: LOW -76.91, MID +3.65, HIGH
+   +153.41 (t=+1.73). By segment at h=63: small -25.77, mid -96.91, large
+   +114.59. The ann-anchored spec orders the same way (h=63 liquidity HIGH
+   +181.48, t=+2.33; LOW -76.74). Livnat-Mendenhall put PEAD in the smallest,
+   least-liquid names; in this universe the only cells with the registered sign
+   are the largest and most liquid, which is what a multiple-comparison artefact
+   looks like and not what the mechanism predicts. Twelve such cells were cut;
+   two clear |t| = 2.
+
+7. THE LATE-WINDOW PLACEBO SAYS THERE IS NO DRIFT CLOCK. Sessions +63..+126
+   after the same surprise earn +18.72 bps, +0.30 bps per session, against the
+   in-window -0.03. Drift that is finished after 60 sessions should give ~0 out
+   here; it gives marginally more than the in-window number, because both are
+   zero.
+
+8. COSTS, ALTHOUGH BY NOW THEY ARE ACADEMIC. Break-even round-trip cost for the
+   two-legged D10-D1 book is 5.6 / -1.2 / 10.6 / -0.8 bps at h=5/21/42/63
+   against 10 charged. The long-only D10-minus-pool form - the only shape this
+   user could trade - is +0.21 / +15.92 / +8.55 / +10.92 bps with t = +0.02 /
+   +0.86 / +0.29 / +0.33, break-even 0.2 / 15.9 / 8.5 / 10.9 bps, netting
+   +0.71%/yr at best against SPY's ~+15.8%/yr over the same decade.
 
 WHAT IS MEASURED
 ----------------
@@ -29,16 +128,20 @@ Universe   the 1,507 current S&P 1500 members (scout/universe.py) - SURVIVORSHIP
 Earnings   scout/sec_bulk.py XBRL facts, tag NetIncomeLoss, consolidated rows
            only (segments and coreg both null), uom USD, first-filing-wins on
            every (ticker, period, qtrs) cell. Fiscal Q4 is usually not filed as
-           a qtrs=1 fact, so 7,842 Q4 quarters are DERIVED as annual minus the
-           three filed quarters of the same fiscal year, and carry the max of
-           the four filing dates. After that 98.9% of consecutive period-end
-           gaps are one quarter.
+           a qtrs=1 fact, so Q4 quarters are DERIVED as annual minus the three
+           filed quarters of the same fiscal year, and carry the max of the four
+           filing dates.
 Dates      scout/earnings_history.json, 21k real SEC 8-K Item 2.02 filing dates.
            98.4% of events matched an 8-K in (period end, filing date + 3d].
-Prices     Alpaca SIP daily closes, adjustment=all, split-REPAIRED (below).
-           2,664 sessions, 2016-01-04..2026-08-07.
-Sample     42,740 SUE events, 40,747 of them usable at h=21 after 2017-01-01,
-           1,390 firms, 2,410 distinct entry sessions.
+Prices     Alpaca SIP daily closes, adjustment=all, split-REPAIRED and
+           frozen-quote-retired (below). 2,664 sessions, 2016-01-04..2026-08-07.
+Sample     42,740 SUE events built; 42,119 usable after 2017-01-01; 41,378
+           ranked at h=21; 2,026 entry sessions; 1,389 firms.
+Effective independent sample   the cross-section is collapsed to one row per
+           SESSION before any statistic, and holds overlap, so the honest count
+           is 2,026 sessions = 96 non-overlapping 21-session holds and 32
+           non-overlapping 63-session holds. That, not 41,378, is why the h=63
+           confidence interval is +-110 bps wide.
 
 THE SIGNAL
 ----------
@@ -53,9 +156,9 @@ The scaling cancels: dividing numerator and denominator by the same share count
 leaves SUE unchanged, so a levels SUE equals the per-share SUE up to slow drift
 in the share count - and it is immune to the split-adjustment problem that
 sec_bulk.adjust_facts_for_splits exists to solve (a 4:1 split divides EPS by
-four and would manufacture a -75% "surprise"). The per-share version is run as
-a registered variant anyway, using NI / split-adjusted shares outstanding
-(sec_bulk.shares_panel, keyed on each fact's FILING date), and it agrees.
+four and would manufacture a -75% "surprise"). The price-scaled variant
+(NI change over market value) is run as a registered variant and agrees:
++3.69 bps at h=21, +68.71 at h=63 (t=+1.10).
 
 WHERE THE shift() IS (the only thing that can manufacture this result)
 ---------------------------------------------------------------------
@@ -71,130 +174,106 @@ per the brief:
     fwd_h(event) = close(e + 1 + h) / close(e + 1) - 1
 
 so the return the signal weights starts at the close AFTER the session in which
-the last input fact became public. Concretely, in DataFrame terms the return is
+the last input fact became public. In DataFrame terms the return is
 `close.shift(-h) / close - 1` read at index e+1, and every fact entering SUE has
 `filed <= date(e)`. The trailing 8 seasonal differences are each checked
 individually: a difference is admitted only if max(filed_j, filed_{j-4}) is
 strictly before the event's own filing date. The decile breakpoints are taken
-from events with entry session in [e-63, e-1] - the previous calendar quarter of
+from events with entry session in [e-63, e-1] - the previous quarter of
 announcements, never the current one (Livnat-Mendenhall's own breakpoint rule,
-and the reason a same-quarter cross-sectional rank is not used).
+and the reason a same-date cross-sectional rank is not used: earnings arrive in
+three-week bursts, so a same-date rank is 40 firms on a Tuesday and 2 on a
+Friday). `main` asserts all three properties on the real 42,119-event table
+before any number is printed, and `--selftest` proves the labeller cannot see
+its own session on synthetic data.
 
 Measured cost of that discipline: median(filed - ann) = 1 day, p75 = 8, p90 =
 17. The point-in-time rule is nearly free here, which is worth saying because it
 is usually not.
 
-CONTROLS (four, all run, none optional)
----------------------------------------
+DATA HYGIENE - AND THE DEFECT THAT MATTERED WAS NOT THE ONE IN THE BRIEF
+-------------------------------------------------------------------------
+The brief warned about the 5.1% unapplied-split debt. This lab repairs it from
+Alpaca's own corporate-actions feed (5 events: AAPL 2020-08-31 4:1, SIRI
+2024-09-10 1:10, ROL twice, DEA; 12 more too close to 1:1 for the ex-date test
+to classify, printed and left alone) and flags every residual |1-day return| >
+45% (0.27% of events touch one; excluding them moves h=21 from -2.46 to -0.87).
+
+The defect that actually moved numbers is the FROZEN QUOTE. Alpaca keeps
+printing a delisted ticker at its last trade, and when the ticker is reissued
+after a Chapter 11 the splice manufactures an enormous return: GPOR, VAL, DBD,
+BTU, CRC, EXE all carry the old equity's penny quote spliced onto the
+reorganised company's $30-70 price, on real 10-Q filing dates. 23 symbols are
+retired at their first run of 10 identical closes (scout/reversal_lab.py's rule)
+and 377 further zero-volume sessions are blanked.
+
+`--no-retire` measures what that is worth, and it is the largest number in this
+file. Without the retirement rule the UNWINSORISED h=63 D10-D1 spread is
+**+896.68 bps, halves +2053.15 / -274.01**, against the clean run's -3.16; at
+h=5/21/42 it is -174.51 / -188.99 / -153.52 against +8.81 / -16.59 / +17.45.
+A dozen bankrupt-ticker splices - which land in the LOW-SUE decile by
+construction, because a company about to reorganise reports terrible earnings -
+are worth thirty times any effect this study is trying to measure, and they
+carry whichever sign the splice happens to have. The 1%/99% winsorisation
+independently removes almost all of it (unretired but winsorised: +6.14 bps at
+h=63 against the clean -1.58), so the two guards are belt and braces and the
+conclusion does not rest on either one alone. A version of this lab with
+neither guard would have reported a large, monotone, half-sample-unstable
+"PEAD" that is entirely delisting artefact.
+
+CONTROLS (six, all run, none optional)
+--------------------------------------
 a. RANDOM-PICK from the identical eligible pool - decile labels drawn uniformly
-   at random per event, 200 draws, mean AND SD (Rule 10). Expectation zero by
-   construction; what it buys is the noise scale. Its SD is printed next to the
-   block-bootstrap SE as Rule 14 demands, and it is 2-3x too tight - the same
-   anti-conservatism H16 documented.
-b. FIRM-LEVEL DATE SHUFFLE - each firm's own SUE values permuted across its own
-   announcement dates, 200 draws. Every firm keeps its own SUE distribution and
-   its own event dates; only the pairing of surprise to quarter dies. A DRIFT
-   effect must collapse here. A "high-SUE firms are simply better stocks" effect
-   survives untouched. This is the control that decides H26.
-c. PRICE-REACTION SORT - the H2b replication. Deciles of the 2-day announcement
-   reaction close(a-1) -> close(a+1) through the identical pipeline, plus H2b's
-   own +-5% mid/small-cap cohort test.
+   per event, 200 draws, mean AND SD (Rule 10). Its SD is printed next to the
+   block-bootstrap SE (Rule 14) and is 0.51-0.67x of it, i.e. anti-conservative
+   by about half, the same direction H16/H25 documented.
+b. FIRM-LEVEL DATE SHUFFLE, 200 draws - THE ROW THAT DECIDES H26, and the one
+   that fires.
+c. PRICE-REACTION SORT - the H2b replication, deciles and H2b's own +-5%
+   mid/small cohort test.
 d. MATCHED BENCHMARKS - the equal-weight mean of every eligible event in the
-   same window (the "pool"), and SPY over each event's identical calendar
-   window (the market-adjusted column).
-
-VERDICT: CONFIRMED at the surprise level, UNTRADEABLE at large-cap costs
-------------------------------------------------------------------------
-1. THE DRIFT IS THERE AND IT IS THE SURPRISE, NOT THE REACTION. Decile 10 minus
-   decile 1, market-adjusted, entry one session after the later of the 8-K and
-   the 10-Q:
-
-       h= 5   +25.7 bps   t=+4.60   halves +26.0 / +25.5
-       h=21   +58.7 bps   t=+4.42   halves +65.1 / +52.5
-       h=42   +81.4 bps   t=+3.94   halves +85.4 / +77.5
-       h=63  +100.4 bps   t=+3.70   halves +85.6 / +115.0
-
-   Same sign in both halves at every horizon, monotone in the horizon, and the
-   two shorter horizons clear this repo's t>3 bar. The decile profile is
-   monotone-ish rather than a knife edge: D1 -37.5 bps and D10 +43.9 bps at
-   h=21, with D5 at -6.0.
-
-2. THE DATE-SHUFFLE CONTROL KILLS IT, WHICH IS WHAT IT IS SUPPOSED TO DO HERE.
-   Permuting each firm's SUE across its own announcements takes the h=21 spread
-   from +58.7 bps to +0.2 +- 9.5 bps (p=0.000) and h=63 from +100.4 to
-   -0.1 +- 16.2. Unlike H15 - where the shuffle reproduced the effect and
-   therefore destroyed it - here the effect is entirely in the TIMING of the
-   surprise, which is exactly what Bernard-Thomas claims. The random-pick null
-   lands at 0.0 +- 4.3 bps (h=21) against the block bootstrap's 13.3, i.e. 3.1x
-   too tight; the shuffle null at 9.5 is 1.4x too tight and is the one quoted.
-
-3. THE PRICE-REACTION CONTROL REPRODUCES H2b'S NULL, so the pipeline agrees with
-   the established repo result. Reaction deciles D10-D1, market-adjusted:
-   +6.3 bps (h=5, t=+0.86), -3.8 (h=21, t=-0.22), -22.7 (h=42, t=-0.95),
-   -37.9 (h=63, t=-1.32) - no drift, and the sign turns negative exactly where
-   H2b found the two cohorts ending identically. H2b's own test on this
-   pipeline: mid/small +5% reactors end +2.09% at 42 sessions, -5% reactors
-   +2.29%, difference -0.20pp. H2b said "+5% reactors and -5% reactors end
-   identically (~+1.7-2.4% both)". Reproduced.
-
-4. IT IS DOWN-CAP, AS DOCUMENTED - AND THAT IS WHERE IT CANNOT BE TRADED.
-   h=21 market-adjusted D10-D1 by liquidity tercile of 20-day median dollar
-   volume at entry: LOW +91.4 bps, MID +55.9, HIGH +34.8. By S&P segment:
-   small +76.4, mid +59.3, large +33.7. The ordering is monotone in both cuts
-   and both halves agree. The effect is roughly 2.7x larger in the least-liquid
-   third of the S&P 1500 than in the most-liquid third - and the least-liquid
-   third of the S&P 1500 is where the 10 bps cost assumption stops being true.
-
-5. COSTS DECIDE IT, AND THEY DECIDE AGAINST. A D10-D1 book pays a round trip on
-   each leg, so break-even round-trip cost is HALF the spread: 12.8 bps (h=5),
-   29.4 (h=21), 40.7 (h=42), 50.2 (h=63). At the 10 bps charged for large caps
-   the h=21 book nets +38.7 bps per 21-session hold = +4.7%/yr GROSS OF BORROW,
-   before market impact, on a book that must be shorted. The long-only form -
-   which is the only form this user can trade - is D10 minus the eligible pool:
-   +21.2 bps at h=21 (t=+3.19), break-even 21.2 bps, netting +11.2 bps per hold
-   = +1.4%/yr against SPY's +15.8%/yr over the same decade. Real, honest, and
-   not a business.
-
-6. WHAT THE H2b/H26 PAIR ACTUALLY MEANS. The 2-day price reaction and SUE
-   correlate at only rank 0.183 in this sample. The market reacts to something
-   other than the seasonal-random-walk surprise on the day (guidance, revenue
-   mix, the analyst consensus this repo has no data for), and it is the
-   accounting surprise - not the reaction - that keeps paying. That is the
-   Bernard-Thomas claim stated precisely, and it is why sorting on the reaction
-   found nothing while sorting on the surprise found this.
+   same window (the pool), and SPY over each event's identical window.
+e. POSITIVE CONTROL - the announcement reaction by SUE decile. Without it a null
+   here would be unreadable.
+f. LATE-WINDOW PLACEBO - sessions +63..+126 on the same surprise.
 
 KNOWN LIMITS (measured or structural, none of them fixed here)
 --------------------------------------------------------------
-1. SURVIVORSHIP ON THE ENTRY SIDE. The universe is TODAY'S S&P 1500 and the
-   8-K date file covers exactly those 1,498 names; scout/pit.py's 154 delisted
-   S&P 500 members have neither 8-K dates nor a ticker in the SEC map (the map
-   is current registrants only). The bias direction is stateable: firms that
-   were delisted for failure disproportionately posted negative surprises, and
-   their absence removes bad outcomes from the LOW-SUE bucket, which SHRINKS
-   the measured spread. So this limitation works against the result rather than
-   for it - but it is not quantified, and the down-cap cells are the ones it
-   touches most.
-2. NO MICRO CAPS. The S&P 600 smallest tercile here is ~$1-3bn, not the
-   sub-$300m decile where the published PEAD is loudest. A large effect at the
-   bottom of THIS universe is a lower bound on the published one, and says
-   nothing about whether the published one is still there.
-3. GAAP NET INCOME ONLY, NO ANALYST CONSENSUS. The seasonal-random-walk SUE is
-   the mechanical surprise, not the surprise-versus-expectations that actually
-   moves prices. Livnat-Mendenhall found the analyst-based SUE produces a LARGER
-   drift; this repo has no analyst data, so the number here is the weaker of the
-   two definitions.
-4. NET INCOME IS DIRTY. Impairments, tax-reform one-offs (2017 Q4 is visible in
-   the tails) and discontinued operations all enter. Winsorising SUE at +-8
-   changes the h=21 spread from +58.7 to +57.2 bps, so the tails are not driving
-   it, but a cleaner operating-earnings tag would be a better signal.
-5. COSTS ARE MODELLED, NOT MEASURED. 10 bps round trip per leg, no borrow, no
-   impact, no shorting constraint, and the effect is concentrated exactly where
-   all four of those get worse.
-6. ONE MACRO ERA. 2017-2026: one long bull market, one crash, one inflation
-   shock.
+1. POWER. The h=21 spread's 95% interval is +-70 bps and the h=63 interval
+   +-110 bps, on 96 and 32 non-overlapping holds. This study excludes a drift
+   larger than roughly 0.7% per quarter in this universe; it cannot exclude one
+   of 20-30 bps. The published large-sample PEAD, which is several times that
+   in the smallest CRSP deciles, IS excluded here.
+2. SURVIVORSHIP ON THE ENTRY SIDE. The universe is TODAY'S S&P 1500 and the 8-K
+   file covers those names; scout/pit.py's delisted members have no ticker in
+   the SEC map (current registrants only). Direction is stateable: firms
+   delisted for failure disproportionately posted negative surprises, and their
+   absence removes bad outcomes from the LOW-SUE bucket, which SHRINKS the
+   measured spread. So the bias works against the registered sign - but it is
+   not quantified, and it lands hardest on exactly the down-cap cells that were
+   supposed to carry the effect.
+3. NO MICRO CAPS. The S&P 600 floor is ~$1bn, not the sub-$300m decile where
+   published PEAD is loudest. This is evidence about the S&P 1500, not about
+   the anomaly's home.
+4. GAAP NET INCOME, NO ANALYST CONSENSUS. The seasonal random walk is the
+   mechanical surprise, not surprise-versus-expectations. Livnat-Mendenhall
+   find the analyst-based SUE drifts MORE; this repo has no analyst data, so
+   this is the weaker of the two definitions - and note that the weaker one
+   still sorts the announcement-day move at t=+15.4.
+5. NET INCOME IS DIRTY. Impairments, the 2017 tax act and discontinued
+   operations all enter. The registered "winsorise SUE at +-8" robustness check
+   turns out to be a NO-OP BY CONSTRUCTION and is reported as such: clipping a
+   variable that is only ever used through a rank cannot move a decile
+   boundary, and it moves h=21 and h=63 by exactly 0.00 bps. The check that
+   does bite is the price-scaled surprise (NI change over market value), a
+   genuinely different variable: +3.69 bps at h=21, +68.71 at h=63 (t=+1.10).
+6. ONE MACRO ERA, 2017-2026, and post-publication decay is exactly what a
+   1989-2006 literature should show by now (McLean-Pontiff).
 
-Run: python -m scout.sue_lab              (full study, ~4 min warm)
-     python -m scout.sue_lab --selftest   (offline shift/leakage checks, <5s)
+Run: python -m scout.sue_lab                (full study, ~7 min warm)
+     python -m scout.sue_lab --selftest     (offline shift/leakage checks, <5s)
+     python -m scout.sue_lab --fast         (structural smoke run, NOT a result)
+     python -m scout.sue_lab --no-retire    (what the frozen-quote defect is worth)
 """
 from __future__ import annotations
 
@@ -203,6 +282,7 @@ import json
 import math
 import pickle
 import time
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -319,9 +399,8 @@ def retire_stale(close: pd.DataFrame, volume: pd.DataFrame, run: int = 10,
     The rule is the one scout/reversal_lab.py registered: >= `run` identical
     consecutive closes is how a frozen quote and a reused-ticker splice both
     present, and no genuinely traded S&P 1500 name does it."""
-    close = close.copy()
-    vals = close.to_numpy()
-    vol = volume.reindex_like(close).to_numpy()
+    vals = np.array(close.to_numpy(), dtype=float)      # to_numpy() can be a view
+    vol = np.asarray(volume.reindex_like(close).to_numpy(), dtype=float)
     retired = []
     for j, sym in enumerate(close.columns):
         col = vals[:, j]
@@ -515,10 +594,44 @@ def attach_returns(ev: pd.DataFrame, close: pd.DataFrame, volume: pd.DataFrame,
     ev["entry_ann"] = np.where(a_ok, e_ann + 1, -1)
     ev["react2"] = np.where(a_ok, cl[np.where(a_ok, e_ann + 1, 0), j]
                             / cl[np.where(a_ok, e_ann - 1, 0), j] - 1.0, np.nan)
+    ev["rmkt2"] = np.where(a_ok, spy[np.where(a_ok, e_ann + 1, 0)]
+                           / spy[np.where(a_ok, e_ann - 1, 0)] - 1.0, np.nan)
     for h in horizons:
         ea = np.where(a_ok, e_ann + 1, 0)
         ev[f"afwd{h}"] = np.where(a_ok, cl[ea + h, j] / cl[ea, j] - 1.0, np.nan)
         ev[f"amkt{h}"] = np.where(a_ok, spy[ea + h] / spy[ea] - 1.0, np.nan)
+    # RULE 13 diagnostic: each event's trailing 252-session beta to SPY, so the
+    # decile profile of BETA can be printed next to the decile profile of
+    # return. H25 was a beta sort that looked like a signal; this is the check
+    # that would have caught it.
+    beta = np.full(len(ev), np.nan)
+    w = 252
+    have = e_evt >= w
+    rows = np.flatnonzero(have)
+    warnings.filterwarnings("ignore", message="Mean of empty slice")
+    for a in range(0, len(rows), 5000):
+        blk = rows[a:a + 5000]
+        off = (e_evt[blk][:, None] - np.arange(w, 0, -1)[None, :])
+        ri = ret1[off, j[blk][:, None]]
+        rm = ret1[off, col["SPY"]]
+        ri = np.where(np.isfinite(ri) & np.isfinite(rm), ri, np.nan)
+        rm = np.where(np.isfinite(ri), rm, np.nan)
+        ci = ri - np.nanmean(ri, axis=1, keepdims=True)
+        cm = rm - np.nanmean(rm, axis=1, keepdims=True)
+        var = np.nansum(cm * cm, axis=1)
+        with np.errstate(invalid="ignore", divide="ignore"):
+            beta[blk] = np.where(var > 0, np.nansum(ci * cm, axis=1) / var, np.nan)
+    ev["beta252"] = beta
+    # LATE-WINDOW PLACEBO: sessions 63..126 after entry, sorted on the SAME
+    # surprise. Bernard-Thomas drift is over inside ~60 sessions, so a spread
+    # that keeps accruing at the same rate out here is a firm characteristic
+    # (this universe is TODAY's S&P 1500 - growth firms that survived), not a
+    # post-announcement correction.
+    lo_i = np.minimum(entry + max(horizons), n_t - 1)
+    hi_i = np.minimum(entry + 2 * max(horizons), n_t - 1)
+    ok_late = entry + 2 * max(horizons) < n_t
+    ev["fwd_late"] = np.where(ok_late, cl[hi_i, j] / cl[lo_i, j] - 1.0, np.nan)
+    ev["mkt_late"] = np.where(ok_late, spy[hi_i] / spy[lo_i] - 1.0, np.nan)
     # data-defect flag: any |1-day| > 45% anywhere in the widest window used
     lo = np.maximum(e_evt - 2, 0)
     hi = entry + max(horizons)
@@ -653,6 +766,9 @@ def run_sort(ev: pd.DataFrame, sig_col: str, ret_col: str, mkt_col: str,
     out["lab"] = lab
     out["entry"] = entry
     out["y"] = y
+    out["sig"] = d[sig_col].to_numpy()
+    out["ticker"] = d["ticker"].to_numpy()
+    out["idx"] = d.index.to_numpy()
     out["decile_means"] = [
         (np.nanmean(y[lab == k]) if (lab == k).any() else np.nan) for k in range(n_d)]
     return out
@@ -677,8 +793,8 @@ def random_pick_control(entry, lab, y, n_t, h, rng, n_d=N_D, reps=CTRL_REPS):
     return out
 
 
-def date_shuffle_control(d: pd.DataFrame, sig_col: str, entry_col: str,
-                         y: np.ndarray, n_t: int, h: int, rng,
+def date_shuffle_control(ticker: np.ndarray, sig: np.ndarray, entry: np.ndarray,
+                         y: np.ndarray, n_t: int, rng,
                          n_d=N_D, reps=CTRL_REPS):
     """CONTROL (b), the one that decides H26: permute each FIRM's SUE values
     across that firm's own announcement dates.
@@ -686,16 +802,18 @@ def date_shuffle_control(d: pd.DataFrame, sig_col: str, entry_col: str,
     What survives: which firms exist, when they announce, and each firm's own
     distribution of surprises - so "high-SUE firms are simply better stocks"
     survives untouched. What dies: which quarter's surprise belongs to which
-    announcement. A drift effect must collapse here."""
-    entry = d[entry_col].to_numpy()
-    sig = d[sig_col].to_numpy()
-    groups = [np.asarray(g) for g in d.groupby("ticker", sort=False).indices.values()]
+    announcement. A drift effect must collapse here.
+
+    It is handed the PRIMARY's own arrays (same rows, same winsorisation, same
+    market adjustment), so the null and the real number differ in exactly one
+    thing."""
+    pos = pd.Series(np.arange(len(ticker)), index=pd.Index(ticker))
+    groups = [g.to_numpy() for _, g in pos.groupby(level=0, sort=False) if len(g) > 1]
     out = np.empty(reps)
     for r in range(reps):
         s = sig.copy()
         for g in groups:
-            if len(g) > 1:
-                s[g] = rng.permutation(s[g])
+            s[g] = rng.permutation(s[g])
         lab = trailing_deciles(s, entry, n_d)
         t = session_sums(entry, lab, y, n_t, n_d - 1, 0).sum(axis=0)
         a, b, _ = _stat(t)
@@ -720,10 +838,19 @@ def main() -> None:
     ap.add_argument("--refresh-events", action="store_true")
     ap.add_argument("--no-repair", action="store_true",
                     help="skip the split repair (shows what the defect is worth)")
+    ap.add_argument("--no-retire", action="store_true",
+                    help="skip the stale-quote retirement (ditto, and it is the "
+                         "one that matters here)")
     ap.add_argument("--selftest", action="store_true")
+    ap.add_argument("--fast", action="store_true",
+                    help="few bootstrap/control draws - a structural smoke run, "
+                         "NOT a result")
     args = ap.parse_args()
     if args.selftest:
         return selftest()
+    if args.fast:
+        global BOOT_REPS, CTRL_REPS
+        BOOT_REPS, CTRL_REPS = 60, 8
 
     rng = np.random.default_rng(SEED)
     t0 = time.time()
@@ -733,6 +860,8 @@ def main() -> None:
     close, volume = bars["close"], bars["volume"]
     if not args.no_repair:
         close = repair_splits(close)
+    if not args.no_retire:
+        close = retire_stale(close, volume, STALE_RUN)
     print(f"  bars {close.shape[0]} sessions x {close.shape[1]} symbols  "
           f"{close.index[0].date()}..{close.index[-1].date()}")
 
@@ -748,6 +877,15 @@ def main() -> None:
     ev = attach_returns(ev, close, volume)
     ev = ev[ev["event"] >= START].reset_index(drop=True)
     n_t = len(close)
+    # POINT-IN-TIME AUDIT on the real table, not a synthetic one: the session
+    # the entry price comes from must be strictly after the session in which
+    # the last input fact became public.
+    sess = close.index
+    assert (sess[ev["e_evt"].to_numpy()] >= ev["event"]).all(), "entry session before the event"
+    assert (sess[ev["e_evt"].to_numpy() + 1] > ev["event"]).all(), "entry price on the event day"
+    assert (ev["filed"] <= sess[ev["e_evt"].to_numpy()]).all(), "a fact filed after its own entry"
+    print(f"  point-in-time audit: entry session > event date on all "
+          f"{len(ev):,} events")
     print(f"  usable after {START}: {len(ev):,} events, "
           f"{ev['e_evt'].nunique():,} distinct entry sessions, "
           f"{100 * ev['defect'].mean():.2f}% touch a |1-day| > {EXTREME_1D:.0%} move")
@@ -770,6 +908,51 @@ def main() -> None:
               f"pool {1e4 * r['pool']:+7.2f}  "
               f"break-even round-trip {1e4 * r['spread'] / 2:5.1f} bps "
               f"(two legs) / {1e4 * r['excess']:5.1f} bps (long-only)")
+        u = run_sort(ev, "sue", f"fwd{h}", f"mkt{h}", "e_evt", h, n_t, rng, winsor=0.0)
+        print(f"      UNWINSORISED {1e4 * u['spread']:+8.2f} bps  t={u['t']:+5.2f}  "
+              f"halves {1e4 * u['half1']:+8.2f}/{1e4 * u['half2']:+8.2f}  "
+              f"(the {WINSOR_P:.0%}/{1 - WINSOR_P:.0%} clip is worth "
+              f"{1e4 * (r['spread'] - u['spread']):+.2f} bps)")
+
+    print("\n=== POSITIVE CONTROL: does the SUE measure carry any earnings news "
+          "at all? ===")
+    print("    (mean 2-day announcement reaction by SUE decile. If this is flat "
+          "the study\n     measures a broken signal, not a market fact - a "
+          "rejection would be meaningless.)")
+    r21 = primary[21]
+    react = ev["react2"].to_numpy()[r21["idx"]]
+    lab = r21["lab"]
+    prof = [np.nanmean(react[lab == k]) if (lab == k).any() else np.nan
+            for k in range(N_D)]
+    print("      reaction by SUE decile (bps): " +
+          " ".join(f"{1e4 * m:+7.1f}" for m in prof))
+    m10, m1 = lab == N_D - 1, lab == 0
+    diff = np.nanmean(react[m10]) - np.nanmean(react[m1])
+    se = math.sqrt(np.nanvar(react[m10], ddof=1) / np.isfinite(react[m10]).sum()
+                   + np.nanvar(react[m1], ddof=1) / np.isfinite(react[m1]).sum())
+    print(f"      D{N_D}-D1 announcement reaction {1e4 * diff:+7.1f} bps  "
+          f"t={diff / se:+5.2f}  (event-level SE; the news IS in the surprise)")
+
+    print("\n=== RULE 13: trailing 252-session beta to SPY by SUE decile ===")
+    bet = ev["beta252"].to_numpy()[r21["idx"]]
+    print("      beta by SUE decile: " +
+          " ".join(f"{np.nanmean(bet[lab == k]):+6.2f}" if (lab == k).any()
+                   else "   nan" for k in range(N_D)))
+
+    print("\n=== DECAY PROFILE: bps per session (drift must decay, a "
+          "characteristic does not) ===")
+    print("  " + "  ".join(f"h={h}: {1e4 * primary[h]['spread'] / h:+6.2f}"
+                           for h in HORIZONS))
+
+    print("\n=== LATE-WINDOW PLACEBO: sessions +63..+126, same surprise ===")
+    print("    Bernard-Thomas drift is finished by ~60 sessions. A spread out "
+          "here at the\n    same per-session rate is a firm characteristic, not "
+          "a correction.")
+    rl = run_sort(ev, "sue", "fwd_late", "mkt_late", "e_evt", max(HORIZONS),
+                  n_t, rng)
+    print(fmt(rl, "late +63..+126"))
+    print(f"      per-session {1e4 * rl['spread'] / max(HORIZONS):+6.2f} bps "
+          f"against the in-window {1e4 * primary[63]['spread'] / 63:+6.2f}")
 
     print("\n=== registered variant: RAW (not market-adjusted) ===")
     for h in HORIZONS:
@@ -777,12 +960,70 @@ def main() -> None:
         print(fmt(r, f"h={h:>2} raw"))
 
     print("\n=== registered variant: announcement-anchored (entry = close(8-K+1)) ===")
-    print("    uses the surprise from the 10-Q, which the press release almost "
-          "certainly\n    contained but this pipeline cannot verify - "
-          "optimistic by the filing gap.")
+    print("    THE LITERATURE-FAITHFUL SPECIFICATION, and the one that needs an "
+          "assumption:\n    the 8-K Item 2.02 press release states the quarter's "
+          "net income, so SUE is\n    knowable at the announcement in the real "
+          "world - but the XBRL fact this lab\n    reads is stamped with the "
+          "10-Q/10-K date, median 1 session later (p75 8,\n    p90 17). Entering "
+          "here therefore assumes the release carried the number.")
+    ann_res = {}
     for h in HORIZONS:
         r = run_sort(ev, "sue", f"afwd{h}", f"amkt{h}", "entry_ann", h, n_t, rng)
+        ann_res[h] = r
         print(fmt(r, f"h={h:>2} ann-anchored"))
+        print(f"      deciles (bps): " +
+              " ".join(f"{1e4 * m:+7.1f}" for m in r["decile_means"]))
+        print(f"      D{N_D}-pool {1e4 * r['excess']:+7.2f} bps  "
+              f"t={r['excess'] / r['se_excess']:+5.2f}   "
+              f"pool {1e4 * r['pool']:+7.2f}")
+    print("\n    EVENT-TIME CAR (market-adjusted, from close(a-1)) - the classic "
+          "PEAD picture:")
+    ra = ann_res[21]
+    lb, ix = ra["lab"], ra["idx"]
+    car0 = (ev["react2"] - ev["rmkt2"]).to_numpy()[ix]
+    print(f"      {'decile':<8}{'(-1,+1)':>10}" +
+          "".join(f"{f'(-1,+{h})':>10}" for h in HORIZONS))
+    for k, name in ((N_D - 1, f"D{N_D}"), (0, "D1")):
+        m = lb == k
+        cells = [np.nanmean(car0[m])]
+        for h in HORIZONS:
+            fh = (ev[f"afwd{h}"] - ev[f"amkt{h}"]).to_numpy()[ix]
+            cells.append(np.nanmean(car0[m] + fh[m]))
+        print(f"      {name:<8}" + "".join(f"{1e4 * c:>+10.1f}" for c in cells))
+    m10, m1 = lb == N_D - 1, lb == 0
+    cells = [np.nanmean(car0[m10]) - np.nanmean(car0[m1])]
+    for h in HORIZONS:
+        fh = (ev[f"afwd{h}"] - ev[f"amkt{h}"]).to_numpy()[ix]
+        cells.append(np.nanmean(car0[m10] + fh[m10]) - np.nanmean(car0[m1] + fh[m1]))
+    print(f"      {'D10-D1':<8}" + "".join(f"{1e4 * c:>+10.1f}" for c in cells))
+    print(f"      of the D{N_D}-D1 total at (-1,+63), "
+          f"{100 * cells[0] / cells[-1]:.0f}% is already paid by close(a+1).")
+
+    print("    controls on the ann-anchored spec (the only cell with the "
+          "registered sign):")
+    for h in (21, 63):
+        r = ann_res[h]
+        rp = random_pick_control(r["entry"], r["lab"], r["y"], n_t, h, rng)
+        ds = date_shuffle_control(r["ticker"], r["sig"], r["entry"], r["y"], n_t, rng)
+        print(f"      h={h:>2}  real {1e4 * r['spread']:+8.2f}   "
+              f"random-pick {1e4 * rp.mean():+7.2f} +- {1e4 * rp.std(ddof=1):5.2f} "
+              f"(p={float((rp >= r['spread']).mean()):.3f})   "
+              f"date-shuffle {1e4 * ds.mean():+7.2f} +- {1e4 * ds.std(ddof=1):5.2f} "
+              f"(p={float((ds >= r['spread']).mean()):.3f})")
+    print("    ann-anchored by liquidity tercile and segment (h=21, h=63):")
+    for h in (21, 63):
+        d = ev[np.isfinite(ev["dvol20"])].copy()
+        d["ltile"] = d.groupby("e_ann")["dvol20"].transform(
+            lambda s: pd.qcut(s.rank(method="first"), 3, labels=False)
+            if s.notna().sum() >= 6 else np.nan)
+        for k, name in enumerate(("LOW", "MID", "HIGH")):
+            r = run_sort(d[d["ltile"] == k], "sue", f"afwd{h}", f"amkt{h}",
+                         "entry_ann", h, n_t, rng)
+            print(fmt(r, f"h={h:>2} ann liquidity {name}"))
+        for s in ("small", "mid", "large"):
+            r = run_sort(ev[ev["segment"] == s], "sue", f"afwd{h}", f"amkt{h}",
+                         "entry_ann", h, n_t, rng)
+            print(fmt(r, f"h={h:>2} ann {s:<5}"))
 
     print("\n=== CONTROL (c): the H2b replication - sort on the 2-DAY PRICE REACTION ===")
     for h in HORIZONS:
@@ -807,9 +1048,8 @@ def main() -> None:
     for h in (5, 21, 63):
         r = primary[h]
         rp = random_pick_control(r["entry"], r["lab"], r["y"], n_t, h, rng)
-        d = ev[(ev["e_evt"] >= 0) & np.isfinite(ev["sue"]) & np.isfinite(ev[f"fwd{h}"])]
-        y = d[f"fwd{h}"].to_numpy() - d[f"mkt{h}"].to_numpy()
-        ds = date_shuffle_control(d, "sue", "e_evt", y, n_t, h, rng)
+        ds = date_shuffle_control(r["ticker"], r["sig"], r["entry"], r["y"],
+                                  n_t, rng)
         p_rp = float((rp >= r["spread"]).mean())
         p_ds = float((ds >= r["spread"]).mean())
         print(f"  h={h:>2}  real {1e4 * r['spread']:+8.2f} bps   block-boot SE "
@@ -914,8 +1154,8 @@ def selftest() -> None:
         lab = trailing_deciles(d["sue"].to_numpy(), ent, 10)
         real = _stat(session_sums(ent, lab, y, n_t, 9, 0).sum(0))
         real = real[0] - real[1]
-        sh = date_shuffle_control(d, "sue", "e_evt", y, n_t, 21,
-                                  np.random.default_rng(1), reps=30)
+        sh = date_shuffle_control(d["ticker"].to_numpy(), d["sue"].to_numpy(),
+                                  ent, y, n_t, np.random.default_rng(1), reps=30)
         if must_die:
             assert abs(sh.mean()) < 0.2 * abs(real), f"{name}: shuffle did not kill it"
         else:

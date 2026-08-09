@@ -63,22 +63,30 @@ are unadjusted in Alpaca daily bars (SIRI prints +925.6%, AAPL 2020-08-31
 -74.2%) plus 146 further |1-day| > 50% moves from spin-offs and reused
 tickers. A volatility study has NO veto to hide behind - the engine's vetoes
 happen to exclude huge movers, this sort would put every corrupted name in the
-top vol quintile by construction. Three guards, all applied to the PRIMARY run,
-and the third one turns out to matter more than the two the brief asked about:
+top vol quintile by construction. Three guards, all applied to the PRIMARY run.
+All three were then turned off one at a time, and the honest measured answer is
+that NONE of them decides this study - the universe choice does (see VERDICT):
 
 1. SPLIT REPAIR from Alpaca's own corporate-actions feed, for events whose
    |log ratio| > 0.35 only (news_attention_lab's lesson: below that the
    ex-date price test false-positives spin-offs, e.g. MET 2017-08-07).
+   MEASURED: 5 events repaired (AAPL 2020-08-31 4:1, SIRI 2024-09-10 0.1:1,
+   ROL x2, DEA), i.e. the two names the repo's audit named by hand.
 2. EXTREME-PRINT GUARD: any daily |simple return| > 45% is set to missing, so
    it enters neither the volatility estimate nor any forward window that spans
-   it. Run again with the guard OFF, and the difference is reported.
+   it. MEASURED: 250 bars across 149 symbols, 0.0064% of the panel. Turning it
+   OFF moves the primary spread from -258.45 to -292.06 bps - 13% MORE
+   negative, in the predicted direction (corrupted prints land in the top vol
+   bucket and inflate its return), and it changes no conclusion.
 3. STALE-QUOTE RETIREMENT: a symbol is dropped permanently from the first run
-   of >= 10 identical consecutive closes. This is the guard the brief did not
-   ask for and the one this particular study cannot live without - a frozen
-   delisted quote has EXACTLY ZERO volatility, so it lands in the lowest-vol
-   quintile every single day and contributes a 0.00% return forever. On the
-   point-in-time universe that is a fake low-vol premium of pure survivorship
-   arithmetic.
+   of >= 10 identical consecutive closes. A frozen delisted quote has EXACTLY
+   ZERO volatility, so it would sit in the lowest-vol quintile every session
+   paying 0.00% forever. This guard was pre-registered as the one this study
+   could not live without; the data says otherwise and the claim is retracted.
+   MEASURED: 40 symbols retired, all of them genuine deaths or reused tickers
+   (EMC 2016, CA 2018, LLL 2019, CHK 2020, INFO 2022). Turning it OFF moves
+   the primary from -258.45 to -266.95 bps (3%) and the point-in-time cell
+   from -55.85 to -52.19 (7%). Worth keeping, worth nothing to the verdict.
 
 CONTROLS (five, all run)
 ------------------------
@@ -117,7 +125,94 @@ Run: python -m scout.idiovol_lab                # full study
 =============================================================================
 VERDICT — filled in from the run; every number below is printed by this file
 =============================================================================
-(pending)
+REJECTED. The registered direction is wrong in 47 cells out of 47, and what
+looks at first like a spectacular INVERSE anomaly is, in order, a beta sort and
+then a survivorship artifact. Nothing here licenses touching config.VOL_BAND.
+
+1. THE REGISTERED SIGN IS WRONG EVERYWHERE, AND IT IS NOT A CONTROL ARTIFACT.
+   Primary (idio1, W=60, h=42, S&P 1500, all guards): Q1 minus Q5 =
+   -258.45 bps per 42-session hold, 95% moving-block CI [-421.34, -110.38],
+   t = -3.30 (a second bootstrap draw of the same cell in the grid gives
+   -3.38). LOW idiosyncratic volatility LOST to HIGH by 15.5%/yr. Negative in
+   all 32 grid cells (4 windows x 2 horizons x 4 signals), negative in all 47
+   registered cells, ZERO sign flips across halves in 47 of 47, and negative on
+   every one of the 42 entry phases in every cell (ph_wrong = ph_n throughout).
+   The controls say it is really there: random quintiles +0.21 +/- 2.27 bps and
+   the symbol-pairing placebo -0.59 +/- 14.10 bps, against -258.45. Positive
+   control passes - signal quintiles 16.5/21.6/26.5/33.4/52.6% annualised map
+   onto realised NEXT-42-session vol of 23.8/28.2/32.6/38.5/51.6%.
+
+2. 72% OF IT IS BETA (Rule 13). Quintile SPY betas fall monotonically
+   Q1 0.76, Q2 0.92, Q3 1.07, Q4 1.21, Q5 1.44. Regressing the dollar-neutral
+   Q1-Q5 book on SPY over the same windows: beta -0.72, alpha -4.31%/yr,
+   Newey-West t = -1.15. The raw -15.51%/yr decomposes into -4.31 alpha and
+   -11.19 beta contribution. Across the 24 volatility cells the raw t sits at
+   -3.13 to -3.69 while the market-adjusted t never leaves [-1.64, -0.78]; the
+   8 pure-BETA-sort cells are the mirror image, raw t -1.83 to -2.72 but
+   market-adjusted alpha t of -0.07 to +1.16 with a POSITIVE point estimate
+   (+1.22 to +4.43%/yr) - the sign Frazzini-Pedersen predict for betting
+   against beta, at a significance that does not clear anything. This is H25
+   again by a different sort key: a monotone decile profile that is the equity
+   premium priced by beta in a decade when SPY compounded at 15.8%/yr.
+
+3. AND MOST OF WHAT SURVIVES IS SURVIVORSHIP. Re-run on the point-in-time
+   S&P 500 (each date's ACTUAL members, delisted names included) the spread
+   collapses from -258.45 (t -3.38) to -55.85 bps (t -0.83), CI
+   [-190.31, +69.45] straddling zero; total vol goes -296.31 -> -121.54
+   (t -1.48). The clean attribution is available because the S&P 1500 file's
+   LARGE segment is the same cap bucket with the same cross-section size
+   (480.8 vs 492.8 names/session) and only TODAY'S membership: it prints
+   -253.16 (t -3.58). Same stocks, same size, same dates - the only difference
+   is knowing who would still be in the index in 2026, and it is worth ~200 bps
+   of the 258. Corroborating: the equal-weight S&P 1500 pool returns
+   +17.61%/yr against the point-in-time S&P 500 pool's +13.21% and SPY's
+   +15.87%, and the high-vol quintile loses 2.19% of its forward windows to
+   names that stop trading against the low-vol quintile's 1.66%.
+   Booking the partial return instead of deleting the window changes nothing
+   (-256.82 vs -258.45; pit500 -58.67 vs -55.85).
+
+4. THE COMPARISON THAT MATTERS: NO UPGRADE. idio1 beats total vol in the
+   registered direction in all 8 (W,h) cells, by +14.4 to +38.5 bps per hold -
+   i.e. idio vol is consistently LESS WRONG, never right. The two sorts agree
+   on the quintile of 71.9% of eligible symbol-sessions; their long-only Q1
+   books are indistinguishable (Sharpe 0.77 vs 0.74, return +12.79 vs
+   +11.33%/yr). A difference of that size, in a study whose entire spread
+   dissolves on a survivorship-clean universe, is not a reason to add a rolling
+   regression to a gate. **config.VOL_BAND and VETO_VOL_DECILE should stay on
+   total volatility.**
+
+5. THE SHARPE QUESTION, ANSWERED HONESTLY. 42-session hold, rebalanced every
+   21, equal weight, 10 bps, pooled over all 21 entry phases:
+     idio1  Q1 +12.79%/yr vol 16.65% Sharpe 0.77 beta 0.84 alpha -0.67 (t -0.27)
+            Q5 +28.88%/yr vol 28.36% Sharpe 1.02 beta 1.36 alpha +7.16 (t +1.62)
+     total  Q1 +11.33%/yr vol 15.41% Sharpe 0.74 beta 0.74
+            Q5 +29.69%/yr vol 29.60% Sharpe 1.00 beta 1.43
+     SPY    +15.82%/yr vol 17.55% Sharpe 0.90    EW pool +18.53% Sharpe 0.88
+   The low-vol book does not beat SPY on Sharpe - it loses, 0.77 to 0.90, and
+   still loses with a 2% risk-free deduction (0.65 vs 0.79). The high-vol book
+   wins on Sharpe in BOTH halves (1.27/0.76 against Q1's 0.83/0.70). Its
+   long-only alpha is +7.16%/yr at t +1.62, which is not significance, and its
+   deflated Sharpe at this study's own trial count (2N = 94) is 0.781. Entry
+   phase costs almost nothing here: Q1 Sharpe ranges 0.76-0.81 over the 21
+   schedules, return +12.77 to +13.45%.
+
+6. COSTS. The low-minus-high book turns over 3.92x/yr one-way and loses
+   -16.07%/yr GROSS, so its break-even round-trip cost is NEGATIVE (-409 bps;
+   total vol -501). There is no cost level at which the registered trade works.
+   The inverse book would clear a 409 bps round trip - but it is a +0.52-beta
+   position whose edge is the survivorship in point 3, and the honest cell for
+   it (pit500) has a CI through zero.
+
+7. WHAT WOULD FALSIFY THIS REJECTION. A delisting-complete S&P 1500 (the data
+   debt RESEARCH-AGENDA already flags). Every number above that carries a
+   t past 3 is measured on today's index membership; every number measured on
+   point-in-time membership is inside its own confidence interval. The correct
+   summary of this sample is not "the low-vol anomaly is backwards" but "on a
+   survivorship-clean universe, 2016-2026 US large caps show NO volatility
+   effect in either direction, and the apparent one is beta plus hindsight."
+
+TRIAL COUNT: 47 registered cells, all reported in ALL REGISTERED CELLS above
+and in idiovol_results.json.
 """
 from __future__ import annotations
 
@@ -1275,20 +1370,35 @@ def main() -> None:
 
     _hdr("MULTIPLE-TESTING DISCOUNT ON THE BEST-LOOKING BOOK")
     from .growth import deflated_sharpe
-    best = books[(PRIMARY_SIG, N_Q - 1)]            # the HIGH-vol quintile, which won
+    # whichever long-only quintile book actually won, named by the data and not
+    # by the hypothesis - the point of the deflation is that the WINNER of a
+    # search is the number most in need of a haircut.
+    bkey = max(books, key=lambda k: perf(books[k], spy_daily)["sharpe"])
+    best = books[bkey]
     x = best[np.isfinite(best)]
     sr_d = float(x.mean() / x.std(ddof=1))
     dsr = deflated_sharpe(sr_d, n_trials=2 * len(allc), n_obs=len(x),
                           skew=float(pd.Series(x).skew()),
                           kurtosis=float(pd.Series(x).kurt() + 3.0))
-    print(f"The best long-only book in this study is the one the hypothesis said")
-    print(f"would be WORST: {PRIMARY_SIG} Q5. Annualised Sharpe "
-          f"{sr_d * math.sqrt(252):.2f} on {len(x):,} daily")
-    print(f"observations; deflated Sharpe at the two-sided trial count "
-          f"2N={2 * len(allc)}: {dsr:.3f}.")
+    print(f"Best long-only book in this study, by Sharpe: {bkey[0]} "
+          f"Q{bkey[1] + 1}  (the hypothesis registered Q1 as the winner).")
+    print(f"Annualised Sharpe {sr_d * math.sqrt(252):.2f} on {len(x):,} daily "
+          f"observations; deflated Sharpe at the")
+    print(f"two-sided trial count 2N={2 * len(allc)}: {dsr:.3f}.")
     print("Read that as the probability the number is not luck GIVEN the search,")
     print("and note that it says nothing about the survivorship above it, which")
     print("is a bias, not a multiple-testing problem, and is not deflatable.")
+    res["variants"] = v.to_dict("records")
+    res["all_cells"] = allc[["cell", "h", "n_dates", "n_names", "spread", "lo", "hi",
+                             "t", "q1_excess", "half1", "half2", "ph_wrong",
+                             "ph_n"]].to_dict("records")
+    res["summary"] = dict(cells=int(len(allc)), max_abs_t=float(allc["t"].abs().max()),
+                          sign_flips=int(flips),
+                          best_book=f"{bkey[0]} Q{bkey[1] + 1}",
+                          best_book_sharpe=float(sr_d * math.sqrt(252)),
+                          deflated_sharpe=float(dsr))
+    RESULTS.write_text(json.dumps(res, indent=1, default=str), encoding="utf-8")
+    print(f"\nmachine-readable results -> {RESULTS.name}")
 
     _hdr(f"[{time.time() - t0:.0f}s]")
 

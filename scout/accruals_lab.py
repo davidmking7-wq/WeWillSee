@@ -135,6 +135,12 @@ MAX_ABS_ACCRUAL = 1.5          # |accruals / avg assets| above this is a unit er
 BOOT_REPS = 5000
 CTRL_REPS = 200
 SEED = 20260809
+# Trial count for the deflated Sharpe, counted from the variant list this file
+# actually runs: 4 horizons x 2 universes (8) + guard-off 4 + 3 size segments
+# x 4 (12) + sector-neutral 4 + deciles 4 + end-assets 4 + stale-12m 4 +
+# ex-financials 4 + the peek diagnostic 4 + liquidity gate 4 + 3 gross-
+# profitability terciles x 2 horizons (6) = 58. Controls are nulls, not trials.
+N_TRIALS = 58
 
 BARS_CACHE = config.SCOUT_DIR / "cache_accruals_bars.pkl"
 RECORDS_CACHE = config.SCOUT_DIR / "cache_accruals_records.pkl"
@@ -491,7 +497,8 @@ def run_universe(name: str, acc: pd.DataFrame, close: pd.DataFrame,
         rows.append(dict(
             universe=name, h=h, n_dates=int(ok.sum()),
             n_names=float(cnt[ok].sum(1).mean()),
-            q1=np.nanmean(q[:, 0]) * 100, q3=np.nanmean(q[:, 2]) * 100,
+            q1=np.nanmean(q[:, 0]) * 100, q2=np.nanmean(q[:, 1]) * 100,
+            q3=np.nanmean(q[:, 2]) * 100, q4=np.nanmean(q[:, 3]) * 100,
             q5=np.nanmean(q[:, N_Q - 1]) * 100, pool=np.nanmean(pool) * 100,
             spread=b["mean"] * 100, lo=b["lo"] * 100, hi=b["hi"] * 100, t=b["t"],
             q1_excess=be["mean"] * 100, t_excess=be["t"],
@@ -968,13 +975,29 @@ def main() -> None:
     res1, ser1 = run_universe("sp1500", accs, closef, form, member_sp1500,
                               badf, rng)
     _hdr("PRIMARY: full table")
-    print(res1[["h", "n_dates", "n_names", "q1", "q3", "q5", "pool", "spread",
-                "lo", "hi", "t", "q1_excess", "t_excess", "half1", "half2",
-                "turn_lo", "turn_hi"]].to_string(index=False, float_format=_fmt))
-    print("\nq1/q3/q5/pool are RAW bucket returns in % over the h-session hold")
+    print(res1[["h", "n_dates", "n_names", "q1", "q2", "q3", "q4", "q5", "pool",
+                "spread", "lo", "hi", "t", "q1_excess", "t_excess", "half1",
+                "half2", "turn_lo", "turn_hi"]].to_string(index=False,
+                                                          float_format=_fmt))
+    print("\nq1..q5/pool are RAW bucket returns in % over the h-session hold")
     print("(they contain the market; spread and q1_excess do not).")
-    print("q1_excess = CONTROL (c), the matched benchmark: the LOW-accrual")
+    print("MONOTONICITY IS PART OF THE HYPOTHESIS: Sloan's accrual effect is a")
+    print("monotone decline from Q1 to Q5. Read the q1..q5 columns before the")
+    print("spread column - a spread carried entirely by one extreme bucket is a")
+    print("different (and weaker) claim than a monotone sort.")
+    print("q1_excess = CONTROL (d), the matched benchmark: the LOW-accrual")
     print("quintile minus the eligible-pool mean = the long-only claim.")
+
+    _hdr("RULE 9: the entry-phase sweep (H7a quoted the luckiest of six)")
+    print("A monthly formation with an h-session hold hides `stride` disjoint")
+    print("non-overlapping entry schedules. Quoting one of them is how this repo")
+    print("once published +733% that was really +209%. All of them, per horizon:\n")
+    print(res1[["h", "spread", "ph_min", "ph_max", "ph_wrong", "ph_n"]]
+          .to_string(index=False, float_format=_fmt))
+    print("\nph_min/ph_max = worst and best of the ph_n disjoint schedules;")
+    print("ph_wrong = how many carry the WRONG sign. The overlapping `spread` is")
+    print("their average, so a wide min-max with ph_wrong > 0 means the headline")
+    print("depends on which month the account started.")
 
     _hdr("U2 pit500 (survivorship control on membership)")
     res2, ser2 = run_universe("pit500", accs, closef, form, member_pit, badf, rng)
@@ -998,22 +1021,35 @@ def main() -> None:
         plc = placebo_control(accs.to_numpy(), s["elig"], s["fwd"], rng) * 100
         shf = date_shuffle_control(accs.to_numpy(), s["elig"], s["fwd"], rng) * 100
         act = float(np.nanmean(s["spread"])) * 100
+        # The timing component is (real - shuffled mean). Its uncertainty is
+        # dominated by the REAL series' block-bootstrap SE; the null mean is an
+        # average of CTRL_REPS draws, so its own SE is shuf_sd/sqrt(reps).
+        se_t = math.sqrt(real_se ** 2 + shf.var(ddof=1) / len(shf))
         crows.append(dict(h=h, spread=act,
                           rand_mean=rnd.mean(), rand_sd=rnd.std(ddof=1),
                           plac_mean=plc.mean(), plac_sd=plc.std(ddof=1),
                           shuf_mean=shf.mean(), shuf_sd=shf.std(ddof=1),
                           timing=act - shf.mean(),
+                          t_timing=(act - shf.mean()) / se_t if se_t > 0 else float("nan"),
+                          static_pct=100 * shf.mean() / act if act else float("nan"),
                           se_ratio_rand=rnd.std(ddof=1) / real_se,
                           se_ratio_plac=plc.std(ddof=1) / real_se,
+                          se_ratio_shuf=shf.std(ddof=1) / real_se,
                           p_shuffle=float((shf >= act).mean())))
     ctrl = pd.DataFrame(crows)
     print(ctrl.to_string(index=False, float_format=_fmt))
     print("\ntiming        = actual spread minus the date-shuffled mean: the part")
     print("                of the effect that is about WHICH YEAR the firm accrued.")
+    print("static_pct    = the complement, in %: how much of the spread a signal")
+    print("                with the firms right and the YEARS WRONG already earns.")
+    print("t_timing      = timing over sqrt(real block-bootstrap SE^2 + the null")
+    print("                mean's own SE^2). This is the statistic Sloan's")
+    print("                mechanism has to clear, not the raw t on `spread`.")
     print("p_shuffle     = share of date-shuffled draws at least as positive as")
     print("                actual. Near 0.5 means the null already explains it.")
     print("se_ratio_*    = each null's SD over the real series' block-bootstrap SE")
-    print("                (Rule 14). Below 1 means that null is anti-conservative.")
+    print("                (Rule 14). Below 1 means that null is anti-conservative")
+    print("                and its p-value must NOT be quoted at face value.")
 
     # -------------------------------------------------------------- Rule 13
     _hdr("RULE 13: the dollar-neutral book regressed on SPY")
@@ -1188,6 +1224,54 @@ def main() -> None:
                                hi=b["hi"] * 100, t=b["t"]))
     print(pd.DataFrame(gprows).to_string(index=False, float_format=_fmt))
 
+    # --------------------------------------------- persistence and Sharpe
+    _hdr("HOW FAST DOES THE SIGNAL MOVE? (it decides what variants 6 and 8 mean)")
+    print("Variant 6 (a year-stale accrual) and variant 8 (an accrual not yet")
+    print("filed) can only be read against the signal's own persistence: if the")
+    print("cross-sectional rank barely changes in a year, those two variants are")
+    print("re-runs of the same sort and prove little. If it changes a lot and")
+    print("they still work, the sort is not about the accounting news.\n")
+    ar = accs.rank(axis=1, pct=True)
+    elig42 = ser1[PRIMARY_H]["elig"]
+    for lag in (1, 6, 12, 24):
+        v = rank_corr_by_date(accs, accs.shift(lag), elig42)
+        print(f"  cross-sectional rank autocorrelation at {lag:>2} month ends: "
+              f"{np.nanmean(v):+.3f}  (n={int(np.isfinite(v).sum())} dates)")
+    print(f"  share of names whose quintile is unchanged 12 month ends later: "
+          f"{100 * float(np.nanmean((ar - ar.shift(12)).abs() < 0.2)):.1f}%")
+
+    _hdr("SHARPE - and it must be measured on NON-OVERLAPPING windows")
+    print("The spread series is monthly-formed with an h-session hold, so")
+    print("consecutive observations share returns. Each of the `stride` disjoint")
+    print("entry schedules is a genuine non-overlapping series; the Sharpe below")
+    print("is the mean across them, with the min-max across schedules as the")
+    print("honest error bar (Rule 9 again).\n")
+    from . import growth
+    srows = []
+    for h in HORIZONS:
+        per_yr = 252.0 / h
+        for nm, ser in (("sp1500 L/S", ser1), ("pit500 L/S", ser2)):
+            st = ser[h]["stride"]
+            ss = []
+            for p in range(st):
+                x = ser[h]["spread"][p::st]
+                x = x[np.isfinite(x)]
+                if len(x) > 4 and x.std(ddof=1) > 0:
+                    ss.append(x.mean() / x.std(ddof=1))
+            if not ss:
+                continue
+            sr_w = float(np.mean(ss))
+            n_obs = int(np.isfinite(ser[h]["spread"]).sum() / st)
+            srows.append(dict(book=nm, h=h, sharpe_ann=sr_w * math.sqrt(per_yr),
+                              sharpe_min=min(ss) * math.sqrt(per_yr),
+                              sharpe_max=max(ss) * math.sqrt(per_yr),
+                              n_windows=n_obs,
+                              dsr=growth.deflated_sharpe(sr_w, N_TRIALS, n_obs)))
+    print(pd.DataFrame(srows).to_string(index=False, float_format=_fmt))
+    print(f"\ndsr = deflated Sharpe (Bailey-Lopez de Prado) at N={N_TRIALS} trials,")
+    print("the count this lab actually ran (see the variant list). It is the")
+    print("probability the Sharpe is real given how many things were tried.")
+
     # ------------------------------------------------- what is in the buckets
     print("\nloading split-adjusted share counts (sec_bulk.shares_panel) ...")
     shares = monthly_shares(tickers, form)
@@ -1305,6 +1389,7 @@ def main() -> None:
         v_liquid=r9.to_dict("records"),
         v_gross_profitability_terciles=gprows,
         sector_composition=cdf.to_dict("records"),
+        sharpe=srows, n_trials=N_TRIALS,
         independence=dict(
             rank_corr_momentum=float(np.nanmean(rc_mom)),
             rank_corr_momentum_sd=float(np.nanstd(rc_mom)),

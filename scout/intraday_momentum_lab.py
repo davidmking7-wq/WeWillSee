@@ -71,6 +71,17 @@ DATA GUARDS (the repo's measured 5.1% unadjusted-split debt, and four more)
      and r13 are both WITHIN-session ratios and a split factor cancels in
      both — which is why this study can afford a universe the daily labs
      could not. It contaminates only H19e, whose signal crosses the overnight.
+     MEASURED CONSEQUENCE OF THAT ROBUSTNESS: the repair fires three times on
+     this panel and only ONE is a real split. AAPL 2020-08-31 4:1 is genuine;
+     HON 2018-10-01 (1.011:1) and HON 2018-10-29 (1.032:1) are the Garrett
+     Motion and Resideo SPIN-OFFS, which Alpaca's feed reports as
+     `forward_split` and which `unapplied_splits_close` cannot classify at
+     ratios this close to 1 — the known false-positive class (see the MET
+     2017-08-07 case in scout/hypotheses.md). Both false positives are
+     harmless HERE for exactly the reason the real one is: rescaling every bar
+     strictly before an ex-date leaves every within-session ratio untouched.
+     They can move only r1_ghlz, and only on those two HON sessions — 2 of
+     ~117,000 symbol-sessions.
   2. HALF-DAYS: the 13:00 early closes are dropped entirely (they have 8
      intervals, not 13, and no 15:30). Detected from the data by
      `intraday.detect_early_closes` (the closing-auction volume ratio) and
@@ -86,19 +97,27 @@ DATA GUARDS (the repo's measured 5.1% unadjusted-split debt, and four more)
   5. NEAR-EMPTY SESSIONS: guard 3 subsumes intraday.py's `min_bar_frac` rule
      (a one-bar session cannot fill 13 bins).
 
-REGISTERED ROWS (scout/hypotheses.md H19a-H19j, written before this ran)
+REGISTERED ROWS (scout/hypotheses.md H19a-H19k, written before this ran)
   a  SPY   sign(r1) -> r13                     f  mid-day: sign(r1) -> P12/P1-1
   b  QQQ   the same (replication)              g  sign(r12) -> r13 (GHLZ's other
   c  IWM   the same (replication)                 predictor, the stronger one)
   d  magnitude-scaled weight, all three       h  ~50 large caps, per name+pooled
   e  GHLZ r1 (includes overnight), all three  i  costs / break-even, every row
                                               j  term structure r1 -> rj, j=2..13
+  k  exit in the OFFICIAL CLOSING AUCTION rather than at the last 16:00 tape
+     print — registered before the run because the auction is the venue the
+     mechanism actually names (MOC imbalances, index and leveraged-ETF
+     rebalances), and a 5-minute bar cannot isolate that print.
 
 CONTROLS (nulls, not trials — every one of them runs on the identical
 sessions, the identical instrument and the identical r13 series)
   (i)   RANDOMIZED SIGN: the position is a fair coin, 2,000 draws. This is the
         null for "does the timing add anything to being in the last half hour
-        at all".
+        at all". For the 42-name BOOK the sign is drawn INDEPENDENTLY PER NAME
+        and only then averaged (`book_nulls`) — flipping one common sign for
+        the whole book would be a market-direction coin flip with several
+        times the book's variance, and would make almost anything look
+        insignificant.
   (ii)  DATE SHUFFLE of the signal: r1 permuted across dates against a fixed
         r13, 2,000 draws. Unlike H15's shuffle this one MUST kill the effect
         if the effect is real, because there is no cross-sectional level term
@@ -107,13 +126,100 @@ sessions, the identical instrument and the identical r13 series)
   (iii) PREV-DAY PLACEBO: sign(r1 of session t-1) -> r13 of session t. The
         mechanism is same-day and mechanical, so this must be zero; if it is
         not, the "signal" is a slow state variable and not intraday momentum.
+  (iiib) RULE 14 is honoured throughout: every permutation p-value is printed
+        next to the ratio of the null's SD to the real series' Newey-West SE,
+        because H16 and H21 both found within-date permutation nulls 2-4x too
+        tight. Here the ratios land at 0.93-1.10, so for once the permutation
+        and the honest SE agree and the p-values can be read at face value.
   (iv)  MATCHED BENCHMARK: always-long r13 (buy 15:30, sell at the close, every
         session) — the passive alternative any timing rule must beat, and the
         thing a sign rule degenerates to when it is always long.
   (v)   BOTH HALVES of the sample, reported for every row.
 
-VERDICT (measured; every number below is printed by `report()`)
-  FILLED IN BY THE RUN — see the RESULTS block at the bottom of this docstring.
+VERDICT: **REJECTED**, and rejected in the one place the mechanism is most
+specific — the close. (Measured 2018-01-02..2026-07-31; every number below is
+printed by `report()` and stored in intraday_momentum_results.json.)
+
+1. THE HEADLINE IS THE WRONG SIGN ON ALL THREE INSTRUMENTS. sign(r1) -> r13
+   earns **-0.82 / -0.50 / -0.27 bps per session** on SPY / QQQ / IWM
+   (NW t = -1.02 / -0.57 / -0.36; hit rate 48.3 / 49.1 / 49.1%, i.e. below a
+   coin). The predictive regression GHLZ report at b ~ +0.05, t ~ 3-5,
+   R2 ~ 1% comes out at **b = -0.061 / -0.011 / -0.031, |t| <= 1.05,
+   R2 = 0.33 / 0.02 / 0.23%**. Every point estimate sits inside both the
+   randomized-sign null and the date-shuffle null. n = 2,138 sessions each.
+
+2. THE TERM STRUCTURE IS THE CLEANEST REFUTATION, because it does not depend
+   on any significance threshold. Holding sign(r1) through each later half
+   hour, same-day continuation is mildly POSITIVE across the middle of the
+   session (peak at the 11:00 bin, +1.25 / +1.02 / +1.09 bps) and is the only
+   thing that is NEGATIVE on all three instruments in the LAST bin. The
+   mechanism says the last half hour is where the forecastable flow lands.
+   It is the single worst half hour of the thirteen.
+
+3. THE MID-DAY VARIANT IS THE ONLY SURVIVOR, AND IT IS THE OPPOSITE CLAIM.
+   sign(r1) -> 10:00-15:30 earns **+2.06 / +4.91 / +3.93 bps**, positive in
+   BOTH halves on all three, date-shuffle p = 0.104 / 0.014 / 0.037 with
+   Rule-14 SE-ratios of 1.00 / 1.10 / 0.98 (so those p-values are honest, not
+   the anti-conservative kind H16/H21 found). It beats its always-long
+   benchmark (+1.21 / +1.39 / -0.43). So what exists in this sample is
+   generic same-day continuation smeared across the session — the
+   "autocorrelation" alternative the study was built to separate — and NOT
+   the close-specific effect. Break-even round-trip cost **+2.07 / +4.93 /
+   +3.96 bps** is under the 5-10 bps large-cap band, so it is not tradeable
+   either.
+
+4. EXITING IN THE REAL CLOSING AUCTION DOES NOT RESCUE IT (H19k, added
+   because the auction is literally where the mechanism's flow crosses):
+   -0.70 / -0.41 / -0.17 bps, unchanged. The auction print differs from the
+   16:00 tape print by a median 8e-05 to 1.3e-04 in log units.
+
+5. GHLZ'S OWN STRONGER PREDICTOR FAILS THE HOUSE'S NOISE TEST. sign(r12) ->
+   r13 is positive (+0.97 / +1.01 / +0.37 bps) but **flips sign across halves
+   on all three instruments** (+2.12/-0.17, +2.68/-0.66, +1.51/-0.77) and
+   breaks even at 0.98 / 1.02 / 0.38 bps. This repo calls a sign flip noise.
+
+6. FIFTY SINGLE LARGE CAPS DO NOT RESCUE IT EITHER. The equal-weight book
+   earns **-0.53 bps/session (NW t = -1.12)**, block-bootstrap CI
+   [-1.47, +0.20], negative in both halves (-0.69 / -0.37), hit 48.55%.
+   Only **13 of 50** names are positive and **5 of 50** are positive in both
+   halves. The cross-sectional top-third-minus-bottom-third book is -0.80 bps
+   (t = -1.82), negative in both halves. The prev-day placebo is -0.18 bps.
+   Read plainly: negative everywhere, significant nowhere.
+   RULE 14, APPLIED TO THIS LAB'S OWN FIRST DRAFT — the methodological point
+   of the round. The obvious null here (an independent coin per name, then
+   average) puts the book **3.5 SD below it at p = 1.000** and would have
+   licensed a confident "significantly negative". That null is WRONG and its
+   SE-ratio says so: it diversifies away the market factor that the signs and
+   the returns SHARE — on most sessions the whole market's first half hour
+   points one way — so it comes out at **SE-ratio 0.32** (three times tighter
+   than the book's own Newey-West SE of 0.472 bps). `book_nulls` therefore
+   also runs `rowshuf`, which permutes whole CROSS-SECTIONS across dates so
+   the within-date sign correlation survives; it widens to SE-ratio 0.58 and
+   still under-states, so **the number actually quoted is the Newey-West t of
+   -1.12 and a CI that straddles zero**, not any permutation p-value. The
+   self-test reproduces the failure mode on demand on a synthetic
+   market-correlated panel (SE-ratio 1.05 for rowshuf vs 0.29-0.30 for the
+   per-name nulls).
+
+7. COSTS WOULD HAVE KILLED IT EVEN IF THE SIGN HAD BEEN RIGHT — the point
+   the task made in advance. At 252 round trips a year the SPY row loses
+   **-4.6% / -7.0% / -13.7% a year at 1 / 2 / 5 bps** and the 50-stock book
+   loses **-3.8% / -6.2% / -13.1% / -23.4% at 1 / 2 / 5 / 10 bps**. The
+   break-even round-trip cost of every close-specific row in the study is
+   NEGATIVE, so there is no cost low enough to make it work — and even the one
+   positive row (mid-day) breaks even at 2.1-4.9 bps, under the band.
+
+8. THE PLACEBO IS AS BIG AS THE SIGNAL, which is its own verdict: yesterday's
+   first half hour "predicts" today's last half hour -0.61 / +0.09 / -1.28
+   bps on the ETFs against the real signal's -0.82 / -0.50 / -0.27.
+
+Scope of the rejection, stated as narrowly as it deserves: three US index
+ETFs and 50 US large caps, 2018-2026 only, one 5-minute SIP tape, and a
+universe that is HINDSIGHT-LIQUID (see `cached_symbols`). This sample is
+entirely POST-publication for a 2018 paper whose evidence ran to 2013, so a
+McLean-Pontiff decay reading is available and is probably the charitable one;
+this lab cannot distinguish decay from a result that never generalised out of
+its original window, because it does not own the original window.
 
 Usage:
   python -m scout.intraday_momentum_lab              # the full study
@@ -344,7 +450,12 @@ def build_panel(symbols: list[str], force: bool = False,
         if set(symbols) <= set(blob["panel"]):
             if not quiet:
                 print(f"  price grid: cached, {len(blob['panel'])} symbols")
-            return {s: blob["panel"][s] for s in symbols}, blob["guards"]
+            keep = set(symbols)
+            # filter the guard log too, or an --etf-only re-run off a full
+            # cache would print the whole panel's drop counts as if they were
+            # the three ETFs'
+            return ({s: blob["panel"][s] for s in symbols},
+                    [g for g in blob["guards"] if g.get("symbol") in keep])
 
     bars = intraday.fetch_minute_bars(list(symbols), START, END,
                                       timeframe="5Min", quiet=quiet)
@@ -455,6 +566,77 @@ def randomized_sign_null(ret: pd.Series, reps: int = PERM_REPS,
             "reps": reps}
 
 
+def book_nulls(r1_df: pd.DataFrame, r13_df: pd.DataFrame, reps: int = 500,
+               seed: int = SEED) -> dict:
+    """The two nulls for the EQUAL-WEIGHT SINGLE-STOCK BOOK.
+
+    THREE nulls, because the obvious two are both wrong in opposite directions
+    and the disagreement between them is the whole lesson (H16 Finding 2,
+    Rule 14). All run on the identical dates, names and r13 values.
+
+      coin      : sign_it ~ +-1 INDEPENDENT per name per session.
+                  ANTI-CONSERVATIVE, and knowably so. The real book's signs are
+                  strongly correlated across names — on most sessions the whole
+                  market's first half hour points the same way — so the real
+                  book is roughly a levered bet on the market's last half hour,
+                  while this null diversifies that factor away and collapses to
+                  a fraction of the real variance. Reported WITH its SE-ratio
+                  so the reader can see it is too tight, never as evidence.
+      shuffle   : each NAME's sign series permuted across dates INDEPENDENTLY.
+                  Same defect as `coin` for the same reason: it scrambles the
+                  within-date cross-section.
+      rowshuf   : whole CROSS-SECTIONS permuted across dates — every session's
+                  42 signs move together as a block, so the market-wide
+                  correlation of the signs is preserved exactly and only the
+                  pairing of a sign-day to a return-day is destroyed. THIS IS
+                  THE NULL THE BOOK MUST BE SCORED AGAINST.
+
+    Every null carries `se_ratio` = its SD over the real book's Newey-West SE.
+    Rule 14: a ratio well below 1 means the p-value beside it is fiction.
+    """
+    common = r13_df.index.intersection(r1_df.index)
+    R = r13_df.loc[common].to_numpy(dtype="float64")
+    S1 = r1_df.loc[common].to_numpy(dtype="float64")
+    ok = np.isfinite(R) & np.isfinite(S1)
+    n_t = ok.sum(axis=1)
+    live = n_t > 0
+    R0 = np.where(ok, R, 0.0)
+    n_t = np.where(live, n_t, 1)
+    rng = np.random.default_rng(seed)
+
+    coin = np.empty(reps)
+    shuf = np.empty(reps)
+    rowsh = np.empty(reps)
+    sgn = np.where(ok, np.sign(S1), 0.0)
+    nd = R.shape[0]
+    for i in range(reps):
+        s = rng.choice([-1.0, 1.0], size=R.shape) * ok
+        coin[i] = ((s * R0).sum(axis=1) / n_t)[live].mean() * 1e4
+        # permute each COLUMN (name) independently across dates
+        perm = np.argsort(rng.random(sgn.shape), axis=0)
+        sp = np.take_along_axis(sgn, perm, axis=0)
+        shuf[i] = ((sp * R0).sum(axis=1) / n_t)[live].mean() * 1e4
+        # permute whole ROWS: the cross-section of signs travels as a block, so
+        # the market-wide correlation among the signs survives the null
+        rp = sgn[rng.permutation(nd)]
+        rowsh[i] = ((rp * R0).sum(axis=1) / n_t)[live].mean() * 1e4
+
+    book_t = ((sgn * R0).sum(axis=1) / n_t)[live]
+    real = book_t.mean() * 1e4
+    nw = _nw_se(book_t) * 1e4
+    out = {"real_bps": float(real), "reps": reps, "n_dates": int(live.sum()),
+           "nw_se_bps": float(nw)}
+    for tag, m in (("coin", coin), ("shuffle", shuf), ("rowshuf", rowsh)):
+        sd = float(m.std(ddof=1))
+        out[tag] = {"mean_bps": float(m.mean()), "sd_bps": sd,
+                    "p5": float(np.percentile(m, 5)),
+                    "p95": float(np.percentile(m, 95)),
+                    "p_one_sided": float((m >= real).mean()),
+                    "se_ratio": float(sd / nw) if nw and np.isfinite(nw) and nw > 0
+                    else float("nan")}
+    return out
+
+
 def date_shuffle_null(sig: pd.Series, ret: pd.Series, reps: int = PERM_REPS,
                       seed: int = SEED, scaled: bool = False) -> dict:
     """The signal permuted across dates against a fixed return series.
@@ -466,23 +648,32 @@ def date_shuffle_null(sig: pd.Series, ret: pd.Series, reps: int = PERM_REPS,
     d = pd.concat([sig.rename("s"), ret.rename("r")], axis=1).dropna()
     s, r = d["s"].to_numpy(), d["r"].to_numpy()
     w = np.clip(s / np.nanstd(s), -VOL_CLIP, VOL_CLIP) if scaled else np.sign(s)
-    real = float((w * r).mean() * 1e4)
+    pnl = w * r
+    real = float(pnl.mean() * 1e4)
     rng = np.random.default_rng(seed)
     m = np.empty(reps)
     for i in range(reps):
         m[i] = (w[rng.permutation(len(w))] * r).mean() * 1e4
-    return {"real_bps": real, "mean_bps": float(m.mean()),
-            "sd_bps": float(m.std(ddof=1)),
+    sd = float(m.std(ddof=1))
+    # RULE 14 (house rule, from H16/H21): never quote a permutation p-value
+    # without the ratio of the null's SD to the real series' Newey-West SE.
+    # A ratio well below 1 means the null is too tight and its p-value is
+    # anti-conservative — the failure mode that nearly "confirmed" H16.
+    nw = _nw_se(pnl) * 1e4
+    return {"real_bps": real, "mean_bps": float(m.mean()), "sd_bps": sd,
             "p5": float(np.percentile(m, 5)), "p95": float(np.percentile(m, 95)),
-            "p_one_sided": float((m >= real).mean()), "reps": reps}
+            "p_one_sided": float((m >= real).mean()), "reps": reps,
+            "nw_se_bps": float(nw),
+            "se_ratio": float(sd / nw) if nw and np.isfinite(nw) and nw > 0
+            else float("nan")}
 
 
 # --------------------------------------------------------------------------
 # per-instrument study
 # --------------------------------------------------------------------------
 
-def instrument_study(sym: str, f: pd.DataFrame,
-                     cost_grid=COST_GRID_BPS) -> dict:
+def instrument_study(sym: str, f: pd.DataFrame, cost_grid=COST_GRID_BPS,
+                     auction: pd.Series | None = None) -> dict:
     """Every registered row for one instrument."""
     L = legs(f)
     r1, r12, r13 = L["r1"], L["r12"], L["r13"]
@@ -501,17 +692,48 @@ def instrument_study(sym: str, f: pd.DataFrame,
     out["reg_ghlz"] = _ols_nw(r13, L["r1_ghlz"])
 
     # --- H19f: the mid-day variant (is the effect close-specific?) --------
+    # One round trip too (enter 10:00, exit 15:30), so its bps and break-even
+    # are directly comparable to the r13 rows even though the holding period
+    # is eleven times longer and the variance far larger.
     out["midday"] = evaluate(sign_weight(r1), L["mid"], cost_grid)
     out["reg_midday"] = _ols_nw(L["mid"], r1)
+    out["bench_long_mid"] = evaluate(pd.Series(1.0, index=L["mid"].index),
+                                     L["mid"], cost_grid)
 
     # --- H19g: r12 -> r13, the paper's other (stronger) predictor ---------
     out["r12"] = evaluate(sign_weight(r12), r13, cost_grid)
     out["reg_r12"] = _ols_nw(r13, r12)
 
+    # --- H19k: exit at the OFFICIAL CLOSING AUCTION, not the last tape print
+    # The mechanism names the auction specifically — MOC imbalances, index and
+    # leveraged-ETF rebalances all cross at 16:00:00 — and a 5-minute bar
+    # CANNOT isolate that print (the cross shares its bar with early
+    # after-hours trades; see intraday.official_closes). So the row that most
+    # closely matches the economics is r13 measured from the 15:30 tape price
+    # to the auction price, which is also what an MOC order actually gets.
+    if auction is not None:
+        ac = pd.to_numeric(auction.reindex(f.index), errors="coerce")
+        r13a = (ac / f["P12"] - 1.0)
+        r13a = r13a.where(r13a.abs() <= EXTREME_HALFHOUR)
+        out["auction"] = evaluate(sign_weight(r1), r13a, cost_grid)
+        out["reg_auction"] = _ols_nw(r13a, r1)
+        out["bench_long_r13_auction"] = evaluate(
+            pd.Series(1.0, index=r13a.index), r13a, cost_grid)
+        lg = np.log(ac / f["P13"]).replace([np.inf, -np.inf], np.nan).dropna()
+        out["auction_vs_tape"] = {
+            "n": int(len(lg)), "median_abs_log_diff": float(lg.abs().median()),
+            "mean_log_diff_bps": float(lg.mean() * 1e4)}
+
     # --- controls ---------------------------------------------------------
     out["ctl_coin"] = randomized_sign_null(r13)
     out["ctl_shuffle"] = date_shuffle_null(r1, r13)
     out["ctl_shuffle_r12"] = date_shuffle_null(r12, r13)
+    # The mid-day row is the one that can come out positive, and it has a
+    # LONG BIAS built in (mornings are up ~52% of the time and the mid-day
+    # window carries the session's drift). Permuting sign(r1) across dates
+    # keeps that bias exactly and destroys only the pairing, so the null mean
+    # — not zero — is the number the row has to beat.
+    out["ctl_shuffle_midday"] = date_shuffle_null(r1, L["mid"])
     out["ctl_placebo"] = evaluate(sign_weight(r1.shift(1)), r13, cost_grid)
     out["bench_long_r13"] = evaluate(pd.Series(1.0, index=r13.index), r13, cost_grid)
     out["bench_buyhold"] = {
@@ -543,7 +765,7 @@ def stock_study(panel: dict, symbols: list[str]) -> dict:
     50 names share their dates and their market factor; they are emphatically
     not 50 independent experiments, and the per-name table is reported as a
     SIGN TEST (how many are positive) rather than as 50 t-statistics."""
-    per, cols_pnl, cols_bench, cols_scaled = {}, {}, {}, {}
+    per, cols_pnl, cols_bench, cols_scaled, cols_plac = {}, {}, {}, {}, {}
     for sym in symbols:
         f = panel.get(sym)
         if f is None:
@@ -556,6 +778,7 @@ def stock_study(panel: dict, symbols: list[str]) -> dict:
         cols_pnl[sym] = p
         cols_bench[sym] = r13.dropna()
         cols_scaled[sym] = (scaled_weight(r1) * r13).dropna()
+        cols_plac[sym] = (sign_weight(r1.shift(1)) * r13).dropna()
         per[sym] = {
             "n": int(len(p)), "mean_bps": _bps(p), "nw_t": _nw_t(p.to_numpy()),
             "sharpe": _sharpe(p.to_numpy()), "hit": float((p > 0).mean()),
@@ -570,6 +793,7 @@ def stock_study(panel: dict, symbols: list[str]) -> dict:
     book = P.mean(axis=1).dropna()                    # EW book, one per date
     bench = pd.DataFrame(cols_bench).mean(axis=1).dropna()
     scaled = pd.DataFrame(cols_scaled).mean(axis=1).dropna()
+    placebo = pd.DataFrame(cols_plac).mean(axis=1).dropna()
     pos = sum(1 for v in per.values() if v["mean_bps"] > 0)
     both = sum(1 for v in per.values()
                if v["half1_bps"] > 0 and v["half2_bps"] > 0)
@@ -593,13 +817,20 @@ def stock_study(panel: dict, symbols: list[str]) -> dict:
 
     return {
         "names": n, "per_name": per,
+        # the panel is UNBALANCED (a few names list part-way through), so the
+        # EW book's composition changes over time; print it rather than imply
+        # a constant 50-name book
+        "mean_names_per_date": float(P.notna().sum(axis=1).mean()),
+        "min_names_per_date": int(P.notna().sum(axis=1).min()),
         "book": evaluate(pd.Series(1.0, index=book.index), book,
                          COST_GRID_STOCK_BPS),
         "book_scaled": evaluate(pd.Series(1.0, index=scaled.index), scaled,
                                 COST_GRID_STOCK_BPS),
         "bench_long_r13": evaluate(pd.Series(1.0, index=bench.index), bench,
                                    COST_GRID_STOCK_BPS),
-        "ctl_coin": randomized_sign_null(bench),
+        "ctl_placebo": evaluate(pd.Series(1.0, index=placebo.index), placebo,
+                                COST_GRID_STOCK_BPS),
+        "ctl_book": book_nulls(r1_df, r13_df),
         "cross_sectional": {
             "n": int(len(xs)), "mean_bps": _bps(xs), "nw_t": _nw_t(xs.to_numpy()),
             "sharpe": _sharpe(xs.to_numpy()),
@@ -621,7 +852,10 @@ def cross_check(panel: dict, symbols: list[str], quiet: bool = False) -> dict:
     They are computed by different code from the same bars; if they disagree,
     one of them is wrong and the study is void. Reported as a max absolute
     difference, not asserted away."""
-    syms = [s for s in symbols if s in panel][:6]
+    # dict.fromkeys, not set(): duplicates in `symbols` would make
+    # session_frames build duplicate COLUMNS, and then `sess[...][s]` is a
+    # DataFrame rather than a Series and the comparison below explodes.
+    syms = list(dict.fromkeys(s for s in symbols if s in panel))[:6]
     sess = intraday.session_frames(syms, START, END, timeframe="5Min",
                                    quiet=True)
     worst = {}
@@ -656,10 +890,16 @@ def cached_symbols() -> list[str]:
     return out
 
 
-def stock_universe(n: int = N_STOCKS) -> list[str]:
-    """The n most liquid cached names that are not the three index ETFs,
-    ranked by median session dollar volume in the panel itself."""
-    return [s for s in cached_symbols() if s not in ETFS][:n]
+def stock_universe() -> list[str]:
+    """Every cached name that is not one of the three index ETFs.
+
+    The truncation to N_STOCKS happens in `run()`, AFTER the panel is built, and
+    is done on median session dollar volume measured in the panel itself — a
+    property of the data rather than of the filename sort. Building the grid for
+    every cached name first costs nothing (the bars are already on disk) and
+    stops the universe from depending on the alphabet.
+    """
+    return [s for s in cached_symbols() if s not in ETFS]
 
 
 # --------------------------------------------------------------------------
@@ -668,7 +908,7 @@ def stock_universe(n: int = N_STOCKS) -> list[str]:
 
 def run(force: bool = False, etf_only: bool = False,
         n_stocks: int = N_STOCKS, quiet: bool = False) -> dict:
-    syms = list(ETFS) + ([] if etf_only else stock_universe(n_stocks))
+    syms = list(ETFS) + ([] if etf_only else stock_universe())
     print(f"H19 intraday momentum lab — {len(syms)} symbols, {START}..{END}")
     panel, guards = build_panel(syms, force=force, quiet=quiet)
     print(f"  price grid built: {len(panel)} symbols pass the "
@@ -687,10 +927,22 @@ def run(force: bool = False, etf_only: bool = False,
            "guard_totals": tot, "extreme_prints": extremes[:60],
            "cross_check": cross_check(panel, list(ETFS) + list(panel), quiet)}
 
+    # official closing-auction prices for the three index instruments (H19k).
+    # Best-effort: a diagnostic must never be able to kill the run.
+    auction = None
+    try:
+        auction = intraday.official_closes([s for s in ETFS if s in panel],
+                                           START, END)
+    except Exception as exc:                    # pragma: no cover - network
+        print(f"  (auction closes unavailable: {type(exc).__name__}) — H19k skipped")
+
     res["etf"] = {}
     for s in ETFS:
         if s in panel:
-            res["etf"][s] = instrument_study(s, panel[s])
+            res["etf"][s] = instrument_study(
+                s, panel[s],
+                auction=None if auction is None or s not in auction.columns
+                else auction[s])
 
     if not etf_only:
         stocks = [s for s in panel if s not in ETFS]
@@ -733,6 +985,13 @@ def report(res: dict) -> None:
       "session (open 15:30, close 16:00).")
     p("BE = break-even round-trip cost in bps: the cost at which the row earns "
       "exactly zero. The large-cap band is 5-10 bps.")
+    p("EFFECTIVE INDEPENDENT SAMPLE: one observation per SESSION, and the "
+      "windows do not overlap (a 30-minute hold cannot touch tomorrow), so n "
+      "IS the independent sample per instrument. SPY/QQQ/IWM share their "
+      "dates and ~all of their market factor, so the three are NOT three "
+      "independent replications — treat them as one experiment shown three "
+      "ways. Same for the 50 stocks: the book is collapsed to one number per "
+      "session before anything is tested.")
 
     for s, d in res.get("etf", {}).items():
         p("\n" + "-" * 118)
@@ -743,8 +1002,13 @@ def report(res: dict) -> None:
         p(_row("H19e GHLZ r1  ->r13", d["ghlz"]))
         p(_row("H19g sign(r12)->r13", d["r12"]))
         p(_row("H19f sign(r1)->midday", d["midday"]))
+        if "auction" in d:
+            p(_row("H19k sign(r1)->r13 AUCTION", d["auction"]))
         p(_row("PLACEBO r1(t-1)->r13", d["ctl_placebo"]))
         p(_row("BENCH always-long r13", d["bench_long_r13"]))
+        if "bench_long_r13_auction" in d:
+            p(_row("BENCH long r13 AUCTION", d["bench_long_r13_auction"]))
+        p(_row("BENCH always-long midday", d["bench_long_mid"]))
         bh = d["bench_buyhold"]
         p(f"  {'BENCH buy&hold 09:30-16:00':<26s} "
           f"{bh['mean_bps']:+7.3f} bps  Sh={bh['sharpe']:+5.2f}  "
@@ -758,16 +1022,24 @@ def report(res: dict) -> None:
           f"R2={100 * r2['r2']:.3f}%")
         p(f"  regression mid = a + b*r1     b={rm['b']:+.4f}  NW t={rm['t']:+5.2f}  "
           f"R2={100 * rm['r2']:.3f}%")
+        if "reg_auction" in d:
+            ra, av = d["reg_auction"], d["auction_vs_tape"]
+            p(f"  regression r13auc = a + b*r1  b={ra['b']:+.4f}  "
+              f"NW t={ra['t']:+5.2f}  R2={100 * ra['r2']:.3f}%   "
+              f"(auction vs 16:00 tape print: median |log diff| "
+              f"{av['median_abs_log_diff']:.2e} on {av['n']} sessions, "
+              f"signed {av['mean_log_diff_bps']:+.2f} bps)")
         c, sh, sh12 = d["ctl_coin"], d["ctl_shuffle"], d["ctl_shuffle_r12"]
         p(f"  CONTROL randomized sign  mean {c['mean_bps']:+.3f}  sd {c['sd_bps']:.3f}"
           f"  [p5 {c['p5']:+.3f}, p95 {c['p95']:+.3f}] bps")
-        p(f"  CONTROL date-shuffle r1  real {sh['real_bps']:+.3f}  null mean "
-          f"{sh['mean_bps']:+.3f}  sd {sh['sd_bps']:.3f}  "
-          f"[p5 {sh['p5']:+.3f}, p95 {sh['p95']:+.3f}]  p={sh['p_one_sided']:.3f}")
-        p(f"  CONTROL date-shuffle r12 real {sh12['real_bps']:+.3f}  null mean "
-          f"{sh12['mean_bps']:+.3f}  sd {sh12['sd_bps']:.3f}  "
-          f"[p5 {sh12['p5']:+.3f}, p95 {sh12['p95']:+.3f}]  "
-          f"p={sh12['p_one_sided']:.3f}")
+        for tag, sd_ in (("r1  ", sh), ("r12 ", sh12),
+                         ("MID ", d["ctl_shuffle_midday"])):
+            p(f"  CONTROL date-shuffle {tag} real {sd_['real_bps']:+.3f}  "
+              f"null mean {sd_['mean_bps']:+.3f}  sd {sd_['sd_bps']:.3f}  "
+              f"[p5 {sd_['p5']:+.3f}, p95 {sd_['p95']:+.3f}]  "
+              f"p={sd_['p_one_sided']:.3f}  "
+              f"SE-ratio {sd_['se_ratio']:.2f} (Rule 14: null sd / real NW SE; "
+              f"<1 means the p-value is too generous)")
         sg = d["sign"]
         p("  net of costs (annualised):  " + "   ".join(
             f"{c:g}bp {100 * sg[f'net_{c:g}bps_ann']:+6.2f}%"
@@ -795,6 +1067,9 @@ def report(res: dict) -> None:
         p(f"H19h SINGLE STOCKS — {st['names']} large caps "
           f"(costs charged at 1/2/5/10 bps; single-stock spreads are wider)")
         p("=" * 118)
+        p(f"  panel is unbalanced: {st['mean_names_per_date']:.1f} names per "
+          f"session on average, minimum {st['min_names_per_date']} "
+          f"(a few names list part-way through the sample)")
         p(_row("EW book sign(r1)->r13", st["book"]))
         p(_row("EW book scaled r1", st["book_scaled"]))
         p(_row("BENCH EW always-long r13", st["bench_long_r13"]))
@@ -803,10 +1078,19 @@ def report(res: dict) -> None:
           f"{x['mean_bps']:+7.3f} bps  t={x['nw_t']:+5.2f}  "
           f"Sh={x['sharpe']:+5.2f}  h1={x['half1_bps']:+6.2f} "
           f"h2={x['half2_bps']:+6.2f}  BE={x['breakeven_bps']:+5.2f}bp")
-        c = st["ctl_coin"]
-        p(f"  CONTROL randomized sign on the EW r13 series: mean "
-          f"{c['mean_bps']:+.3f}  sd {c['sd_bps']:.3f}  "
-          f"[p5 {c['p5']:+.3f}, p95 {c['p95']:+.3f}] bps")
+        p(_row("PLACEBO r1(t-1)->r13", st["ctl_placebo"]))
+        cb = st["ctl_book"]
+        p(f"  book nulls over {cb['n_dates']} dates, {cb['reps']} draws; real "
+          f"book NW SE {cb['nw_se_bps']:.3f} bps. READ THE SE-RATIO FIRST "
+          f"(Rule 14) — only `rowshuf` preserves the within-date correlation "
+          f"of the signs, so only its p-value is admissible:")
+        for tag in ("coin", "shuffle", "rowshuf"):
+            c = cb[tag]
+            p(f"    CONTROL {tag:<8s} real {cb['real_bps']:+.3f}  null mean "
+              f"{c['mean_bps']:+.3f}  sd {c['sd_bps']:.3f}  "
+              f"[p5 {c['p5']:+.3f}, p95 {c['p95']:+.3f}]  "
+              f"p={c['p_one_sided']:.3f}  SE-ratio {c['se_ratio']:.2f}"
+              f"{'   <- ADMISSIBLE' if tag == 'rowshuf' else '   <- too tight, do not quote'}")
         sg = st["sign_test"]
         p(f"  SIGN TEST across names: {sg['positive']}/{sg['of']} positive "
           f"(z={sg['z']:+.2f} vs a fair coin, but the names share dates and a "
@@ -857,7 +1141,12 @@ def _synthetic_bars(n_days: int = 1200, beta: float = 0.0, seed: int = 3,
         if not half:
             br[72:78] += (r13 - br[72:78].sum()) / 6.0
         for i in range(nb):
-            if plant_gap and k % 311 == 5 and 20 <= i < 26:
+            # Bin of bar i is i // 6 (six 5-minute bars to a half hour), so
+            # bars 18..23 are EXACTLY bin 3 — dropping them leaves that bin
+            # empty and is what the `bins_ok` guard has to catch. (Dropping
+            # 20..25 straddles two bins and leaves both non-empty, which is
+            # how this generator silently failed to exercise the guard.)
+            if plant_gap and k % 311 == 5 and 18 <= i < 24:
                 continue                       # a hole in bin 3 of that session
             o = px
             px = px * (1.0 + br[i])
@@ -927,10 +1216,20 @@ def selftest(verbose: bool = True) -> int:
        f"{len(f)} sessions kept")
 
     # --- 4. no lookahead in the scaled weight ------------------------------
-    s = pd.Series(np.arange(400.0), index=pd.bdate_range("2020-01-01", periods=400))
-    w = scaled_weight(s, win=60)
-    ck("scaled weight uses only past dispersion", bool(w.iloc[:60].isna().all()),
-       "first 60 sessions are NaN (rolling window .shift(1))")
+    # Direct check rather than a NaN count: reproduce w[t] by hand from the 60
+    # observations ENDING AT t-1 and require an exact match. If the .shift(1)
+    # were removed this fails, whereas a NaN-prefix test would not.
+    rs = pd.Series(np.random.default_rng(7).normal(0, 0.01, 400),
+                   index=pd.bdate_range("2020-01-01", periods=400))
+    w = scaled_weight(rs, win=60)
+    t = 200
+    by_hand = rs.iloc[t] / rs.iloc[t - 60:t].std(ddof=1)
+    ck("scaled weight uses ONLY dispersion measured through t-1",
+       abs(float(w.iloc[t]) - float(np.clip(by_hand, -VOL_CLIP, VOL_CLIP))) < 1e-12,
+       f"w[200]={float(w.iloc[t]):+.6f} vs hand-built {float(by_hand):+.6f}")
+    ck("scaled weight is NaN before the window can be filled",
+       bool(w.iloc[:VOL_WIN // 2].isna().all()),
+       f"first {VOL_WIN // 2} sessions NaN (min_periods=win//2, then .shift(1))")
 
     # --- 5. cost arithmetic ------------------------------------------------
     r = pd.Series(np.full(500, 10.0 / 1e4),
@@ -940,6 +1239,44 @@ def selftest(verbose: bool = True) -> int:
        f"{e['breakeven_bps']:.4f} bps")
     ck("net at 5 bps is half the gross",
        abs(e["net_5bps_ann"] - _ann_ret(np.full(500, 5.0 / 1e4))) < 1e-9)
+
+    # --- 5b. the BOOK nulls: kill a planted effect, centre on a null one ----
+    rng = np.random.default_rng(23)
+    idx = pd.bdate_range("2018-01-02", periods=900)
+    names = [f"S{i}" for i in range(20)]
+    a1 = pd.DataFrame(rng.normal(0, 0.004, (len(idx), len(names))),
+                      index=idx, columns=names)
+    planted = pd.DataFrame(0.25 * a1.to_numpy()
+                           + rng.normal(0, 0.004, a1.shape),
+                           index=idx, columns=names)
+    nul = pd.DataFrame(rng.normal(0, 0.004, a1.shape), index=idx, columns=names)
+    bn_p = book_nulls(a1, planted, reps=200)
+    ck("book row-shuffle null kills a planted book effect",
+       bn_p["rowshuf"]["p_one_sided"] < 0.02
+       and abs(bn_p["rowshuf"]["mean_bps"]) < abs(bn_p["real_bps"]) / 5,
+       f"real {bn_p['real_bps']:+.2f} vs rowshuf {bn_p['rowshuf']['mean_bps']:+.2f}"
+       f" (sd {bn_p['rowshuf']['sd_bps']:.2f}), p={bn_p['rowshuf']['p_one_sided']:.3f}")
+
+    # THE POINT OF rowshuf: with a COMMON market factor in both the signal and
+    # the return — which is what a real equity panel looks like — the
+    # independent-per-name nulls diversify that factor away and come out far
+    # too tight. This is H16's Finding 2 reproduced on demand, and it is the
+    # reason the report refuses to quote `coin`/`shuffle`.
+    mkt_s = rng.normal(0, 0.006, (len(idx), 1))
+    mkt_r = rng.normal(0, 0.006, (len(idx), 1))
+    corr_s = pd.DataFrame(mkt_s + rng.normal(0, 0.002, a1.shape),
+                          index=idx, columns=names)
+    corr_r = pd.DataFrame(mkt_r + rng.normal(0, 0.002, a1.shape),
+                          index=idx, columns=names)
+    bn_c = book_nulls(corr_s, corr_r, reps=200)
+    ck("row-shuffle null is MUCH wider than the per-name nulls on a "
+       "market-correlated panel (Rule 14 failure mode, reproduced)",
+       bn_c["rowshuf"]["sd_bps"] > 3 * bn_c["coin"]["sd_bps"]
+       and bn_c["rowshuf"]["se_ratio"] > 0.5 > bn_c["coin"]["se_ratio"],
+       f"sd rowshuf {bn_c['rowshuf']['sd_bps']:.2f} vs coin "
+       f"{bn_c['coin']['sd_bps']:.2f} vs shuffle {bn_c['shuffle']['sd_bps']:.2f}; "
+       f"SE-ratios {bn_c['rowshuf']['se_ratio']:.2f} / "
+       f"{bn_c['coin']['se_ratio']:.2f} / {bn_c['shuffle']['se_ratio']:.2f}")
 
     # --- 6. the return the strategy trades is disjoint from the signal -----
     ck("signal and traded return share no bar",
@@ -966,8 +1303,13 @@ def main() -> None:
         raise SystemExit(selftest())
     res = run(force=a.force, etf_only=a.etf_only, n_stocks=a.n_stocks)
     report(res)
-    RESULTS_JSON.write_text(json.dumps(res, indent=1, default=str))
-    print(f"\nmachine-readable results -> {RESULTS_JSON.name}")
+    # a partial run gets its OWN file: --etf-only used to overwrite the full
+    # study's results with a three-symbol subset, which is the kind of quiet
+    # data loss that makes a "reproduce it" instruction untrue
+    out = (RESULTS_JSON.with_name(RESULTS_JSON.stem + "_etfonly.json")
+           if a.etf_only else RESULTS_JSON)
+    out.write_text(json.dumps(res, indent=1, default=str))
+    print(f"\nmachine-readable results -> {out.name}")
 
 
 if __name__ == "__main__":

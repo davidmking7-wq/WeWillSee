@@ -1005,12 +1005,22 @@ def run(horizons=HORIZONS, draws=N_CONTROL_DRAWS, verbose: bool = True) -> dict:
             h1, h2 = halves(g)
             lo, hi = _block_boot_ci(g.to_numpy(), block=max(h, 5))
             mkt = market_adjust(g, bench_ret, h)
+            # The HONEST effective sample. _n_eff on the daily series comes out
+            # at or ABOVE n_days here (3,220 vs 2,664 at h=42) because a
+            # long-short book's daily returns are near-serially-uncorrelated
+            # even when its WEIGHTS barely move — quarterly filings and a
+            # 42-session hold do not make 2,664 independent observations.
+            # nonoverlap_blocks says what the t-statistic should be read
+            # against: ~63 independent windows, not thousands of days.
+            nb = nonoverlap_blocks(g, h)
             res["portfolios"].append({
                 "signal": key, "h": h,
                 "mean_bps": 1e4 * ls["mean_gross"],
                 "ci_lo_bps": 1e4 * lo, "ci_hi_bps": 1e4 * hi,
                 "t_nw": ls["t_gross"],
                 "n_eff": _n_eff(g.to_numpy(), max(h, 5)),
+                "n_indep": nb["n_blocks"], "blk_mean_%": nb["mean_%"],
+                "blk_t": nb["t"], "blk_win_rate": nb["share_positive"],
                 "h1_bps": 1e4 * float(h1.mean()), "h2_bps": 1e4 * float(h2.mean()),
                 "ann_gross_%": 100 * ls["ann_gross"], "ann_net_%": 100 * ls["ann_net"],
                 "sharpe_gross": ls["sharpe_gross"],
@@ -1096,6 +1106,21 @@ def report(res: dict) -> None:
   t_nw      Newey-West(h); this repo's standalone bar is t > 3, not 2
   beta/alpha_ann_%/t_alpha  Rule 13 — the book regressed on SPY. A
             dollar-neutral spread is NOT market-neutral; read alpha, not gross.""")
+
+    print("\n  EFFECTIVE INDEPENDENT SAMPLE — read the t-stats against THIS, "
+          "not against n_days:")
+    print(p[["signal", "h", "n_days", "n_eff", "n_indep", "blk_mean_%",
+             "blk_t", "blk_win_rate"]]
+          .to_string(index=False, float_format=lambda x: f"{x:9.3f}"))
+    print("""  n_eff     from the daily series. It comes out AT OR ABOVE n_days, which is
+            exactly the flattery nonoverlap_blocks' docstring warns about: a
+            long-short book's DAILY returns are near-serially-uncorrelated even
+            when its WEIGHTS barely move, so the daily series looks independent
+            while the POSITIONS are quarterly.
+  n_indep   NON-OVERLAPPING h-session windows — the honest count. Ten years of
+            P&L driven by quarterly filings at a 42-session hold is ~63
+            independent windows, not 2,664 days.
+  blk_t     t on those windows. This is the number that decides the hypothesis.""")
 
     print("\n  matched benchmarks (annualised, gross):")
     print(p[["signal", "h", "q5_ann_%", "q1_ann_%", "pool_ann_%"]]
