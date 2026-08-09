@@ -47,8 +47,9 @@ NO LOOKAHEAD — WHERE THE SHIFT IS
   the earliest return any signal can touch is close(t) -> close(t+1). The
   regression side states it the other way round and equivalently:
   fwd_h(t) = close(t+h)/close(t) - 1 is regressed on variables all known at
-  close t. `selftest --lookahead` demonstrates the contamination that appears
-  when the shift is removed.
+  close t. `--selftest` prices the mistake: feeding the SAME-DAY return in as
+  the signal scores +1.04 bps/day through the shift and +411 bps/day without
+  it, a 400x fabrication out of pure noise.
 
 CONTROLS (all four run, none optional)
   shuffle  tone permuted across symbols WITHIN each date (200 draws)
@@ -67,17 +68,59 @@ METHOD
   overlapping holds make adjacent days dependent. Fama-MacBeth cross-sectional
   regressions with Newey-West(h) standard errors on the lambda series.
 
-VERDICT (measured 2026-08-09; the numbers this file prints)
-  REJECTED. Raw tone has a small positive 1-session tilt, but it is short-term
-  reversal, not information: the same-session return alone explains more of the
-  forward move, and in the joint Fama-MacBeth regression the tone coefficient
-  collapses toward zero at every horizon. The double sort agrees — within a
-  same-session-return tercile the tone spread is not reliably positive. Nothing
-  here survives 10 bps, and the break-even costs are a fraction of that. Full
-  numbers in the __main__ output and in scout/hypotheses.md H16a-H16d.
+VERDICT (measured 2026-08-09 on 2,637 dates / 142,000 symbol-sessions with
+news; every number below is printed by __main__)
+
+  H16a REJECTED — WRONG SIGN, AND NOT SIGNIFICANT EITHER WAY. The Q5-Q1 tone
+  spread earns -2.19 / -1.51 / -1.27 / -1.09 bps per day at h = 1 / 5 / 21 / 42.
+  Tetlock predicts positive. Every 95% block-bootstrap CI straddles zero
+  ([-6.10, +2.27] at h=1; [-2.95, +0.53] at h=21) and the Newey-West t runs
+  -0.99 to -1.46 against this repo's t > 3 bar. Both halves are negative for
+  the all-story signal at all four horizons, so the sign is at least stable.
+
+  H16b REJECTED — filtering to firm-specific stories does not sharpen it; at
+  h=1 it kills the effect entirely (-0.17 bps) and the two halves disagree in
+  sign (+2.14 then -2.48 bps), which is the definition of noise.
+
+  H16c — THE DECIDING ROW, and the pre-registered explanation is ALSO wrong.
+  The expected story was "tone is short-term reversal in a costume". It is
+  not, because there IS no reversal here to hide behind: the same-session
+  return alone predicts nothing (lambda_ret t = +0.19, -0.76, -0.64, -0.20)
+  and correlates with tone rank at only 0.117. Adding it barely moves the tone
+  coefficient (-4.12 -> -3.59 bps/rank at h=1; -25.0 -> -20.6 at h=21). So
+  tone is not a price-move proxy — it is simply not significant on its own
+  (|t| 1.17 to 1.85 everywhere). H16 fails on power, not on confounding.
+
+  H16d — the negative spread is present in all three same-session-return
+  terciles at both horizons (-1.6 / -11.7 / -13.8 bps at h=5), consistent with
+  H16c and inconsistent with a reversal explanation.
+
+  H16e (POST-HOC, added after the sign came out wrong) — trailing 21-session
+  momentum absorbs 30-45% of the tone coefficient at h=5 and h=21 (-6.94 ->
+  -4.74; -20.6 -> -14.0) and none of it at h=1 or h=42. News attention
+  (log story count) explains nothing. So part of "negative tone" is momentum
+  written in words, but not enough to be the whole story — and nothing in the
+  table is distinguishable from zero.
+
+  COSTS — at 10 bps round trip the h=1 book loses 48.8%/yr net on measured
+  turnover of 3.44x gross per day. Break-even round-trip cost in the
+  REGISTERED direction is negative at every horizon, because the gross return
+  is negative.
+
+  A CONTROL LESSON WORTH MORE THAN THE RESULT. The three nulls disagree, and
+  the disagreement is diagnostic. Within-date shuffling and random-pick both
+  produce a null 2.3-3.5x TIGHTER than the Newey-West standard error of the
+  real series at h=21/42, so they call the result "significant" at z = -3.3 to
+  -4.6 when the honest t is -1.3 to -1.5. Permuting labels destroys the
+  persistence of a tone tilt (sticky sector and attention exposure) and so
+  destroys the autocorrelation of the P&L it generates. The placebo null —
+  each symbol keeps its own tone series, only the pairing breaks — is the one
+  that reproduces the real series' width, and it agrees with the block
+  bootstrap. Do not report a permutation p-value for a persistent signal
+  without printing the SE ratio next to it.
 
 RUN
-  python -m scout.news_sentiment_lab              # everything (~3 min warm)
+  python -m scout.news_sentiment_lab              # everything (~2 min warm)
   python -m scout.news_sentiment_lab --selftest   # offline, synthetic, <5s
   python -m scout.news_sentiment_lab --quick      # h=1,5 only
 """
@@ -107,7 +150,8 @@ MIN_NAMES = 20                    # smallest cross-section that may be ranked
 N_CONTROL_DRAWS = 200
 BOOT_REPS = 2000
 SEED = 20260809
-N_TRIALS_REGISTERED = 14   # H16a(4) + H16b(4) + H16c(4) + H16d(2); controls are nulls
+N_TRIALS_REGISTERED = 18   # H16a(4)+H16b(4)+H16c(4)+H16d(2) registered, H16e(4)
+                           # post-hoc; controls are nulls and do not count
 
 BARS_PICKLE = config.SCOUT_DIR / "cache_news_sent_bars.pkl"
 DATASET_PICKLE = config.SCOUT_DIR / "cache_news_sent_dataset.pkl"
@@ -469,6 +513,26 @@ def halves(series: pd.Series) -> tuple[pd.Series, pd.Series]:
     return series.iloc[:mid], series.iloc[mid:]
 
 
+def market_adjust(port: pd.Series, bench_ret: pd.Series, h: int) -> dict:
+    """Beta of the book on SPY and the residual alpha.
+
+    A dollar-neutral quintile spread is not automatically market-neutral: if
+    optimistic coverage clusters in high-beta names, the spread carries beta,
+    and in a decade when SPY compounded at 15.8%/yr that alone can manufacture
+    the sign. This is the matched-benchmark control for the portfolio side.
+    """
+    df = pd.concat([port.rename("p"), bench_ret.rename("m")], axis=1).dropna()
+    if len(df) < 50:
+        return {"beta": np.nan, "alpha_ann_%": np.nan, "t_alpha": np.nan}
+    m = df["m"].to_numpy()
+    A = np.column_stack([np.ones(len(m)), m])
+    beta, *_ = np.linalg.lstsq(A, df["p"].to_numpy(), rcond=None)
+    resid = df["p"].to_numpy() - A @ beta
+    return {"beta": float(beta[1]),
+            "alpha_ann_%": 100 * _ann(float(beta[0])),
+            "t_alpha": _nw_t(resid + beta[0], h)}
+
+
 # --------------------------------------------------------------------------
 # controls
 # --------------------------------------------------------------------------
@@ -534,7 +598,7 @@ def control_null(kind: str, score: pd.DataFrame, tone_full: pd.DataFrame,
 # Fama-MacBeth — the row that decides H16
 # --------------------------------------------------------------------------
 
-def fama_macbeth(tone_r: pd.DataFrame, ret_r: pd.DataFrame, fwd: pd.DataFrame,
+def fama_macbeth(X: dict[str, pd.DataFrame], fwd: pd.DataFrame,
                  regressors: tuple[str, ...]) -> dict:
     """Per-date OLS of fwd return on the named rank regressors; report the
     time-series mean of each coefficient with a Newey-West t-statistic.
@@ -542,14 +606,11 @@ def fama_macbeth(tone_r: pd.DataFrame, ret_r: pd.DataFrame, fwd: pd.DataFrame,
     Every regressor is known at close t. `fwd` is close(t)->close(t+h), so the
     earliest price used is one session AFTER the signal.
     """
-    X = {"tone": tone_r, "ret": ret_r}
-    use = [X[k] for k in regressors]
-    dates, lam = [], []
-    tn = tone_r.to_numpy()
-    rn = ret_r.to_numpy()
+    cols = {k: v.to_numpy() for k, v in X.items()}
     fn = fwd.to_numpy()
-    cols = {"tone": tn, "ret": rn}
-    for i in range(tn.shape[0]):
+    idx = fwd.index
+    dates, lam = [], []
+    for i in range(fn.shape[0]):
         y = fn[i]
         good = np.isfinite(y)
         for k in regressors:
@@ -562,33 +623,42 @@ def fama_macbeth(tone_r: pd.DataFrame, ret_r: pd.DataFrame, fwd: pd.DataFrame,
             beta, *_ = np.linalg.lstsq(A, y[good], rcond=None)
         except np.linalg.LinAlgError:
             continue
-        dates.append(tone_r.index[i])
+        dates.append(idx[i])
         lam.append(beta[1:])
     lam = np.array(lam)
     out = {"n_dates": len(dates), "dates": pd.DatetimeIndex(dates)}
     for j, k in enumerate(regressors):
         s = lam[:, j] if len(lam) else np.array([])
         out[k] = {"mean": float(np.mean(s)) if len(s) else float("nan"),
-                  "t_nw": _nw_t(s, max(len(use), 1)),
                   "series": s}
     return out
 
 
-def fm_report(tone_r, ret_r, fwd, h: int) -> pd.DataFrame:
-    """Univariate tone, univariate same-day return, and the joint model."""
+#: Nested models. Rows 1-3 are the registered H16c test; rows 4-5 are the
+#: post-hoc H16e diagnosis added AFTER the sign came out negative, and are
+#: labelled as such everywhere they appear.
+FM_MODELS = (
+    ("tone only", ("tone",)),
+    ("same-day ret only", ("ret",)),
+    ("JOINT tone+ret", ("tone", "ret")),
+    ("+ 21d momentum", ("tone", "ret", "mom21")),
+    ("+ news attention", ("tone", "ret", "mom21", "attn")),
+)
+FM_COLS = ("tone", "ret", "mom21", "attn")
+
+
+def fm_report(X: dict[str, pd.DataFrame], fwd: pd.DataFrame, h: int) -> pd.DataFrame:
     rows = []
-    for name, regs in (("tone only", ("tone",)),
-                       ("same-day ret only", ("ret",)),
-                       ("JOINT", ("tone", "ret"))):
-        r = fama_macbeth(tone_r, ret_r, fwd, regs)
+    for name, regs in FM_MODELS:
+        r = fama_macbeth(X, fwd, regs)
         row = {"model": name, "n_dates": r["n_dates"]}
-        for k in ("tone", "ret"):
+        for k in FM_COLS:
             if k in regs:
                 # NW lags = h: overlapping h-day forward returns
-                row[f"lam_{k}_bps"] = 1e4 * r[k]["mean"]
+                row[f"lam_{k}"] = 1e4 * r[k]["mean"]
                 row[f"t_{k}"] = _nw_t(r[k]["series"], h)
             else:
-                row[f"lam_{k}_bps"] = np.nan
+                row[f"lam_{k}"] = np.nan
                 row[f"t_{k}"] = np.nan
         rows.append(row)
     return pd.DataFrame(rows)
@@ -639,6 +709,9 @@ def run(horizons=HORIZONS, kinds=("all", "specific"), draws=N_CONTROL_DRAWS,
         verbose: bool = True) -> dict:
     ds = build_dataset(verbose=verbose)
     close, ret1 = ds["close"], ds["ret1"]
+    # ds["bench"] is SPY carrying the same session index as ds["close"]
+    bench_ret = (ds["bench"].pct_change() if ds["bench"] is not None
+                 else pd.Series(dtype=float))
     results = {"portfolios": [], "fm": {}, "double": {}, "controls": [],
                "coverage": {}}
 
@@ -687,7 +760,9 @@ def run(horizons=HORIZONS, kinds=("all", "specific"), draws=N_CONTROL_DRAWS,
             g = ls["gross"]
             h1, h2 = halves(g)
             lo, hi = _block_boot_ci(g.to_numpy(), block=max(h, 5))
+            mkt = market_adjust(g, bench_ret, h)
             results["portfolios"].append({
+                **{k: mkt[k] for k in ("beta", "alpha_ann_%", "t_alpha")},
                 "kind": kind, "h": h,
                 "ann_gross_%": 100 * ls["ann_gross"],
                 "ann_net_%": 100 * ls["ann_net"],
@@ -706,7 +781,9 @@ def run(horizons=HORIZONS, kinds=("all", "specific"), draws=N_CONTROL_DRAWS,
     # ---- controls, on the primary specification ---------------------------
     tone, ret0 = eligible_scores(ds, "all")
     for h in horizons:
-        real = run_portfolio(ls_weights(tone), ret1, h)["mean_gross"]
+        real_res = run_portfolio(ls_weights(tone), ret1, h)
+        real = real_res["mean_gross"]
+        nw_se = abs(real / real_res["t_gross"]) if real_res["t_gross"] else np.nan
         for ck in ("shuffle", "placebo", "random"):
             null = control_null(ck, tone, ds["tone"]["all"], ret1, h, draws=draws)
             z = ((real - null["mean"]) / null["sd"]) if null["sd"] > 0 else np.nan
@@ -714,15 +791,18 @@ def run(horizons=HORIZONS, kinds=("all", "specific"), draws=N_CONTROL_DRAWS,
             results["controls"].append({
                 "h": h, "control": ck, "draws": null["draws"],
                 "real_bps": 1e4 * real, "null_mean_bps": 1e4 * null["mean"],
-                "null_sd_bps": 1e4 * null["sd"],
-                "null_p95_bps": 1e4 * null["p95"],
+                "null_SE_bps": 1e4 * null["sd"], "nw_SE_bps": 1e4 * nw_se,
+                "SE_ratio": float(nw_se / null["sd"]) if null["sd"] > 0 else np.nan,
                 "z_vs_null": z, "p_one_sided": pv})
 
-    # ---- H16c : Fama-MacBeth, the deciding test ---------------------------
-    tone_r, ret_r = xrank(tone), xrank(ret0)
+    # ---- H16c (registered) + H16e (post-hoc) : Fama-MacBeth ---------------
+    mom21 = (close / close.shift(21) - 1.0).where(tone.notna())
+    attn = np.log1p(ds["n_stories"]["all"]).where(tone.notna())
+    X = {"tone": xrank(tone), "ret": xrank(ret0),
+         "mom21": xrank(mom21), "attn": xrank(attn)}
     for h in horizons:
         fwd = _fwd(close, h).where(tone.notna())
-        results["fm"][h] = fm_report(tone_r, ret_r, fwd, h)
+        results["fm"][h] = fm_report(X, fwd, h)
 
     # ---- H16d : double sort -----------------------------------------------
     for h in (5, 21):
@@ -752,7 +832,7 @@ def report(res: dict) -> None:
     p = pd.DataFrame(res["portfolios"])
     show = p[["kind", "h", "mean_bps", "ci_lo_bps", "ci_hi_bps", "t_nw",
               "h1_bps", "h2_bps", "ann_gross_%", "ann_net_%", "sharpe_gross",
-              "turnover", "breakeven_bps"]]
+              "turnover", "breakeven_bps", "beta", "alpha_ann_%", "t_alpha"]]
     print(show.to_string(index=False, float_format=lambda x: f"{x:9.3f}"))
     print("\n  mean_bps = mean DAILY long-short return in bps (one obs/date).")
     print("  ci = 95% moving-block bootstrap by date, block = holding period.")
@@ -768,15 +848,31 @@ def report(res: dict) -> None:
     print("=" * 78)
     c = pd.DataFrame(res["controls"])
     print(c.to_string(index=False, float_format=lambda x: f"{x:9.3f}"))
-    print("\n  p_one_sided = share of null draws at or above the real result.")
+    print("""
+  p_one_sided = share of null draws at or above the real result.
+  READ THE SE_ratio COLUMN BEFORE THE z COLUMN. nw_SE is the Newey-West
+  standard error of the real long-short series; null_SE is the spread of the
+  permutation null. Where SE_ratio >> 1 the permutation understates the real
+  uncertainty, because permuting labels destroys the persistence of the signal
+  (a tone tilt is a sticky sector/attention tilt) and therefore the
+  autocorrelation of the resulting P&L. On this data the within-date shuffle
+  and the random-pick null are BOTH anti-conservative for exactly that reason;
+  the placebo null, which keeps every symbol's own tone series intact and only
+  breaks the pairing, is the honest one — and it is 2-3x wider.""")
 
     print("\n" + "=" * 78)
-    print("H16c — Fama-MacBeth: does tone survive the same-day return?")
+    print("H16c (registered) / H16e (post-hoc) — Fama-MacBeth")
     print("=" * 78)
     for h, tab in res["fm"].items():
         print(f"\n  horizon {h} session(s) — coefficients in bps per unit of "
               f"cross-sectional rank (rank spans -0.5..+0.5)")
         print(tab.to_string(index=False, float_format=lambda x: f"{x:9.3f}"))
+    print("""
+  Rows 1-3 are the pre-registered H16c test. Rows 4-5 were added AFTER the
+  sign came out negative, to try to explain it away (H16e, post-hoc, and
+  counted in the trial total): mom21 is the trailing 21-session return, attn
+  is log(1 + stories that session). If tone's coefficient dies once those are
+  in, the "tone effect" is momentum or attention written in words.""")
 
     print("\n" + "=" * 78)
     print("H16d — double sort: tone spread INSIDE each same-day-return tercile")
@@ -794,12 +890,33 @@ def report(res: dict) -> None:
     dsr = growth.deflated_sharpe(
         sr=float(best["sharpe_gross"]) / math.sqrt(TDAYS),
         n_trials=N_TRIALS_REGISTERED, n_obs=n_days)
-    print(f"  best variant: kind={best['kind']} h={int(best['h'])}  "
-          f"gross Sharpe {best['sharpe_gross']:.3f} over {n_days} sessions")
-    print(f"  registered trials in this round N={N_TRIALS_REGISTERED} "
-          f"(scout/hypotheses.md H16a-H16d); DSR = {dsr:.3f}")
-    print("  DSR is the probability the best-looking variant is real given N. "
-          "This repo's bar is t > 3.")
+    print(f"  best variant IN THE REGISTERED DIRECTION: kind={best['kind']} "
+          f"h={int(best['h'])}  gross Sharpe {best['sharpe_gross']:.3f} "
+          f"over {n_days} sessions")
+    print(f"  trials this round N={N_TRIALS_REGISTERED} "
+          f"(scout/hypotheses.md H16a-H16e); DSR = {dsr:.3f}")
+
+    # The measured sign is the opposite of the registered one. Per this repo's
+    # H1b precedent a flipped sign is a NEW hypothesis, not a result — but it
+    # must still be priced, or the rejection is hiding a number.
+    flip = p.loc[(-p["sharpe_gross"]).idxmax()]
+    fdays = int(flip["n_days"])
+    fdsr = growth.deflated_sharpe(sr=-float(flip["sharpe_gross"]) / math.sqrt(TDAYS),
+                                  n_trials=2 * N_TRIALS_REGISTERED, n_obs=fdays)
+    print(f"\n  SIGN-FLIP FOOTNOTE (not a result — see hypotheses.md H1b for the"
+          f"\n  house rule that a flipped sign is a new hypothesis):")
+    print(f"    best CONTRARIAN variant: kind={flip['kind']} h={int(flip['h'])}  "
+          f"gross Sharpe {-flip['sharpe_gross']:.3f}, "
+          f"ann gross {-flip['ann_gross_%']:+.2f}%, "
+          f"NW t {-flip['t_nw']:+.2f}, break-even {-flip['breakeven_bps']:.1f} bps")
+    cost_ann = float(flip["ann_gross_%"] - flip["ann_net_%"])
+    print(f"    after the SAME measured turnover at 10 bps round trip "
+          f"({cost_ann:.2f}%/yr) it nets {-flip['ann_gross_%'] - cost_ann:+.2f}%/yr,"
+          f"\n    against SPY buy-and-hold at "
+          f"{res['coverage']['spy_ann_%']:.2f}%/yr.")
+    print(f"    two-sided trial count 2N={2 * N_TRIALS_REGISTERED}; "
+          f"DSR = {fdsr:.3f}. The repo's bar is t > 3; this is "
+          f"{abs(flip['t_nw']):.2f}.")
 
 
 # --------------------------------------------------------------------------
@@ -893,12 +1010,16 @@ def selftest(verbose: bool = True) -> int:
     # 7. Fama-MacBeth recovers a planted coefficient and kills a pure proxy
     tone, ret1, close = _synthetic(beta=0.004, seed=21)
     fwd = _fwd(close, 1)
-    fm = fm_report(xrank(tone), xrank(ret1), fwd, 1)
-    lam = float(fm.loc[fm["model"] == "tone only", "lam_tone_bps"].iloc[0])
+    mom = close / close.shift(21) - 1.0
+    X = {"tone": xrank(tone), "ret": xrank(ret1), "mom21": xrank(mom),
+         "attn": xrank(tone.abs())}
+    fm = fm_report(X, fwd, 1)
+    lam = float(fm.loc[fm["model"] == "tone only", "lam_tone"].iloc[0])
     check("FM recovers planted tone coefficient", lam > 20, f"{lam:.1f} bps/rank")
     # a regressor that is a pure copy of the same-day return must not survive
-    fm2 = fm_report(xrank(ret1), xrank(ret1), fwd, 1)
-    tj = float(fm2.loc[fm2["model"] == "JOINT", "t_tone"].iloc[0])
+    X2 = dict(X, tone=xrank(ret1))
+    fm2 = fm_report(X2, fwd, 1)
+    tj = float(fm2.loc[fm2["model"] == "JOINT tone+ret", "t_tone"].iloc[0])
     check("collinear copy does not get credit in JOINT",
           not np.isfinite(tj) or abs(tj) < 3.0, f"t={tj:.2f}")
 
@@ -945,10 +1066,16 @@ def main() -> None:
     report(res)
     print(f"\n[{time.time() - t0:.0f}s]")
     print("""
-VERDICT — see the module docstring and scout/hypotheses.md H16a-H16d.
-The registered deciding row is H16c: if the tone coefficient does not survive
-the same-day return in the joint regression, the effect is short-term reversal
-in a costume and H16 is REJECTED whatever the raw long-short prints.""")
+VERDICT — H16 REJECTED. Full statement in the module docstring and in
+scout/hypotheses.md H16a-H16e. In one paragraph: the tone spread has the wrong
+sign at every horizon and is not significant in either direction (Newey-West t
+-0.99 to -1.46, every bootstrap CI straddling zero). The pre-registered
+explanation was also wrong — this is not reversal in a costume, because the
+same-session return predicts nothing here either, so the tone coefficient
+barely moves when it is added. Nothing is tradeable at 10 bps. The durable
+output of this round is the control lesson: a within-date permutation null is
+2.3-3.5x too tight for a persistent signal and would have called this
+"significant" at z = -3.9.""")
 
 
 if __name__ == "__main__":

@@ -786,6 +786,78 @@ def main() -> None:
     print("            null. ~50 means the null already explains it.")
     print("p_one_sided = share of shuffled draws at least as negative as actual.")
 
+    # ---- what the shuffled null is actually made of (DESCRIPTIVE) ---------
+    _hdr("WHAT CONTROL (c) IS CAPTURING")
+    print("DESCRIPTIVE ONLY: this block uses full-sample information and is NOT")
+    print("a trading claim. It exists to name the confound the control exposes.")
+    lab21 = pser[21]["lab"]
+    n_el = (lab21 >= 0).sum(0)
+    freq = (lab21 == N_Q - 1).sum(0) / np.maximum(n_el, 1)
+    # each symbol's own mean daily return over ITS OWN eligible sessions, so a
+    # name acquired in 2016 is compared on the days it actually traded rather
+    # than being silently dropped or given a survivor's decade.
+    r1 = close.pct_change().to_numpy()
+    elig_mask = (lab21 >= 0) & np.isfinite(r1)
+    ann = (np.where(elig_mask, np.nan_to_num(r1), 0.0).sum(0)
+           / np.maximum(elig_mask.sum(0), 1)) * 252 * 100
+    keep = n_el >= 250                       # a year of eligible sessions, minimum
+    f = pd.Series(freq[keep], index=close.columns[keep]).sort_values()
+    a = pd.Series(ann[keep], index=close.columns[keep])
+    k = len(f) // 3
+    lo, hi = f.index[:k], f.index[-k:]
+    print(f"\n{int(keep.sum())} of {close.shape[1]} symbols have >=250 eligible "
+          "sessions (the rest were")
+    print("acquired too early to rank; they are excluded HERE only, not above).")
+    print(f"Q5 landing frequency runs {f.min():.1%} .. {f.max():.1%} across them.\n")
+    print(f"  least news-bursty third (n={k}), e.g. {', '.join(f.index[:8])}")
+    print(f"      mean return over their own eligible sessions "
+          f"{a[lo].mean():+.1f}%/yr")
+    print(f"  most  news-bursty third (n={k}), e.g. {', '.join(f.index[-8:])}")
+    print(f"      mean return over their own eligible sessions "
+          f"{a[hi].mean():+.1f}%/yr")
+    print(f"  gap {a[lo].mean() - a[hi].mean():+.1f} pp/yr")
+    print("\nThat gap is available without reading a single headline's DATE, and")
+    print("it is the effect. Note what the two thirds are: 'bursty' here means")
+    print("attention that is SPIKY relative to the name's own normal, which is")
+    print("moderate-coverage value/financial/healthcare names - against the")
+    print("continuously-covered mega-cap growth names whose baseline is so high")
+    print("that nothing looks abnormal. Over 2016-2026 that is a style bet.")
+
+    # ---- the one cell that survives control (c), across all variants ------
+    _hdr("THE ONE CELL THAT SURVIVES CONTROL (c): h=1, every variant")
+    print("h=1 is the only horizon where the actual spread sits outside the")
+    print("date-shuffled null, so it gets the control run on all four signals.\n")
+    e1 = eligibility(close, 1)
+    f1 = forward(close, 1)
+    h1rows = []
+    for name in VARIANTS:
+        sa = sigs[name].to_numpy()
+        lab = quintile_labels(sa, e1, np.random.default_rng(SEED + 1))
+        q, _, _ = bucket_means(lab, f1)
+        act = float(np.nanmean(q[:, N_Q - 1] - q[:, 0]))
+        shf = date_shuffle_control(sa, e1, f1, rng)
+        h1rows.append(dict(variant=name, spread=act * 1e4,
+                           shuf_mean=shf.mean() * 1e4, shuf_sd=shf.std(ddof=1) * 1e4,
+                           timing=(act - shf.mean()) * 1e4,
+                           p_one_sided=float((shf <= act).mean()),
+                           breakeven_bps=-act * 1e4
+                           / (turnover(lab, N_Q - 1, 1) + turnover(lab, 0, 1))))
+    h1 = pd.DataFrame(h1rows)
+    print(h1.to_string(index=False, float_format=_fmt))
+    print("\nThis is the honest positive of the whole study, and it is tiny: a")
+    print("real, control-surviving 1-SESSION effect of about 2 bps, in the")
+    print("registered direction, in 3 of 4 count forms (which are 4 versions of")
+    print("one measure, so this is ~1 test, not 4).")
+    print(f"Break-even round-trip cost is {h1['breakeven_bps'].max():.2f} bps at "
+          f"best against {COST_BPS:.0f} bps charged - a")
+    print("fifth of the cost floor, at 100%-a-day turnover.")
+    print("\nLEADING ALTERNATIVE EXPLANATION, and it needs no attention story:")
+    print("control (a) measured Q5's next-session |return| at 1.45% vs Q1's")
+    print("1.32%, so Q5 is the conditionally HIGH-VOLATILITY bucket - and the")
+    print("low-volatility anomaly predicts exactly this sign. The date-shuffle")
+    print("cannot separate them: it destroys the attention timing and the")
+    print("conditional-volatility timing together.")
+
     # -------------------------------------------------------- all variants
     _hdr("ALL PRE-REGISTERED VARIANTS (every one run is reported)")
     allres = [primary]
@@ -835,9 +907,13 @@ def main() -> None:
     cmp = primary[["h", "spread", "t"]].merge(
         nres[["h", "spread", "t"]], on="h", suffixes=("_correct", "_naive"))
     print(cmp.to_string(index=False, float_format=_fmt))
-    print("\nThe gap is the value of the timestamp rule ON THIS SIGNAL. It is")
-    print("small because news VOLUME is unsigned - a sentiment study on the same")
-    print("feed moves far more (news_data --lookahead-demo). Reported anyway.")
+    infl = (cmp["spread_naive"] / cmp["spread_correct"] - 1).mean() * 100
+    print(f"\nThe wrong rule INFLATES the registered effect by {infl:.0f}% on average")
+    print("and pushes |t| from 1.4-1.8 up to 2.0-2.3 - the direction that gets a")
+    print("null published as a finding. The gap is modest here only because news")
+    print("VOLUME is unsigned; a sentiment study on the same feed moves far more")
+    print("(news_data --lookahead-demo). Every number in this file uses the")
+    print("correct rule; this block exists to price what that decision bought.")
 
     # ------------------------------------------------------------ direction
     _hdr("REGISTERED VARIANT 5: DIRECTION SPLIT of the top quintile vs the pool")
@@ -863,9 +939,10 @@ def main() -> None:
     print()
     print("The registered SIGN is right at every horizon and in every variant:")
     print("high-attention stocks do underperform low-attention stocks. Nothing")
-    print(f"clears t>3 (best |t| = {res['t'].abs().max():.2f} over "
-          f"{len(res)} cells), but that alone would only")
-    print("mean 'underpowered'.")
+    print(f"clears t>3 (best |t| = "
+          f"{max(res['t'].abs().max(), ds['t'].abs().max()):.2f} over "
+          f"{len(res) + len(ds)} cells), but that alone would")
+    print("only mean 'underpowered'.")
     print()
     print("What decides it is CONTROL (c). Permuting each symbol's attention")
     print("series across dates - destroying every event date while leaving each")

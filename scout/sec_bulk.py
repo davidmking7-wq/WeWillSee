@@ -123,7 +123,7 @@ def parse_quarter(blob: bytes, tags: set[str]) -> pd.DataFrame:
         with z.open("num.txt") as f:
             num = pd.read_csv(f, sep="\t", low_memory=False,
                               usecols=["adsh", "tag", "version", "ddate", "qtrs",
-                                       "uom", "value"])
+                                       "uom", "segments", "coreg", "value"])
     num = num[num["tag"].isin(tags)]
     # us-gaap only (version looks like "us-gaap/2023"); dei tags carry their own
     num = num[num["version"].astype(str).str.startswith(("us-gaap", "dei"))]
@@ -131,7 +131,8 @@ def parse_quarter(blob: bytes, tags: set[str]) -> pd.DataFrame:
     df["filed"] = pd.to_datetime(df["filed"], format="%Y%m%d", errors="coerce")
     df["ddate"] = pd.to_datetime(df["ddate"], format="%Y%m%d", errors="coerce")
     df = df.dropna(subset=["filed", "ddate", "value"])
-    return df[["cik", "adsh", "tag", "ddate", "qtrs", "uom", "value", "filed", "form"]]
+    return df[["cik", "adsh", "tag", "ddate", "qtrs", "uom", "segments", "coreg",
+               "value", "filed", "form"]]
 
 
 def ticker_map() -> pd.DataFrame:
@@ -193,10 +194,24 @@ def load(rebuild: bool = False, **kw) -> pd.DataFrame:
 
 
 def pit_panel(facts: pd.DataFrame, tag: str, tickers: list[str],
-              dates: pd.DatetimeIndex, qtrs: int | None = None) -> pd.DataFrame:
+              dates: pd.DatetimeIndex, qtrs: int | None = None,
+              consolidated_only: bool = True) -> pd.DataFrame:
     """Point-in-time panel: value of `tag` KNOWABLE at each date.
 
-    Two disciplines are enforced here and both matter:
+    THREE disciplines are enforced here and all of them matter:
+
+    0. CONSOLIDATED ROWS ONLY (`segments` and `coreg` both empty). This is the
+       one that silently destroys share-count signals. 61% of
+       CommonStockSharesOutstanding rows carry a `segments` dimension --
+       `ClassOfStock=CommonClassA;`, `ClassOfStock=CommonClassB;` and so on --
+       and the consolidated total is the row with NO segment. For Alphabet in
+       2023 the file contains Class A 5.899bn, Class B 0.870bn, Class C 5.691bn
+       AND the total 12.460bn; picking among them arbitrarily makes the series
+       jump between 0.87bn and 12.46bn from quarter to quarter, which reads as
+       repeated ±190% issuance. Ford does the same thing. Filtering to the
+       unsegmented row is what makes the panel a company-level series at all.
+
+    and the two that were already here:
       1. a fact appears only from its FILED date onward, never its period end;
       2. when the same (ticker, period) is filed more than once (restatements,
          10-K/A amendments), the FIRST filing wins — that is what was actually
@@ -207,6 +222,8 @@ def pit_panel(facts: pd.DataFrame, tag: str, tickers: list[str],
     1 = one quarter, 4 = annual). Mixing them silently is how a revenue
     signal ends up comparing annual figures to quarterly ones."""
     df = facts[(facts["tag"] == tag) & (facts["ticker"].isin(tickers))]
+    if consolidated_only and "segments" in df.columns:
+        df = df[df["segments"].isna() & df["coreg"].isna()]
     if qtrs is not None:
         df = df[df["qtrs"] == qtrs]
     if df.empty:
@@ -224,6 +241,105 @@ def pit_panel(facts: pd.DataFrame, tag: str, tickers: list[str],
         wide.index = wide.index.tz_localize(tz)
     out = wide.reindex(wide.index.union(dates)).ffill().reindex(dates)
     return out.reindex(columns=tickers)
+
+
+def split_factors(symbols: list[str], start: str = "2016-01-01",
+                  end: str = "2026-12-31") -> dict[str, list[tuple[pd.Timestamp, float]]]:
+    """{symbol: [(ex_date, new/old), ...]} from Alpaca's corporate-actions feed."""
+    from . import data_audit
+    sp = data_audit.fetch_splits(symbols, start, end)
+    out: dict[str, list[tuple[pd.Timestamp, float]]] = {}
+    for _, s in sp.iterrows():
+        try:
+            f = float(s["new_rate"]) / float(s["old_rate"])
+            ex = pd.Timestamp(s["ex_date"])
+        except Exception:
+            continue
+        if f > 0 and abs(f - 1.0) > 1e-9:
+            out.setdefault(s["symbol"], []).append((ex, f))
+    for k in out:
+        out[k].sort()
+    return out
+
+
+def adjust_for_splits(panel: pd.DataFrame,
+                      factors: dict[str, list[tuple[pd.Timestamp, float]]]) -> pd.DataFrame:
+    """Restate a share-count panel in TODAY'S share terms.
+
+    THIS IS NOT OPTIONAL AND IT IS EASY TO MISS. XBRL share counts are the raw
+    number the company reported at the time; they are NOT split-adjusted, and
+    nothing in the SEC data hints otherwise. Measured on the unadjusted panel,
+    AAPL goes from 4.38bn shares in Feb-2020 to 16.82bn in Feb-2021 — a
+    reported +286% "issuance" that is entirely the 4:1 split of 2020-08-31.
+    NVDA does the same thing in 2024 (2.47bn -> 24.51bn, the 10:1 split).
+
+    A net-issuance signal built on the raw numbers therefore ranks every
+    company that split as the most massively dilutive stock in the market —
+    which, since splits follow big price run-ups, means it would systematically
+    short recent winners and call it an accounting anomaly. The signal would
+    not be weak; it would be an inverted momentum factor in disguise.
+
+    Shares reported at t are multiplied by every split factor that took effect
+    AFTER t, putting the whole series in current-share terms."""
+    out = panel.copy()
+    for sym in out.columns:
+        for ex, f in factors.get(sym, []):
+            ts = ex.tz_localize(out.index.tz) if out.index.tz is not None else ex
+            mask = out.index < ts
+            out.loc[mask, sym] = out.loc[mask, sym] * f
+    return out
+
+
+SHARE_TAGS = ("CommonStockSharesOutstanding",
+              "WeightedAverageNumberOfDilutedSharesOutstanding",
+              "WeightedAverageNumberOfSharesOutstandingBasic",
+              "CommonStockSharesIssued")
+
+
+def shares_panel(facts: pd.DataFrame, tickers: list[str], dates: pd.DatetimeIndex,
+                 adjust: bool = True) -> pd.DataFrame:
+    """Split-adjusted shares outstanding, with a tag fallback chain.
+
+    No single tag covers the market: CommonStockSharesOutstanding reaches 6,861
+    tickers, and the names it misses (F and XOM among them) report under the
+    weighted-average tags instead. Each ticker takes the first tag that has
+    data for it, in SHARE_TAGS order — mixing tags WITHIN a ticker would create
+    fake issuance every time the source changed, so the choice is made once per
+    ticker and held.
+
+    Implausible values are dropped rather than trusted: several filers report
+    NEGATIVE or zero counts under these tags (AT&T prints -0.35bn), which is
+    an accounting artefact and not a share count."""
+    panels = {t: pit_panel(facts, t, tickers, dates, qtrs=0) for t in SHARE_TAGS}
+    out = pd.DataFrame(index=dates, columns=tickers, dtype=float)
+    chosen = {}
+    for tk in tickers:
+        for tag in SHARE_TAGS:
+            col = panels[tag][tk] if tk in panels[tag].columns else None
+            if col is None:
+                continue
+            col = col.where(col > 0)          # negatives/zeros are artefacts
+            if col.notna().sum() > 0.3 * len(dates):
+                out[tk] = col
+                chosen[tk] = tag
+                break
+    if adjust:
+        out = adjust_for_splits(out, split_factors(list(out.columns)))
+    out.attrs["tag_used"] = chosen
+    return out
+
+
+def net_issuance(facts: pd.DataFrame, tickers: list[str], dates: pd.DatetimeIndex,
+                 lookback: int = 252) -> pd.DataFrame:
+    """12-month log change in split-adjusted shares outstanding.
+
+    Negative = net buyback. Pontiff-Woodgate (2008): managers issue when they
+    believe the stock is overpriced and repurchase when underpriced, so this is
+    a free quarterly read on insider valuation. Log change rather than percent
+    so issuance and buybacks are symmetric."""
+    sh = shares_panel(facts, tickers, dates)
+    return (sh / sh.shift(lookback)).apply(lambda c: c.map(
+        lambda v: float('nan') if not (v and v > 0) else __import__('math').log(v)))
 
 
 def main() -> None:
