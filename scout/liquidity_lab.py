@@ -1258,19 +1258,52 @@ def main() -> None:
                         ls_breakeven_bps=float(be),
                         ls_measured_cost_bps=float(own_ls / max(to_ls, 1e-9) * 1e4))
 
+    # the same book on point-in-time membership: the number the study turns on
+    e_pit = elig_of(pit500, PRIMARY_H, PRIMARY_W)
+    lab_pit = quintile_labels(sig[(PRIMARY_SIG, PRIMARY_W)], e_pit,
+                              np.random.default_rng(SEED + PRIMARY_H),
+                              min_elig=MIN_ELIGIBLE)
+    qcs_p, _, _ = bucket_means(lab_pit, cs_cost)
+    pit_rows = []
+    for qi in (0, N_Q - 1):
+        rp = ladder(sub_portfolios(lab_pit, qi, simple), STRIDE)
+        top_ = book_turnover(lab_pit, qi)
+        ownp = float(np.nanmean(qcs_p[:, qi]))
+        gp = perf(rp, spy_daily)
+        npf = perf(rp, spy_daily, cost_yr=top_ * ownp)
+        ix = np.flatnonzero(np.isfinite(rp))
+        hf2 = len(ix) // 2
+        pit_rows.append(dict(
+            bucket=f"pit Q{qi + 1}", cs_bps=ownp * 1e4, turnover=top_,
+            gross=gp["ann_ret"], net_own=npf["ann_ret"], vol=gp["ann_vol"],
+            sharpe_own=npf["sharpe"], maxdd=gp["maxdd"], beta=gp["beta"],
+            alpha_own=npf["alpha"], t_alpha=npf["t_alpha"],
+            sh_h1=perf(rp[ix[:hf2]], spy_daily[ix[:hf2]], top_ * ownp)["sharpe"],
+            sh_h2=perf(rp[ix[hf2:]], spy_daily[ix[hf2:]], top_ * ownp)["sharpe"]))
+    pdf = pd.DataFrame(pit_rows)
+    print("\n  THE SAME BOOK ON POINT-IN-TIME S&P 500 MEMBERSHIP (control f):")
+    print(pdf.to_string(index=False, float_format=_fmt))
+    res["books_pit500"] = pdf.to_dict("records")
+
     sub_pool = sub_portfolios(np.where(e, 0, -1).astype(np.int8), 0, simple)
     pb = perf(ladder(sub_pool, STRIDE), spy_daily)
+    sub_pool_p = sub_portfolios(np.where(e_pit, 0, -1).astype(np.int8), 0, simple)
+    pbp = perf(ladder(sub_pool_p, STRIDE), spy_daily)
     sb = perf(spy_daily, spy_daily)
     print("\n  MATCHED BENCHMARKS (control d)")
     print(f"    equal-weight eligible pool : {pb['ann_ret']:+6.2f}%/yr  "
           f"vol {pb['ann_vol']:5.2f}%  Sharpe {pb['sharpe']:.2f}  "
           f"maxDD {pb['maxdd']:.1f}%")
+    print(f"    same pool, point-in-time   : {pbp['ann_ret']:+6.2f}%/yr  "
+          f"vol {pbp['ann_vol']:5.2f}%  Sharpe {pbp['sharpe']:.2f}  "
+          f"maxDD {pbp['maxdd']:.1f}%")
     print(f"    SPY buy and hold           : {sb['ann_ret']:+6.2f}%/yr  "
           f"vol {sb['ann_vol']:5.2f}%  Sharpe {sb['sharpe']:.2f}  "
           f"maxDD {sb['maxdd']:.1f}%   "
           f"(rf={RF_SENSITIVITY:.0%}: "
           f"{(sb['ann_ret'] / 100 - RF_SENSITIVITY) / (sb['ann_vol'] / 100):.2f})")
-    res["benchmarks"] = dict(equal_weight_pool=pb, spy=sb)
+    res["benchmarks"] = dict(equal_weight_pool=pb, equal_weight_pool_pit=pbp,
+                             spy=sb)
 
     sub_q5 = sub_portfolios(lab_n, N_Q - 1, simple)
     ph_r = [perf(ladder(sub_q5, STRIDE, p), spy_daily) for p in range(STRIDE)]
@@ -1310,9 +1343,12 @@ def main() -> None:
     gsum = pd.DataFrame([summarise_gate(grows, g, seg, hf)
                          for g in GATES for hf in ("all", "h1", "h2")])
     gsum = gsum[gsum["dates"].notna()] if "dates" in gsum else gsum
+    print("gate_musd 10 = shipped, 0 = no gate, -10 = ONLY the names the")
+    print("shipped gate deletes. All returns are per 42-session window.\n")
     print(gsum[["gate_musd", "half", "dates", "picks", "pool", "med_dv_musd",
-                "med_cs_bps", "hit_pct", "gross_pct", "cost_pct", "net_pct",
-                "spy_pct", "beat_spy_pct", "mean_peak_pct", "small_share_pct"]]
+                "below_10m_pct", "med_cs_bps", "hit_pct", "gross_pct",
+                "cost_pct", "net_pct", "spy_pct", "beat_spy_pct",
+                "mean_peak_pct", "small_share_pct"]]
           .to_string(index=False, float_format=_fmt))
     res["gate_test"] = gsum.to_dict("records")
 
