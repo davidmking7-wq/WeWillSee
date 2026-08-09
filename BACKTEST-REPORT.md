@@ -1606,3 +1606,155 @@ correction after independent attack.**
 attention shocks, story novelty, headline tone, earnings-announcement coverage
 and abnormal volume all forecast the **size** of the next move and essentially
 **none of its sign**.
+
+## Round 4 — the v6 candidate, and the retraction of the W_HIGH recommendation
+
+Round 3 ended with one actionable claim: `W_HIGH = 0.25` is the composite's
+largest weight, measures negative controlling for momentum, and deleting it
+should repair the engine. It was reported to the user twice as the single
+highest-value next step and put in this branch's PR title.
+
+**Two independent verifiers killed it. It is beta. The recommendation is
+withdrawn.**
+
+### What H29 measured, and why it looked right
+
+Leave-one-out over the eight v5 weights, 2,281 daily formations, 42-session
+holds, both universes. Positive delta = dropping the weight IMPROVED the sort:
+
+| dropped | delta (bps) | t | halves | verdict as reported |
+|---|---|---|---|---|
+| mom12 | -57.2 | -3.20 | -29.1 / -85.2 | contributes |
+| mom6 | -30.7 | -1.53 | -41.8 / -19.6 | contributes |
+| **high** | **+65.7** | **+2.35** | +57.8 / +73.6 | **harms** |
+| vol | +22.7 | +2.16 | +39.6 / +5.9 | harms |
+| brk20 | +11.7 | +1.93 | +10.0 / +13.3 | harms |
+
+All eight signs agreed across both universes. The W_HIGH sweep was strictly
+monotone in four readouts. Rule 9 passed at 100% of 42 entry schedules. The
+momentum-only book reached a market-adjusted +54.7 at **t = 3.28**, reported as
+the only cell in the lab clearing the house bar.
+
+Every one of those statements is either wrong or means something else.
+
+### Kill 1 — a hard-coded Newey-West lag, wrong by a factor of 41
+
+`high52_lab.py:845`, inside `beta_to_bench()`:
+
+```python
+se = nw_se(resid, 1) * math.sqrt(len(resid) / max(len(resid) - 2, 1))
+```
+
+Lag 1 is CORRECT in `high52_lab`, which forms monthly (STEP=21, overlap 2 deep
+— the same file derives it as `ceil(h/STEP)-1 = 1`). `weight_lab` forms every
+session, so the correct lag is **41**. `weight_lab` uses `lag = H-1` for its own
+`stats()` calls but cannot reach inside the imported `beta_to_bench`.
+
+Measured residual autocorrelation of the momentum-only regression:
+**rho(1) = 0.893.** Lag 1 captures one of ~41 lags of mechanical overlap.
+
+| vector | alpha | beta | t as shipped | t at NW41 | t block-clustered |
+|---|---|---|---|---|---|
+| momentum only | +54.7 | 0.25 | **3.28** | **1.07** | 1.19 |
+| W_HIGH=0 -> momentum | +35.8 | 0.16 | 2.21 | 0.67 | 0.76 |
+| drop high | +26.6 | 0.09 | 1.67 | 0.49 | 0.56 |
+| momentum long-only vs SPY | — | — | 0.95 | **0.28** | — |
+
+Every market-adjusted t is inflated ~3.2x. **No cell in the lab clears t > 3.**
+The claim's own method field named "momentum-only market-adjusted t 3.28" as
+half its deciding evidence; that number does not exist. This is the H27 failure
+mode (3.0006 against an analytic 2.9510) at sixty times the margin.
+
+### Kill 2 — the primary finding is beta, and the lab printed the refutation
+
+**The lab market-adjusted every LEVEL and never the DELTAS. The deltas are the
+test.**
+
+`drop high`, S&P 1500: raw delta +65.7. Dropping `high` moves the spread's SPY
+beta by **+0.281**, and SPY paid 255.5 bps/window:
+
+```
+    0.281 x 255.5 = +71.8 bps of pure beta
+    regress the DELTA series on SPY -> alpha = -5.1 bps (NW t41 -0.25)
+    halves -22.9 / +12.7  -- FLIPS
+    exact decomposition:  +65.7  =  -5.1  +  71.8   (residual -1.0)
+```
+
+PIT-500 agrees: raw +42.8, beta contribution +59.6, alpha -14.9 (t -0.62),
+halves flip. **Risk-adjusted, in BOTH universes, dropping W_HIGH makes the sort
+slightly WORSE.** The pre-registered direction fails.
+
+The monotone sweep is one readout counted four times, and the lab's own table
+contains the disproof:
+
+| W_HIGH | 0.00 | 0.10 | 0.25 | 0.40 |
+|---|---|---|---|---|
+| D10-D1 (the headline) | +48.2 | +21.4 | -17.5 | -44.4 |
+| **spread beta** | **+0.09** | **-0.05** | **-0.20** | **-0.31** |
+| **market-adjusted** | **+26.6** | **+32.8** | **+31.7** | **+34.3** |
+
+The raw row swings 92 bps; the alpha row swings 8 bps **in the wrong
+direction**. D10-minus-pool, CAGR and Sharpe are not independent readouts —
+they track the same top-decile beta (0.996 / 0.957 / 0.899 / 0.844). On PIT-500
+the market-adjusted alpha is -2.7 / -2.2 / +12.4 / +21.3, **strictly INCREASING
+in W_HIGH** — the exact opposite of the claim.
+
+And the noise control, which the lab called decisive, reverses under Rule 13:
+replacing `high` with noise at the same weight raises the raw spread but also
+raises its beta, and market-adjusted, **high52's content is worth +24.7 bps of
+ALPHA** — positive.
+
+### What H29 actually established
+
+Stripped of the beta, one thing survives and it is not the headline: **the v5
+composite's null is a cancellation, and the ingredient that carries information
+is momentum.** `drop mom12` is -57.2 at t -3.20 with consistent halves and
+agrees across universes; that direction is not a beta artifact because dropping
+momentum *reduces* the spread while beta moves the other way.
+
+But the strength does not clear anything once the lag is right, and the
+long-only tradeable form has an alpha against SPY of **+14.0 bps/window at
+t = 0.28.** Indistinguishable from zero.
+
+### H30 — the race, answered
+
+A long-only book built only from measured results, laddered across all 42 entry
+offsets, net of costs:
+
+| book | CAGR | Sharpe | beta |
+|---|---|---|---|
+| **SPY buy-and-hold** | **14.99%** | **1.004** | 1.00 |
+| momentum only | 15.61% | 0.818 | **1.09** |
+| W_HIGH=0 -> momentum | 14.18% | 0.787 | 1.03 |
+| drop high | 13.19% | 0.767 | 1.00 |
+| equal-weight gated pool | 11.53% | 0.788 | 0.92 |
+| v5 baseline top decile | 10.72% | 0.695 | 0.90 |
+
+The best book beats SPY on raw return by +0.62pp/yr and **loses on Sharpe by
+0.186, at beta 1.09.** Per Rule 13 that is not an answer: the return is bought
+with beta. On point-in-time data it loses on return as well (10.96% vs 14.99%),
+and **0 of 24 point-in-time books beat SPY.** H30's own primary: CAGR 11.21,
+Sharpe 0.613, alpha -2.71%/yr at t -0.80, deflated Sharpe 0.186.
+
+**The decomposition that explains the whole repo.** The equal-weight GATED POOL
+is already **-0.216 Sharpe against cap-weighted SPY before a single stock is
+picked** — equal-weighting ~540 names simply carries more volatility than the
+index. The selection layer adds **+0.030** Sharpe back. Three rounds of signal
+research have been fighting over a component worth a seventh of a structural
+handicap nobody was measuring.
+
+### The lesson, and it is about Rule 13
+
+Rule 13 — *risk-adjust every cross-sectional sort before believing it* — was
+written THIS ROUND, from H25. H29 then violated it in a subtler place: it
+adjusted the levels and not the deltas, and a delta of two beta-laden sorts is
+itself beta-laden. **The rule caught its own author's next mistake, one level
+down.**
+
+That is now five corrections in two rounds — H25's decile profile, H20's
+-20.3%, H27's t = 3.0006, H22's regime, and now H29's entire headline — and
+four of the five were beta or overlap in disguise.
+
+**Round 4 score: 2 registered, 2 reported, 0 surviving verification.
+The W_HIGH recommendation is retracted. `config.W_HIGH` should NOT be changed
+on this evidence.**
