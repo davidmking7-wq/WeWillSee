@@ -819,6 +819,10 @@ def main() -> None:
 
     t0 = time.time()
     rng = np.random.default_rng(SEED)
+    res: dict = {"params": dict(windows=list(WINDOWS), horizons=list(HORIZONS),
+                                hold=HOLD, stride=STRIDE, n_q=N_Q,
+                                cost_bps=COST_BPS, big_move=BIG_MOVE,
+                                stale_run=STALE_RUN, seed=SEED)}
 
     _hdr("H28 - idiosyncratic volatility vs the engine's TOTAL volatility band")
     print("MECHANISM: lottery preference, leverage constraints and asymmetric")
@@ -876,6 +880,15 @@ def main() -> None:
           f"{len(cl['killed'])} symbols")
     print(f"   {', '.join(f'{s} from {d}' for s, d, _ in cl['killed'][:8])}"
           f"{' ...' if len(cl['killed']) > 8 else ''}")
+    res["data"] = dict(
+        start=str(close.index[0].date()), end=str(close.index[-1].date()),
+        n_sessions=int(n_d), n_symbols=int(n_s),
+        live_symbol_sessions=int(live.sum()),
+        splits_repaired=cl["repaired"],
+        extreme_bars_removed=int(np.nansum(bad)),
+        stale_retired=[[s, d] for s, d, _ in cl["killed"]],
+        sp1500_symbols=int(sp1500[0].sum()),
+        pit500_mean_live=float((pit500 & live).sum(1).mean()))
 
     # signals ---------------------------------------------------------------
     print("\nbuilding signals ...")
@@ -923,6 +936,7 @@ def main() -> None:
     print(f"next {PRIMARY_H} sessions, by quintile of the signal at t.")
     print("The eligible pool is held IDENTICAL across signals (it keys off the")
     print("idio1 window), so every head-to-head below compares sorts, not pools.\n")
+    res["positive_control"] = {}
     for nm in ("idio1", "total"):
         lab_n = quintile_labels(stats[PRIMARY_W][nm], e,
                                 np.random.default_rng(SEED + PRIMARY_H))
@@ -935,6 +949,10 @@ def main() -> None:
               + "  ".join(f"Q{i + 1} {np.nanmean(qv[:, i]) * 100:5.1f}%"
                           for i in range(N_Q))
               + f"   pool {np.nanmean(poolv) * 100:5.1f}%")
+        res["positive_control"][nm] = dict(
+            signal_pct=[float(np.nanmean(qs[:, i]) * 100) for i in range(N_Q)],
+            fwd_vol_pct=[float(np.nanmean(qv[:, i]) * 100) for i in range(N_Q)],
+            pool_fwd_vol_pct=float(np.nanmean(poolv) * 100))
     print("\nThe sort is alive and volatility is enormously persistent. Whatever")
     print("the return result is, it is not a broken pipeline.")
 
@@ -963,6 +981,8 @@ def main() -> None:
     print(f"So {abs(raw_yr - row['ls_alpha']) / max(abs(raw_yr), 1e-9) * 100:.0f}% of the "
           "raw number is the SPY exposure a dollar-neutral")
     print("book is not entitled to call alpha (Rule 13).")
+    res["primary"] = {k: (float(v) if isinstance(v, (int, float, np.floating))
+                          else v) for k, v in row.items()}
 
     # ------------------------------------------------- THE comparison grid
     _hdr("THE COMPARISON THAT MATTERS: idio vol vs TOTAL vol, side by side")
@@ -998,6 +1018,9 @@ def main() -> None:
           == quintile_labels(stats[PRIMARY_W]["total"], e, np.random.default_rng(1)))
     print(f"the two sorts put the same name in the same quintile on "
           f"{float(ag[e].mean()) * 100:.1f}% of eligible symbol-sessions.")
+    res["grid"] = g.to_dict("records")
+    res["idio_minus_total_bps"] = {f"W{w}_h{h}": float(v) for (w, h), v in d.items()}
+    res["sort_agreement_pct"] = float(ag[e].mean()) * 100
 
     # ------------------------------------------------------- controls b, c
     _hdr("CONTROLS (b) RANDOM QUINTILES and (c) SYMBOL-PAIRING PLACEBO")
@@ -1018,6 +1041,14 @@ def main() -> None:
     print(f"  (c) pairing placebo    {pl.mean() * 1e4:+8.2f} +/- "
           f"{pl.std(ddof=1) * 1e4:6.2f} bps   p_one_sided "
           f"{float((pl >= act / 1e4).mean()):.3f}")
+    res["controls"] = dict(
+        actual_bps=act, boot_se_bps=float(row["se"]), boot_t=float(row["t"]),
+        random_mean_bps=float(rq.mean() * 1e4),
+        random_sd_bps=float(rq.std(ddof=1) * 1e4),
+        random_p=float((rq >= act / 1e4).mean()),
+        placebo_mean_bps=float(pl.mean() * 1e4),
+        placebo_sd_bps=float(pl.std(ddof=1) * 1e4),
+        placebo_p=float((pl >= act / 1e4).mean()))
     print(f"\nRULE 14 SE RATIOS: random {rq.std(ddof=1) * 1e4 / row['se']:.2f}x, "
           f"placebo {pl.std(ddof=1) * 1e4 / row['se']:.2f}x the real series'")
     print("block-bootstrap SE. A ratio below 1 means the permutation p-value")
@@ -1067,6 +1098,12 @@ def main() -> None:
     print("   equal-weight book by ~3pp/yr on 2017-2026 point-in-time data. An")
     print(f"   equal-weight pool that beats SPY by {ew1500 - spy_ann:+.1f}pp/yr here is that")
     print("   bias, printed - and it does not land evenly across vol quintiles.")
+    res["survivorship"] = dict(
+        window_deleted_pct=[float(np.nanmean(qm[:, i]) * 100) for i in range(N_Q)],
+        window_deleted_pool_pct=float(np.nanmean(poolm) * 100),
+        truncated_pct=[float(np.nanmean(qt[:, i]) * 100) for i in range(N_Q)],
+        ew_sp1500_yr=float(ew1500), ew_pit500_yr=float(ewpit),
+        spy_yr=float(spy_ann))
 
     # -------------------------------------------------- the tradeable book
     _hdr(f"THE TRADEABLE BOOK: {HOLD}-session hold, rebalanced every {STRIDE}, "
@@ -1081,6 +1118,7 @@ def main() -> None:
     print("choice, and this file is not going to pretend otherwise.\n")
     spy_daily = simple[:, colpos[MARKET]]
     books = {}
+    res["books"] = {}
     for nm in ("idio1", "total"):
         lab_n = quintile_labels(stats[PRIMARY_W][nm], e,
                                 np.random.default_rng(SEED + PRIMARY_H))
@@ -1114,6 +1152,12 @@ def main() -> None:
               f"alpha {pls['alpha']:+.2f}%/yr (t={pls['t_alpha']:+.2f}),")
         print(f"     turnover {to_ls:.2f}x/yr one-way, break-even round-trip cost "
               f"{gross['ann_ret'] / 100 / max(to_ls, 1e-9) * 1e4:.0f} bps")
+        res["books"][nm] = dict(
+            quintiles=b.to_dict("records"),
+            ls_gross_yr=float(gross["ann_ret"]), ls_net_yr=float(pls["ann_ret"]),
+            ls_beta=float(pls["beta"]), ls_alpha_yr=float(pls["alpha"]),
+            ls_t_alpha=float(pls["t_alpha"]), ls_turnover=float(to_ls),
+            ls_breakeven_bps=float(gross["ann_ret"] / 100 / max(to_ls, 1e-9) * 1e4))
 
     sub_pool = sub_portfolios(np.where(e, 0, -1).astype(np.int8), 0, simple)
     pool_r = ladder(sub_pool, STRIDE)
@@ -1127,6 +1171,7 @@ def main() -> None:
           f"vol {sb['ann_vol']:5.2f}%  Sharpe {sb['sharpe']:.2f}  "
           f"maxDD {sb['maxdd']:.1f}%   "
           f"(rf={RF_SENSITIVITY:.0%}: {(sb['ann_ret'] / 100 - RF_SENSITIVITY) / (sb['ann_vol'] / 100):.2f})")
+    res["benchmarks"] = dict(equal_weight_pool=pb, spy=sb)
 
     # phase dispersion of the tradeable claim
     _hdr("ENTRY-PHASE SWEEP OF THE TRADEABLE BOOK (Rule 9)")
@@ -1142,9 +1187,13 @@ def main() -> None:
           f"{perf(ladder(sub_q1, STRIDE), spy_daily)['ann_ret']:+.2f}%")
     print("  A long-only ladder is far less phase-sensitive than the top-2")
     print("  concentrated book of H7a, which is what dilution buys.")
+    res["phase_sweep_q1"] = dict(sharpe_min=float(min(ph)), sharpe_max=float(max(ph)),
+                                 ret_min=float(min(pr)), ret_max=float(max(pr)))
 
     if args.quick:
         print(f"\n[{time.time() - t0:.0f}s]  (--quick: variant grid skipped)")
+        RESULTS.with_name("idiovol_results_quick.json").write_text(
+            json.dumps(res, indent=1, default=str), encoding="utf-8")
         return
 
     # ------------------------------------------------------ registered variants

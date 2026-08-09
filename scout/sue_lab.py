@@ -224,6 +224,12 @@ COST_BPS = 10.0             # round trip, per leg
 BOOT_REPS = 2000
 CTRL_REPS = 200
 SEED = 20260809
+WINSOR_P = 0.01             # forward returns clipped at their own 1st/99th pct
+                            # inside each analysed subsample - Livnat-Mendenhall's
+                            # own treatment. Applied to EVERY event identically,
+                            # so it cannot favour a decile; the unwinsorised
+                            # number is printed next to every headline.
+STALE_RUN = 10              # identical consecutive closes = a frozen quote
 SPLIT_LOG_TOL = 0.30        # only repair splits this far from 1:1 (news_attention_lab
                             # limit: the ex-date price test cannot classify smaller ones)
 EXTREME_1D = 0.45           # |1-day return| above this is presumed a data defect
