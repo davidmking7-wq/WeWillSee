@@ -81,3 +81,44 @@ REVERSED by real dates), sell-before-event (failed), catalyst-ahead
 ranking (shipped), 25+ exit rules, 4 engine variants, 5 expectation
 exits, sector exclusion (failed), 12 portfolio configs, ML meta-label
 (removed), bull-only filter (tested in portfolio lab — hurt).
+
+### H9-H14 — portfolio geometry instead of stock selection (registered 2026-08-09, BEFORE any real-data run)
+
+Registered per RESEARCH-AGENDA rule 2. Context: the weekly forensics and the
+gates lab jointly established that the SELECTION layer adds nothing at any
+horizon tested (decile 1 minus decile 10 = -0.099% at 5 td, -0.257% at 42 td;
+gated book ann. alpha -1.08% on point-in-time data). These rows therefore
+attack a different term of `g = mu - sigma^2/2` — see ALPHA-STACK.md for the
+derivation and `scout/growth.py` for the formulas. Every one of them counts
+toward N whatever the result.
+
+Failure conditions are stated for each, because a hypothesis without one is
+not a hypothesis.
+
+| # | date | hypothesis (mechanism, one sentence) | expected sign | status |
+|---|---|---|---|---|
+| H9 | 2026-08-09 | Multi-asset time-series trend over liquid ETFs earns a positive Sharpe that is roughly UNCORRELATED with the equity book, because it bets on the sign of drift across four asset classes rather than on the equity premium (macro information diffuses slowly; institutional flows push with recent moves). | sleeve Sharpe > 0, \|rho to SPY\| < 0.3 | **REGISTERED — not yet run on real data.** Synthetic-edge run recovers Sharpe 2.81, synthetic null 12 draws mean -0.06 (t=-0.54). Fails if the real sleeve is unprofitable OR if rho to the equity book exceeds 0.3, which would make it the equity premium in a costume. Prior note: 2016-2026 contains managed futures' worst decade, so a weak result here is weak evidence against a 100-year prior. |
+| H10 | 2026-08-09 | Cross-asset RELATIVE momentum (long the strongest half of the instrument set, short the weakest) is a materially different bet from H9's time-series trend, so the two combine to a higher Sharpe than either alone. | rho(trend, xsec) < 0.5 | **REGISTERED — early evidence AGAINST.** Both synthetic runs put rho at 0.77-0.78 and effective_bets at 1.6-2.0 of 4 sleeves. If real data agrees, H10 is rejected and the stack is two bets, not four — which cuts the projected stacked Sharpe from 0.73 to roughly 0.55. Recorded now so the number is not quietly revised later. |
+| H11 | 2026-08-09 | Volatility targeting the COMBINED book (allowed to lever UP, unlike the H5g variant that was capped at 1x) raises its Sharpe, because volatility is forecastable while return is not and the growth identity subtracts sigma^2/2. | Sharpe(vol-targeted) > Sharpe(raw), both halves | **REGISTERED.** Distinct from H5g, which was rejected: that one was long-only single stocks, capped at 1x, so it could only ever de-lever and lost the 2020-21 high-vol rally. Fails if the uplift is absent in either half, or if it comes entirely from leverage rather than from stabilised risk (check: does realised vol actually land near target?). |
+| H12 | 2026-08-09 | Trailing-window HRP weighting of the sleeves beats trailing inverse-volatility weighting out of sample, because it never inverts the covariance matrix and so does not amplify small-eigenvalue error. | Sharpe(hrp) >= Sharpe(eqrisk) | **REGISTERED — early evidence AGAINST.** In the synthetic-edge run HRP scored 0.32 against equal-risk's 0.96. With only 4 sleeves there is barely a hierarchy to exploit, which is a fair prior for rejection: HRP's published advantage is at 20+ assets. |
+| H13 | 2026-08-09 | Expanding-window fractional Kelly, sized by the drawdown constraint f = 2ln(1-q)/(ln(1-q)+lnP), converts the combined book's Sharpe into return WITHOUT breaching the stated drawdown budget. | realised max drawdown <= the budget; growth rises | **REGISTERED.** The formula bounds drawdown FROM THE START, not from a running peak — the self-test measures peak-to-trough at a median -29.8% against a 20% start-relative budget on the same paths. Fails if realised peak-to-trough exceeds roughly 1.5x the budget, or if leverage spends most of the sample at the cap (which would mean the constraint never bound and the sizing is decorative). |
+| H14 | 2026-08-09 | The rebalancing premium gamma* = 0.5(sum w_i sigma_ii - w'Sigma w) is a material, harvestable part of a diversified book's return — the term the concentrated top-2 book was giving away (H8: "concentration buys dispersion, not return"). | gamma* > 1%/yr on the sleeve book | **REGISTERED — identity, not anomaly.** gamma* >= 0 is a theorem (verified over 300 random long-only books in the self-test) so the hypothesis is about MAGNITUDE only. Honest counterweight already on the record: the gates lab measured cap-weighted SPY beating every equal-weight book by ~3pp/yr in 2017-2026, i.e. Fernholz's diversity condition failed in exactly this window. A large gamma* that still loses to SPY is the expected outcome, not a contradiction. |
+
+Trial-count note: H9-H14 add 6 registered hypotheses plus the sleeve lab's
+variants (3 sleeves x 2 weighting schemes x 2 leverage layers = 12 configs),
+so N rises by ~18. The provability arithmetic in ALPHA-STACK.md Part 3 is
+computed AT that trial count: at N~120 and ten years of daily data, none of
+these can clear a deflated-Sharpe gate locally. They are therefore accepted
+or rejected on (a) external evidence strength, (b) failing to be disconfirmed
+here, and (c) the controls in the lab — never on a local p-value.
+
+Method rows adopted from this round, independent of any result:
+
+- **Rule 10: one null draw is not a control.** A 10-year Sharpe has a
+  standard error near 0.32. The sleeve lab's first single-draw null printed
+  -0.64 for a sleeve that is unbiased across 12 draws (mean -0.07). Any
+  "our null looks clean" claim must quote a distribution and a t-statistic.
+- **Rule 11: fit every weight on trailing data only.** The sleeve lab's first
+  draft weighted sleeves by full-sample inverse volatility and full-sample
+  HRP. Both are lookahead, both are easy to write by accident, and neither is
+  visible in a headline number. `causal_weights` exists because of it.

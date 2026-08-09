@@ -69,6 +69,36 @@ python -m scout.backtest        # regenerate the engine-vs-SPY validation
 python -m scout.labtest --variant ...   # research harness for future engine ideas
 ```
 
+## Beyond stock picking: `ALPHA-STACK.md`
+
+The backtests in this repo say the selection layer adds no return at any
+horizon tested — the composite's best-ranked decile is its worst, and the
+gates are a defensiveness overlay. **ALPHA-STACK.md** takes that seriously
+and asks where an edge can legitimately come from instead, working from
+
+```
+g = mu - sigma^2/2      L* = mu/sigma^2      g(L*) = S^2/2
+```
+
+Growth is quadratic in Sharpe, and Sharpe is bought with weakly-correlated
+sleeves rather than with better forecasts. The honest size of the prize,
+costed in `scout/agenda_rank.py`: about **1.5x the market's excess return at
+the same risk**, or ~2x compounded growth at a fixed drawdown budget — from
+four builds totalling ~30 days, each able to fail its own test.
+
+```
+python -m scout.growth_selftest          # 51 checks, no API keys needed
+python -m scout.agenda_rank              # which project is worth building
+python -m scout.sleeve_lab --synthetic-null   # the lab's own control
+python -m scout.sleeve_lab               # the real experiment (needs keys)
+```
+
+`scout/growth.py` holds the formulas (Kelly and the drawdown-constrained
+fraction, Fernholz's excess growth rate, Ledoit-Wolf shrinkage, HRP, Meucci
+effective bets, EWMAC trend, Kalman beta, deflated Sharpe, Wald's SPRT).
+Hypotheses H9-H14 in `scout/hypotheses.md` were registered before the lab
+ran, including the one already showing evidence against it.
+
 (Use `.venv/bin/python` / `.venv\Scripts\python` if you set up a venv.)
 
 Key files: `scout/` (engine), `picks.xlsx` (the scorecard you open),
