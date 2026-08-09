@@ -212,3 +212,60 @@ plus the equal-thirds era check that killed H22 and the entry-phase pooling of
 Rule 9.
 
 Momentum at t = 2.04 is promoted to "the live candidate", not to "shipped".
+
+## Adopted from Mira (2026-08-09): the downgrade taxonomy and refresh conditions
+
+`byteseek/Mira` (https://github.com/byteseek/Mira) is an agent-native investment
+research workspace. Two of its skills are now installed at
+`.claude/skills/data-analysis-quality-gate/` and
+`.claude/skills/macro-economic-analysis/`.
+
+**An honest assessment of what it adds, because overselling it would be the
+exact failure this repo keeps documenting.** Mira's quality gate exists to stop
+an LLM from asserting a number it never computed — it forces a data-requirement
+brief, a calculation ledger, and an explicit downgrade when the arithmetic was
+skipped. That is a real and common failure mode, and it is **not the one that
+has been killing us.** Our labs always computed everything; all seven
+retractions were subtler — beta in disguise (four times), a Newey-West lag wrong
+by 41x, a missing risk-free rate, and eighteen lucky deals. Across Mira's ten
+skills and fourteen loops, exactly one file mentions backtesting at all, and
+nothing addresses survivorship, point-in-time membership, or multiple testing.
+Rules 9 and 13-17 remain the load-bearing discipline here.
+
+Two things from it are genuinely worth adopting.
+
+### 1. A downgrade vocabulary
+
+This repo has verdicts (CONFIRMED / REJECTED / INCONCLUSIVE) but no vocabulary
+for *why* something is not yet trusted, which has let "inconclusive" cover very
+different situations. Adopt Mira's taxonomy:
+
+| tag | meaning | example from our record |
+|---|---|---|
+| `calculation_gap` | the arithmetic was not done or was done wrong | H29 — market-adjusted the levels, never the deltas |
+| `source_gap` | the data cannot answer the question | H33 — 120 large caps cannot test a neglect premium |
+| `watch_only` | direction is right, evidence is not sufficient to act | H31 — consistent everywhere, t only 1.02-1.51 |
+| `needs_refresh` | true in-sample, conditional on a regime that may end | H31 again — the cap-vs-equal gap is partly a mega-cap decade |
+
+### 2. `refresh_condition` — what would change the answer
+
+Mira requires every durable conclusion to record what would overturn it. This
+repo has never done that, and it is exactly what a five-round research record
+needs, because several results are **conditional rather than wrong**.
+
+Conditions now on the record:
+
+- **H31 (cap-weighting, +0.150 Sharpe):** reverses if market concentration
+  mean-reverts. Fernholz's diversity theorem says equal-weight should win when
+  it does; `gates_lab` already measured cap-weight beating every equal-weight
+  book across 2017-2026, the most concentration-driven decade on record.
+  **Refresh when the top-10 share of S&P 500 market cap falls for two
+  consecutive years.**
+- **H20 (5-min realised variance, 13-16% better):** a measurement result, not a
+  market one. Refreshes only if the data source changes.
+- **H32 (merger arb, beta 0.271):** the beta collapse is structural and should
+  persist. The absent return was 18 bidding wars; **refresh if a period with a
+  materially higher topping-bid rate occurs**, and note the sample contains no
+  2008-style credit crisis, which is merger arb's canonical failure.
+- **The fourteen rejected signals:** no refresh condition. They were rejected on
+  mechanism, sign, or controls, not on regime.
