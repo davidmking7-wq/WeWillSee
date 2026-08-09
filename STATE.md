@@ -133,6 +133,62 @@ levels and forgot that a *difference* of two beta-laden sorts is beta-laden.
 - **H34 partnership — REJECTED** (112 variants). At rho 0.511 the combination
   cannot reach a landslide.
 
+## BLOCKED: the Alpaca keys are dead (2026-08-09)
+
+Both `data.alpaca.markets` and `paper-api.alpaca.markets` return **401
+unauthorized**. `.env` is intact and the key is being read correctly (26-char
+key, 44-char secret) — the credentials were revoked or rotated at Alpaca's end.
+
+**To unblock:** get free keys at https://alpaca.markets (paper account,
+data-only), put them in `.env` at the repo root (gitignored), and re-run.
+
+**What still works with no credentials at all:**
+- `scout/sec_bulk.py` — 23.4M XBRL facts, already built on disk
+- `scout/bars.py` — 1,506 symbols x 2,664 dates, 2016-2026, already cached
+- `scout/deals.py` — SEC filings need no key
+- `python -m scout.growth_selftest` — 51 checks, fully offline
+- every result and document in this repo
+
+Nothing already measured is lost.
+
+## Round 6 — STOPPED, incomplete, and worth resuming
+
+The one genuinely untested idea left, and it came from an outside review of this
+repo's record: *"several old tests were correct about their narrow question but
+were applied to the wrong job. Volatility scaling can reduce risk, but it cannot
+create return; a slow trend filter can avoid prolonged collapses, but it will
+not predict every crash. The candidate needs both a real return source AND a
+risk rule, with each doing only the job it can actually do."*
+
+Verified against the record, that is right about three of our tests:
+- **H5g** scaled volatility on a stock book, capped at 1x, and was judged on RETURN.
+- **H5a/H5b/H5c** tested trend and crash flags as CRASH PREDICTORS on the picks
+  and were rejected because "cash there costs return, +716% vs +733%" — a
+  drawdown tool marked down for not making money.
+- **The alpha-stack's vol targeting on SPY** cut drawdown -34.0% -> -27.3%
+  CONSISTENTLY and was rejected because its SHARPE gain flipped across halves.
+
+And it exposed a genuine gap, confirmed in the code: `sma200ok` exists in
+`scout/signals.py:47` ONLY as a cross-sectional stock filter. **A trend rule has
+never been applied to the index itself and judged on drawdown.**
+
+`scout/overlay_lab.py` (57 KB) is written and committed. It stopped because
+**BIL is not in the bar cache** and the keys died before it could be fetched.
+That matters: BIL is the cash leg AND the risk-free rate, and its absence is
+exactly what killed H32 (alpha +2.39% t 1.02 -> +0.76% t 0.33 once rf was
+included). A trend overlay sits in cash by design, so running it without a real
+bill series would repeat that error at its maximum.
+
+**To resume:** restore keys, run `python -m scout.bars` to warm BIL/IEF/SHY,
+then `python -m scout.overlay_lab`. The decisive control is already specified in
+the module: a RANDOM-TIMING book with MATCHED TIME-IN-MARKET. If the real rule
+sits inside that null, the "edge" is just reduced exposure in a volatile decade.
+
+Honest prior: Faber 2007 is among the most published rules in finance,
+2016-2026 is entirely post-publication and a documented bad decade for equity
+trend. Expect *slightly better Sharpe, materially lower drawdown, lower raw
+return* — and if that is the answer, that IS the result.
+
 ## THE NEXT ACTION
 
 The construction result is confirmed but **not significant on its own**
