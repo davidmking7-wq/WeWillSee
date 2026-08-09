@@ -117,13 +117,20 @@ concentrated in a handful of desk bylines.
 HOW MUCH THE TIMESTAMP RULE IS WORTH, MEASURED
 ----------------------------------------------
 `--lookahead-demo` runs the same crude tone signal against the same next-day
-returns twice, changing only the attribution. On 2016-2018 (731 days, tercile
-long-short, clustered by date) the naive UTC-calendar mapping scored +9.39
-bps/day at t=+3.08 — through this repo's own t>3 bar, consistent in both
-halves — while the correct mapping scored +3.14 bps/day at t=+1.06 with the
-halves disagreeing (+0.62 / +5.66), i.e. noise. The whole 15.8%/yr difference
-is manufactured by the timestamp. That is the number this file exists for.
-(Rerun it on the full panel; the figures above are what was measured.)
+returns twice, changing only the attribution. Measured on the full cached
+panel — 120 point-in-time names, 2016-01-02..2026-07-31, 464,430 symbol-rows,
+2,655 daily observations, tercile long-short, t clustered by date:
+
+    NAIVE   (UTC calendar date)   +6.42 bps/day   t=+3.55   H1 +9.62 | H2 +3.23
+    CORRECT (this module's rule)  -2.32 bps/day   t=-1.30   H1 +0.23 | H2 -4.87
+
+The naive number clears this repo's own t>3 publication bar and holds its sign
+in both halves. It is entirely an artifact of the timestamp: 8.74 bps/day, or
+about 22% a year, of alpha that does not exist. The correct number is a
+sign-flipping non-result, which is what it should be. Every guardrail in
+RESEARCH-AGENDA.md section 1 — both halves, t>3, date-clustered errors —
+passes the fake one, because they all share the same corrupted index. This is
+the single reason to use `attribute_sessions` and never `.dt.date`.
 
 Usage:
   python -m scout.news_data                    # selftest + smoke test

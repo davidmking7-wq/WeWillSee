@@ -20,3 +20,4 @@ scout/sleeve_bars.pkl
 scout/cache_news_*
 scout/cache_intraday_*
 scout/cache_fundamentals_*
+scout/cache_secbulk/

@@ -27,16 +27,24 @@ forward-filling — which is what every tutorial, every "download fundamentals
 to a DataFrame" snippet, and every vendor CSV with a `date` column does —
 hands the backtest the income statement weeks or months before anyone could
 read it. That is not a rounding error. Measured on this module's own smoke
-universe (25 large caps, 2016-2026, `python -m scout.fundamentals`):
+universe (25 large caps, 2016-2026, 2,672 first-filings,
+`python -m scout.fundamentals`):
 
-    median lag end -> filed :  10-Q  36 days     10-K  56 days
-    annual facts, median     :  56 days   (p90 63 days)
-    share of panel cells where the `end`-indexed panel already holds a fact
-    the `filed`-indexed panel does not yet know:  ~14% of all cells
+    median lag end -> filed :  10-Q  31 days (p90 38)
+                               10-K  47 days (p90 58)
+                               all   32 days (p90 51)
 
-Fourteen percent of a decade-long panel silently containing the future, with
-a median of ~8 weeks of free look on every fresh number. Any "signal" built on
-that will look magnificent and will be entirely fake.
+and building the SAME panel both ways, then counting cells where the
+`end`-indexed version already holds a fact the `filed`-indexed version does
+not yet know about:
+
+    Assets        (quarterly instants)  39.0% of 68,179 cells are ahead,
+                                        median 16 days of free look (p90 35)
+    NetIncomeLoss (annual durations)    14.0% of 68,048 cells are ahead,
+                                        median 22 days of free look (p90 47)
+
+Two in five cells of a balance-sheet panel silently containing the future.
+Any "signal" built on that will look magnificent and will be entirely fake.
 
 THE RULE IMPLEMENTED HERE, AND THE ONLY ONE THIS MODULE WILL EVER USE
 ---------------------------------------------------------------------
@@ -64,37 +72,64 @@ close(t) -> close(t+1). Concretely, with `ret` the close-to-close return:
     panel indexed on `end`     UNSAFE by ~2 months — see above
 
 `lookahead_demo()` measures the damage of the `end`-indexed version on real
-data, and __main__ runs it. There is no shift() hidden anywhere else: the
-single shift is in `_expand()`, and it is the only one.
+data, and __main__ runs it. The lag lives in exactly one place: `_expand()`,
+which every value panel goes through. `_filed_column()` applies the identical
+shift to the companion metadata so `period_end`, `filed` and `age_days` stay
+aligned with the value they describe; those two are the only shift() calls
+touching panel data anywhere in the module.
 
-THE THREE LIMITS THAT MATTER, MEASURED NOT GUESSED
----------------------------------------------------
-1. **Tag coverage is genuinely inconsistent across filers, and it is not
-   random — it is correlated with industry.** `GrossProfit` is absent for
-   JPM, XOM, V, BAC, MRK and every other filer whose income statement has no
-   cost-of-goods line. `CostOfRevenue` is absent for AAPL (which tags
-   `CostOfGoodsAndServicesSold` instead). A screen built on a tag that only
-   half the market reports is a sector bet wearing a factor costume. Every
-   builder here therefore takes a CASCADE of tags, records which one each
-   ticker resolved to, and returns that map so the caller can see the
-   selection. Measured coverage for the smoke universe is printed by
-   `coverage_report()`.
-2. **Share counts are AS REPORTED — not split adjusted.** AAPL's shares go
-   from 4.3bn to 17.1bn across 2020-08-31 in this data because of a 4:1
-   split, not because Apple issued 12.8bn shares. Net-issuance research that
-   skips this measures splits. `split_factors()` (Alpaca corporate actions,
-   the one function here that needs a key) puts a whole series on one basis,
-   and `shares_outstanding(..., split_adjust=True)` applies it.
-3. **Cash-flow facts in 10-Qs are YEAR TO DATE, not quarterly.** Apple's
-   Q3 `NetCashProvidedByUsedInOperatingActivities` covers nine months. There
+THE FIVE LIMITS THAT MATTER, MEASURED NOT GUESSED
+--------------------------------------------------
+Three of these were found by running the smoke test and not believing it.
+Each one is silent: nothing raises, nothing warns, the panel just quietly
+loses a name or a decade.
+
+1. **Tag coverage is inconsistent across filers, and it is not random — it
+   is correlated with industry.** On the 25-name smoke universe only 10
+   report `GrossProfit` at all and only 8 report enough annual GrossProfit
+   facts to use; the revenue-minus-cost cascade rescues 11 more; **6 (JPM,
+   V, XOM, MA, BAC, DIS) cannot be given a gross profit by any cascade**,
+   because banks, payment networks and integrated oil majors do not present
+   a cost-of-revenue line. A "gross profitability" screen on this data drops
+   financials and energy entirely — that is a sector bet wearing a factor
+   costume. Every builder therefore takes a CASCADE, and returns a
+   `sources` map naming exactly which tag each ticker resolved to,
+   including "none". Read that map before trusting a cross-section.
+2. **The `companyconcept` endpoint silently returns nothing for tags the
+   filer plainly reports.** Visa (CIK 1403161) and Coca-Cola (CIK 21344)
+   both return HTTP 200 with zero `Assets` facts, while `companyfacts`
+   returns 136 and 144. Believed at face value, that is two of twenty-five
+   large caps dropping out of every panel. `concept()` re-checks every empty
+   answer against the bulk document before accepting it.
+3. **A ticker's CURRENT CIK may hold none of its history.** XOM resolves to
+   CIK 2115436 ("ExxonMobil Holdings Corp"), which has 2 `Assets` facts, all
+   filed 2026-08-03; CIK 34088 ("Exxon Mobil Corporation") has 152 going
+   back to 2008. `predecessor_cik()` detects the reorganisation from the
+   accession numbers and `facts()` spans both.
+4. **Share counts are AS REPORTED — not split adjusted**, and multi-class
+   filers may have none at all. The raw panel contains 8 single-step jumps
+   over 2016-2026 on 25 names (AAPL x3.98, NVDA x9.97, GOOGL x19.85, ...);
+   every one is a split, and a net-issuance signal computed on it would be
+   measuring corporate actions. `shares_outstanding(..., split_adjust=True)`
+   (Alpaca corporate actions — the one function here needing a key) takes
+   those 8 jumps to **0**. Separately, Visa tagged an undimensioned
+   cover-page count exactly twice, in 2009 and 2010, and never again: its
+   Class A/B/C counts are dimensional facts, which this API drops. Visa
+   simply has no usable share count here, and `sources["V"] == "none"` says
+   so rather than inventing one.
+5. **Cash-flow facts in 10-Qs are YEAR TO DATE, not quarterly.** Apple's Q3
+   `NetCashProvidedByUsedInOperatingActivities` covers nine months. There
    are no 3-month cash-flow facts for most filers, so `period="quarterly"`
    returns almost nothing for that tag. Use `period="annual"` for cash flow
    and accruals; this module does not de-cumulate YTD flows.
 
 Smaller ones: XBRL starts ~2009 (large filers) to ~2011 (small), so this is
 not a 1963-2026 dataset; SEC tickers use dashes (BRK-B), handled in
-`resolve_cik`; and a `companyconcept` 404 means "this filer never used this
-tag", which is cached as a negative so it is asked once.
+`resolve_cik`; a genuine `companyconcept` 404 means "this filer never used
+this tag" (GOOGL and META have never tagged
+dei:EntityCommonStockSharesOutstanding) and is cached as a negative; and the
+first row of any panel is NaN by construction, because the one-session lag
+shifts it off the front.
 
 USAGE
 -----
@@ -109,15 +144,23 @@ USAGE
 
 VERDICT
 -------
-The adapter works and is honest. 25/25 tickers resolve; `Assets`,
-`NetIncomeLoss` and shares outstanding are effectively universal (25/25);
-`GrossProfit` reaches 25/25 only after the revenue-minus-cost cascade, and
-14/25 without it. The median filing lag is 40 days over all forms, which is
-the exact amount of lookahead an `end`-indexed panel would have handed a
-backtest, on ~14% of its cells. Nothing here is a trading signal; it is the
-first fundamental data this repo can defend.
+The adapter works and is honest about where it does not. On 25 large caps
+over 2016-2026: 25/25 tickers resolve to a CIK; `Assets`, `NetIncomeLoss`
+and `NetCashProvidedByUsedInOperatingActivities` reach 25/25 (98.7%, 98.1%
+and 97.0% of panel cells filled); shares outstanding reaches 24/25 and is
+split-clean after adjustment; **gross profit reaches only 19/25 even with
+the cascade, and that is the binding constraint on any profitability work
+here**. The median filing lag is 32 days (10-K 47), which is precisely the
+lookahead an `end`-indexed panel hands a backtest — on 39% of the cells of
+a balance-sheet panel.
+
+Nothing in this module is a trading signal. It has no control, no costs and
+no both-halves split, because it makes no claim that would need them. It is
+the first fundamental data this repo can defend, and the next step is a lab
+that uses it.
 """
 import argparse
+import atexit
 import gzip
 import json
 import pickle
@@ -332,12 +375,34 @@ def _load_concept_cache(taxonomy: str, tag: str) -> dict:
     return _concept_mem[key]
 
 
-def _save_concept_cache(taxonomy: str, tag: str) -> None:
+_concept_dirty: set[tuple[str, str]] = set()
+
+
+def _write_concept_cache(taxonomy: str, tag: str) -> None:
     path = _concept_cache_path(taxonomy, tag)
     tmp = path.with_suffix(".tmp")
     with open(tmp, "wb") as f:
         pickle.dump(_concept_mem[(taxonomy, tag)], f, protocol=4)
     tmp.replace(path)
+
+
+def flush_caches() -> None:
+    """Write out any concept caches touched since the last flush.
+
+    Saving on every single fetch is quadratic: the per-tag cache holds one
+    entry per company, so a 150-name universe would rewrite a growing pickle
+    150 times per tag. `fact_table` flushes once when it finishes, and
+    `atexit` covers anything fetched outside it.
+    """
+    for taxonomy, tag in list(_concept_dirty):
+        try:
+            _write_concept_cache(taxonomy, tag)
+        except Exception:
+            pass
+    _concept_dirty.clear()
+
+
+atexit.register(flush_caches)
 
 
 _bulk_memo: dict[int, dict] = {}
@@ -414,13 +479,14 @@ def concept(cik: int, tag: str, taxonomy: str = "us-gaap",
             rows = _flatten_units(entry.get("units", {}))
     result = rows or None
     cache[cik] = result
-    _save_concept_cache(taxonomy, tag)
+    _concept_dirty.add((taxonomy, tag))
     return result
 
 
 PRED_CACHE = SCOUT_DIR / f"{CACHE_PREFIX}predecessors.json"
 PRED_PROBE_TAG = "Assets"
 PRED_MIN_SPAN_DAYS = 3 * 365      # below this, suspect a reorganised CIK
+_pred_mem: dict[str, int | None] | None = None
 
 
 def predecessor_cik(cik: int, refresh: bool = False) -> int | None:
@@ -445,12 +511,15 @@ def predecessor_cik(cik: int, refresh: bool = False) -> int | None:
     which is what a genuine continuation looks like and what a coincidental
     filing-agent CIK will not survive.
     """
-    cache = {}
-    if PRED_CACHE.exists() and not refresh:
-        try:
-            cache = json.loads(PRED_CACHE.read_text())
-        except Exception:
-            cache = {}
+    global _pred_mem
+    if _pred_mem is None or refresh:
+        _pred_mem = {}
+        if PRED_CACHE.exists() and not refresh:
+            try:
+                _pred_mem = json.loads(PRED_CACHE.read_text())
+            except Exception:
+                _pred_mem = {}
+    cache = _pred_mem
     key = str(int(cik))
     if key in cache and not refresh:
         return cache[key]
@@ -551,6 +620,7 @@ def fact_table(tickers, tag: str, taxonomy: str = "us-gaap",
         out[t] = facts(t, tag, taxonomy, refresh=refresh)
         if verbose and i % 25 == 0:
             print(f"    {taxonomy}:{tag} {i}/{len(tickers)}")
+    flush_caches()
     return out
 
 
@@ -734,9 +804,7 @@ def panel_from_frames(frames: dict, cal: pd.DatetimeIndex,
         vals[t] = _expand(ev, cal, lag_sessions, "value")
         if meta:
             ends[t] = _expand(ev, cal, lag_sessions, "period_end")
-            fileds[t] = _expand(ev, cal, lag_sessions, "filed_date")\
-                if "filed_date" in ev.columns else _filed_column(ev, cal,
-                                                                 lag_sessions)
+            fileds[t] = _filed_column(ev, cal, lag_sessions)
     value = pd.DataFrame(vals, index=cal).astype("float64")
     value.index.name = "date"
     if not meta:
@@ -830,9 +898,7 @@ def shares_outstanding(tickers, start: str, end: str, calendar=None,
         ev = split_events(list(frames), lo, end)
         by_sym = dict(tuple(ev.groupby("symbol"))) if not ev.empty else {}
         for t in frames:
-            basis = "end" if sources.get(t) in AS_OF_SHARE_TAGS else "filed"
-            frames[t] = adjust_facts_for_splits(frames[t], by_sym.get(t),
-                                                basis=basis)
+            frames[t] = adjust_facts_for_splits(frames[t], by_sym.get(t))
     return panel_from_frames(frames, cal, period="any", unit="shares",
                              lag_sessions=lag_sessions), sources
 
@@ -1018,30 +1084,29 @@ def split_events(tickers, start: str, end: str,
     return df
 
 
-# Tags whose value is a COUNT AS OF a measurement date (the cover page, the
-# balance sheet). Their split basis is that date. Everything else — notably
-# the weighted-average share counts — is restated retrospectively by the
-# filer under ASC 260, so its basis is the FILING date instead.
-AS_OF_SHARE_TAGS = frozenset({"dei:EntityCommonStockSharesOutstanding",
-                              "us-gaap:CommonStockSharesOutstanding"})
-
-
 def adjust_facts_for_splits(df: pd.DataFrame, splits: pd.DataFrame,
-                            basis: str = "end") -> pd.DataFrame:
+                            basis: str = "filed") -> pd.DataFrame:
     """Put every as-reported share count on TODAY'S share basis.
 
-    THE ADJUSTMENT BELONGS ON THE FACT, NOT ON THE PANEL CELL. The first
-    version of this function multiplied the finished panel by a factor that
-    stepped on the EX-DATE, and it made things worse (8 spurious jumps became
-    16): the panel steps on the FILING date, roughly two months after the
-    ex-date, so between the two it was pairing a pre-split count with a
-    post-split factor and inventing a 4x drop followed by a 4x rebound. Each
-    fact is multiplied by the splits that happened after ITS OWN basis date,
-    which is the only version that makes shares_t / shares_{t-12m} mean
-    anything.
+    TWO THINGS HAD TO BE MEASURED TO GET THIS RIGHT.
 
-    `basis` is "end" for as-of counts and "filed" for retrospectively
-    restated ones — see AS_OF_SHARE_TAGS.
+    1. The adjustment belongs on the FACT, not on the panel cell. The first
+       version multiplied the finished panel by a factor that stepped on the
+       EX-DATE, and it made things worse — 8 spurious jumps became 16. The
+       panel steps on the FILING date, ~2 months after the ex-date, so
+       between the two it paired a pre-split count with a post-split factor
+       and invented a 4x drop followed by a 4x rebound.
+    2. The basis date is `filed`, not `end`. Alphabet's cover-page count for
+       period end 2022-06-30 — twelve days BEFORE its 2022-07-18 20:1
+       ex-date — was filed on 2022-07-27 and already reads 13,078,000,000,
+       i.e. post-split. The cover page states shares outstanding at the
+       latest practicable date, so the count is on the basis in force when
+       the document went out. It is also the robust choice because `end`
+       means different things to different filers: AAPL stamps its dei
+       cover-page fact with the actual cover date (2020-07-17) while GOOGL
+       stamps it with the period end (2022-06-30).
+
+    With both fixed, the 8 split jumps across the smoke universe go to 0.
     """
     if df.empty or splits is None or splits.empty:
         return df
@@ -1259,6 +1324,32 @@ def selftest() -> None:
     assert len(d) == 1 and d.iloc[0]["val"] == 100.0
     assert d.iloc[0]["filed"] == pd.Timestamp("2022-02-15")
     print("  [ok] derived facts inherit the filing date of their accession")
+
+    # split adjustment: on the FACT, keyed on the FILED date. Reproduces the
+    # real GOOGL straddle — period end before the ex-date, filed after it,
+    # value already post-split.
+    shares = pd.DataFrame({
+        "start": [pd.NaT] * 3,
+        "end": pd.to_datetime(["2022-03-31", "2022-06-30", "2022-09-30"]),
+        "filed": pd.to_datetime(["2022-04-27", "2022-07-27", "2022-10-26"]),
+        "val": [658_763_000.0, 13_078_000_000.0, 12_971_000_000.0],
+        "unit": "shares", "form": "10-Q", "accn": ["b1", "b2", "b3"],
+        "fy": 0, "fp": "", "frame": "", "days": np.nan})
+    splits = pd.DataFrame({"symbol": ["GOOGL"],
+                           "ex_date": [pd.Timestamp("2022-07-18")],
+                           "ratio": [20.0]})
+    adj = adjust_facts_for_splits(shares, splits)
+    step = adj["val"].iloc[1] / adj["val"].iloc[0]
+    assert abs(adj["val"].iloc[0] - 13_175_260_000.0) < 1, adj["val"].iloc[0]
+    assert 0.95 < step < 1.05, step
+    print(f"  [ok] split adjust on the FILED date: 658,763,000 -> "
+          f"{adj['val'].iloc[0]:,.0f}, next quarter moves x{step:.3f} "
+          f"(no fake 20x)")
+    wrong = adjust_facts_for_splits(shares, splits, basis="end")
+    step_wrong = wrong["val"].iloc[1] / wrong["val"].iloc[0]
+    assert step_wrong > 19, step_wrong
+    print(f"  [ok] the `end` basis would have invented a x{step_wrong:.1f} "
+          f"issuance — this is why the basis is `filed`")
     print("\nSELFTEST OK")
 
 
@@ -1335,6 +1426,16 @@ def smoke_test() -> None:
     ann = lag[lag["form"].isin(("10-K", "10-K/A"))]
     print(f"  => a panel indexed on period end sees each ANNUAL number "
           f"{ann['lag_days'].median():.0f} days early (median).")
+    tail = lag[lag["lag_days"] > 120]
+    print(f"  the {len(tail)} lags over 120 d ({100 * len(tail) / len(lag):.1f}%) "
+          f"are not late 10-Ks — they are old periods tagged for the FIRST "
+          f"time in a\n  later document (forms: "
+          f"{', '.join(tail['form'].value_counts().index[:4])}), e.g. "
+          f"a proxy's pay-vs-performance table or an\n  8-K recasting "
+          f"segments after an acquisition. `pit_events` ignores them: a "
+          f"filing that\n  repeats an OLDER period never overwrites a newer "
+          f"number. Median excluding them is still "
+          f"{lag[lag['lag_days'] <= 120]['lag_days'].median():.0f} d.")
 
     # ---- 4. the lookahead, measured on the panel itself
     cal = _calendar(start, end)

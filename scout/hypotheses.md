@@ -154,3 +154,51 @@ including the ones that look best.
   demonstration in the repo: a correctly implemented, correctly de-levering
   Kelly rule still lost money because the thing it was sizing had no edge.
   Test the signal before building the sizing on top of it.
+
+### H16 — headline sentiment drift, and whether it is anything but reversal (registered 2026-08-09, BEFORE any run)
+
+Mechanism (Tetlock 2007; Tetlock-Saar-Tsechansky-Macskassy 2008): media tone
+carries fundamental information that is incorporated with a lag, because
+reading and interpreting text is costly, so pessimistic coverage predicts
+lower subsequent returns and optimistic coverage higher ones beyond what the
+same-session price move already reflects. Lab: `scout/news_sentiment_lab.py`
+over the cached Benzinga panel (120 point-in-time-liquid S&P 500 names as of
+2016-01-04, 2016-2026, 308,870 stories).
+
+The decisive question is stated up front, per Rule 1: **most naive news
+studies re-discover short-term reversal in a costume.** H16c is therefore
+the row that decides H16 — a tone effect that vanishes once the same-session
+return is in the regression is not a news effect.
+
+Signal: net tone_{i,t} = (pos - neg) / (pos + neg + 1) summed over every
+story attributable to session t (news_data's timestamp rule: readable before
+close t). Cross-sectionally ranked within the date among liquid names that
+have news. **The shift:** weights formed at close t are multiplied by the
+close(t)->close(t+1) return and onward — `Wbar.shift(1) * ret1` in
+`ls_portfolio`, nowhere else.
+
+| # | date | hypothesis (mechanism, one sentence) | expected sign | status |
+|---|---|---|---|---|
+| H16a | 2026-08-09 | Cross-sectional net headline tone predicts forward returns: quintile long-short (Q5-Q1) is positive at 1/5/21/42 sessions, strongest early and decaying (slow diffusion of textual information). | LS > 0, monotone decay | (4 variants: h = 1, 5, 21, 42) |
+| H16b | 2026-08-09 | Restricting to SPECIFIC stories (not templated wire, <= 10 tags) sharpens the effect, because broadtape movers-lists carry no firm-specific information and only add noise. | LS(specific) >= LS(all) | (4 variants: h = 1, 5, 21, 42) |
+| H16c | 2026-08-09 | **THE DECIDING ROW.** Tone has incremental power over the same-session return: in a joint Fama-MacBeth cross-sectional regression of forward return on tone rank AND same-session return rank, the tone coefficient stays positive and significant with date-clustered (Newey-West) standard errors. | lambda_tone > 0 with t > 3 | (4 variants: h = 1, 5, 21, 42) |
+| H16d | 2026-08-09 | The tone spread survives inside each tercile of the same-session return (a double sort separates news content from price reversal). | tone spread > 0 in all 3 return terciles | (2 variants: h = 5, 21) |
+
+Controls (nulls, not trials): (i) tone shuffled across symbols WITHIN each
+date, 200 draws; (ii) placebo — each symbol permanently assigned another
+symbol's tone series, which keeps each tone series' own time-series
+properties and breaks only the pairing, 200 draws; (iii) random quintile
+assignment from the identical eligible pool, 200 draws; (iv) matched
+benchmark = equal-weight of the eligible-with-news pool. Both halves split at
+the median date. Moving-block bootstrap by date, block length = holding
+period, because overlapping holds make adjacent days dependent. Costs 10 bps
+round trip on measured turnover, plus the break-even round-trip cost.
+
+Failure conditions, stated in advance: H16a fails if the sign flips across
+halves or the LS mean is inside the shuffled-tone null; H16c fails — and
+takes H16 with it — if lambda_tone loses significance once the same-session
+return is included; the whole thing is untradeable regardless of sign if the
+break-even round-trip cost is below 10 bps.
+
+Trial count: N rises by 14 (4 + 4 + 4 + 2). Control draws are nulls and do
+not count.
