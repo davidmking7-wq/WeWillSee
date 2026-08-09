@@ -22,3 +22,4 @@ scout/sleeve_bars.pkl
 # 200 MB pickle lands in a commit before anyone notices.
 scout/cache_*
 scout/cache_secbulk/
+scout/cache_bars_master.pkl
