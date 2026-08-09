@@ -313,6 +313,84 @@ overnight premium is simply the dividend, which lands in the overnight leg by
 construction; cost grid 0/5/10 bps round trip; both halves split at the median
 date on every row.
 
+### H22 — the first NON-price signals in this repo: net share issuance and gross profitability (registered 2026-08-09, BEFORE any run)
+
+Mechanism, one sentence each (Rule 1):
+(1) **Net share issuance** — Pontiff-Woodgate (2008), Daniel-Titman (2006):
+managers issue equity when they believe the stock is overpriced and repurchase
+when they believe it is underpriced, so the twelve-month change in shares
+outstanding is a free quarterly read on the best-informed insider's valuation.
+(2) **Gross profitability** — Novy-Marx (2013): gross profit over total assets
+measures productive capacity at the point in the income statement least
+contaminated by accounting discretion, so it sorts returns where bottom-line
+earnings do not.
+
+Why it matters HERE: every signal this repo has ever ranked on is a function of
+past prices, and the gates lab established that the price composite sorts
+nothing (decile 1 minus decile 10 = -0.099% at 5 td, -0.257% at 42 td). These
+are the two strongest documented free NON-price signals, and until
+`scout/sec_bulk.py` existed there was no point-in-time fundamental data here to
+test them with.
+
+Lab: `scout/fundamental_lab.py`. Universe = point-in-time S&P 500 membership
+(`scout/pit.py`) 2016-2026, so each date ranks only that day's actual members
+and delisted names stay in until their last print. **The shift:** signals are
+built from facts whose SEC FILING date is <= t, quintile weights are formed at
+close t, and every portfolio applies `wbar.shift(1) * ret1`, so the first
+return any signal can touch is close(t) -> close(t+1).
+
+| # | date | hypothesis (mechanism, one sentence) | expected sign | status |
+|---|---|---|---|---|
+| H22a | 2026-08-09 | Low net issuance (net repurchase) beats high net issuance: the quintile spread on -1 x the 12-month log change in split-adjusted shares outstanding is positive at a 42-session hold. | Q5-Q1 > 0 | REGISTERED — not yet run |
+| H22b | 2026-08-09 | High gross profit / total assets beats low: the quintile spread on GP/AT is positive at a 42-session hold. | Q5-Q1 > 0 | REGISTERED — not yet run |
+| H22c | 2026-08-09 | **THE DECIDING ROW.** Both signals are INDEPENDENT of the repo's existing price composite: the cross-sectional rank correlation to 12-1 momentum and to the gated v5 composite score is small, and the fundamental spread survives inside every momentum tercile. A signal that re-expresses momentum adds nothing to a momentum engine no matter how well it sorts on its own. | \|rho\| < 0.2 AND spread > 0 in all 3 momentum terciles | REGISTERED — not yet run |
+| H22d | 2026-08-09 | The two signals combine: an equal-weight average of the two cross-sectional ranks spreads wider than either alone (they proxy different frictions, so their errors are weakly correlated). | combined spread >= max(single spreads) | REGISTERED — not yet run |
+| H22e | 2026-08-09 | The long-only top quintile — the only form this repo could actually trade — beats SPY on Sharpe after 10 bps round trip. | Sharpe(Q5 net) > Sharpe(SPY) | REGISTERED — expected to FAIL on Sharpe; registered because long-only is the shipped form and the answer must be measured, not assumed |
+| H22f | 2026-08-09 | ROBUSTNESS, registered ex ante so it cannot be used as a rescue: the GP/AT result holds on the subset of names that tag `GrossProfit` directly, without the Revenue-minus-COGS derivation. | same sign, similar magnitude | REGISTERED — not yet run |
+| H22g | 2026-08-09 | RULE 9 COMPLIANCE: a 21-td ("monthly") rebalance gives the same answer as the phase-pooled daily-formation estimator, and the spread across the 21 possible entry phases is small relative to the effect. | phase spread << effect | REGISTERED — not yet run |
+
+Sensitivity reported for H22a/H22b whatever it says: holds of 21, 42 and 126
+sessions (fundamental signals are slow; 42 is this repo's horizon and is the
+registered headline, the other two are context, not a search).
+
+Controls (nulls, not trials): (i) RANDOM-PICK quintiles from the identical
+eligible pool, 200 draws — the control that separates "buyback stocks went up"
+from "S&P 500 stocks went up"; (ii) PLACEBO, each symbol permanently assigned
+another symbol's whole signal series so every series keeps its own persistence
+and only the pairing breaks, 200 draws — Finding 2 of H16 established this is
+the only honest null for a persistent signal; (iii) within-date SHUFFLE, 200
+draws, reported WITH the SE-ratio Rule 14 requires so its anti-conservatism is
+visible; (iv) matched benchmarks — equal weight of the eligible pool, and SPY;
+(v) Rule 13 — every dollar-neutral book regressed on SPY before its sign is
+quoted.
+
+Method: quintiles, equal weight, 42-session overlapping cohorts, 10 bps round
+trip charged on measured turnover, break-even round-trip cost reported. Both
+halves split at the median date. Moving-block bootstrap by date with block =
+holding period (the cluster-by-date bootstrap this repo uses in
+`scout/calibrate.py`, plus the block that overlapping holds require).
+
+Data debt handled explicitly: 5.1% of splits are unapplied in Alpaca daily bars.
+This lab repairs them from Alpaca's OWN corporate-actions feed AND masks any
+residual \|1-day return\| > 45%, and prints the count of each.
+
+Failure conditions, stated in advance: H22a/H22b fail if the spread's sign
+flips across halves, or if it sits inside the placebo null, or if the
+break-even round-trip cost is under 10 bps; **H22c fails — and takes the
+practical case for the whole hypothesis with it — if the rank correlation to
+momentum exceeds 0.2 in magnitude or the spread disappears inside momentum
+terciles**, because this repo already owns the momentum; H22d fails if the
+combination does not beat the better single signal; H22f fails if the derived-GP
+and real-GP subsets disagree in sign.
+
+Coverage is the binding constraint and is reported before any return number:
+of 742 point-in-time members since 2016, 729 have Alpaca bars and only 593 map
+to a CIK in the SEC's ticker file at all (that file maps CIK to the CURRENT
+ticker, so acquired and renamed companies silently vanish — a survivorship leak
+in the FUNDAMENTAL data even though the price universe is point-in-time).
+`GrossProfit` is tagged by 237 of them; the rest need the Revenue-minus-COGS
+derivation, and financials do not report a gross profit at all.
+
 Controls (nulls, not trials): (i) within-date LEG-LABEL permutation — a
 sign-flip randomisation of the overnight-minus-intraday difference, 10,000
 draws, with the SE-ratio print Rule 14 requires; (ii) moving-block bootstrap
@@ -328,3 +406,84 @@ if the close-entry advantage is not positive in both halves, or if it is
 statistically indistinguishable from the random-pick control** (in which case
 H4 is a market-wide drift statement, not a rule about picks); H18g fails if
 break-even round-trip cost is under 5 bps.
+
+### H21 — short-horizon reversal as a LIQUIDITY premium, conditioned on news (registered 2026-08-09, BEFORE any run)
+
+Mechanism (Campbell-Grossman-Wang 1993; Nagel RFS 2012 "Evaporating
+Liquidity"; Da-Liu-Schaumburg RFS 2014): a one-week price move produced by
+uninformed liquidity DEMAND must be paid for, so it reverses — the reversal
+return IS the fee earned by whoever absorbed the order flow; a move produced
+by INFORMATION does not reverse, because it is the new price. The same raw
+signal therefore has opposite economics depending on its cause, and the
+cached news panel is a direct proxy for that cause.
+
+**Why this row exists: the repo has tested momentum four times and measured it
+sorting nothing (decile 1 minus decile 10 = -0.26% at 42 td). Short-horizon
+REVERSAL is the opposite sign at the opposite horizon and has never been
+tested here once.** H15/H16 rejected news-based SIGNALS; H21 uses news only as
+a CONDITIONER on a price signal, which is a different claim.
+
+Lab: `scout/reversal_lab.py`. Universe = the same 120 point-in-time-liquid
+S&P 500 members as of 2016-01-04 that the news labs use (scout/pit.py, no
+post-2016 additions), 2016-01..2026-08, split-repaired daily SIP closes.
+
+**The shift:** `sig(t) = close.shift(1) / close.shift(6) - 1` — the 5-session
+return ending at close(t-1), so session t itself is SKIPPED (a one-day gap
+kills bid-ask bounce, the classic fake reversal). The book is formed at
+close(t) and earns `fwd_h(t) = close.shift(-h) / close - 1`. Signal and return
+share index t and touch disjoint price ranges: the signal reads closes at t-6
+and t-1, the return reads closes at t and t+h. Registered direction: LONG the
+bottom quintile (losers), SHORT the top quintile (winners); spread = Q1 - Q5,
+positive means reversal.
+
+**News conditioning:** specific stories (news_data.is_templated /
+is_broadtape drop machine wire copy and >10-tag broadtape) attributed to
+sessions t-5..t-1 — the same five sessions the formation return spans, all
+readable before close t under news_data's 16:00-ET rule.
+
+| # | date | hypothesis (mechanism, one sentence) | expected sign | status |
+|---|---|---|---|---|
+| H21a | 2026-08-09 | Unconditional short-horizon reversal exists in this large-cap panel: the bottom quintile of the skip-a-day 5-session return beats the top quintile over the next 5 sessions. | Q1 - Q5 > 0 at h=5 | REGISTERED — not yet run |
+| H21b | 2026-08-09 | **THE DECIDING ROW.** Reversal is a liquidity premium, so it is STRONG among stocks with NO specific news in the formation week and WEAK OR ABSENT among stocks that had news. | spread(no-news) - spread(news) > 0, CI on the DIFFERENCE excluding zero | REGISTERED — not yet run |
+| H21c | 2026-08-09 | The same ordering appears monotonically across terciles of ABNORMAL news volume (log((k+1)/(median k over the prior 60 sessions +1))), because abnormal coverage is the sharper proxy for "the move was information". | spread falls monotonically from the low-attention to the high-attention tercile | REGISTERED — not yet run |
+| H21d | 2026-08-09 | The LONG-ONLY leg (buy the losers, no shorts — the only practically tradeable form for this user) beats the equal-weight eligible pool, and does so more in the no-news group. | Q1 - pool > 0, larger for no-news | REGISTERED — not yet run |
+| H21e | 2026-08-09 | Reversal profits classically concentrate in illiquid names, so restricting to the top-liquidity half of the panel should SHRINK the spread; registered as the expected-NEGATIVE row that decides tradeability. | spread(top-liquidity half) < spread(all), possibly to zero | REGISTERED — expected to SHRINK |
+| H21f | 2026-08-09 | Costs decide it at weekly rebalancing: the break-even round-trip cost must clear the 10 bps charged for large caps. | break-even >= 10 bps | REGISTERED — the tradeability gate |
+
+Registered variants, all reported whatever they say (16 total): unconditional
+Q1-Q5 at h = 1/5/10/21 (4); news-conditioned with COMMON breakpoints at
+h = 5 (primary) and 1/10/21 (4); news-conditioned with WITHIN-GROUP terciles
+at h=5 (1); abnormal-news terciles at h=5 (1); long-only at h=5 (1);
+liquidity top-half and ex-bottom-tercile (2); the NO-SKIP signal that shows
+what the one-day gap is worth (1); news counted over t-5..t instead of
+t-5..t-1 (1); and the extreme-print-filtered rerun (1).
+
+Controls (nulls, not trials): (i) RANDOM-PICK — quintile labels permuted
+inside each session over the identical eligible pool, 200 draws, mean AND SD
+quoted (Rule 10); (ii) DATE-SHUFFLE of the signal — each symbol's formation
+return permuted across dates, 200 draws; unlike H15 this control must NOT kill
+the effect, because reversal is a timing claim by construction, so it
+discriminates rather than merely nulls; (iii) NEWS-LABEL SHUFFLE — the
+news/no-news assignment permuted across symbols within each date preserving
+group sizes, 200 draws: this is the null for the DIFFERENCE, and it is what
+decides H21b; (iv) MATCHED BENCHMARKS — the equal-weight eligible pool and
+SPY. Every permutation p-value is printed next to the ratio of the null's SD
+to the real series' block-bootstrap SE (Rule 14). Rule 13 is honoured: the
+dollar-neutral book is regressed on SPY before its sign is quoted.
+
+Data hygiene stated in advance (the repo's known 5.1% unadjusted-split debt):
+closes are the SPLIT-REPAIRED series built by `news_attention_lab.load_close`
+(the AAPL 2020-08-31 4:1 repair among them), PLUS a stale-quote retirement
+rule — a symbol is dropped permanently from its first run of >=10 identical
+consecutive closes, which is how a delisted ticker's frozen quote and a
+reused-ticker splice present. Every remaining |1-day return| > 45% is
+enumerated individually with a verdict, and the whole study is rerun with
+those windows excluded.
+
+Failure conditions, stated in advance: H21a fails if the unconditional spread
+is inside the random-pick null or flips sign across halves; **H21b fails — and
+takes H21 with it — if the no-news-minus-news difference is inside the
+news-label-shuffle null, or if it flips sign across halves**; H21c fails if
+the ordering is not monotone; H21f fails, and makes the whole thing
+untradeable regardless of sign, if the break-even round-trip cost is under
+10 bps.

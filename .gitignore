@@ -17,7 +17,8 @@ scout/backtest_cache_pit.pkl
 scout/backtest_cache_1500.pkl
 scout/form4_cache/
 scout/sleeve_bars.pkl
-scout/cache_news_*
-scout/cache_intraday_*
-scout/cache_fundamentals_*
+# any lab's downloaded-data cache. The general glob matters: research agents
+# invent new cache prefixes (cache_fundlab_*, cache_news_sent_*, ...) and a
+# 200 MB pickle lands in a commit before anyone notices.
+scout/cache_*
 scout/cache_secbulk/

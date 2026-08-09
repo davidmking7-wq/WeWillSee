@@ -62,6 +62,7 @@ UA = {"User-Agent": "WeWillSee research davidmking7@gmail.com"}
 CACHE_DIR = config.SCOUT_DIR / "cache_secbulk"
 FACTS_PKL = CACHE_DIR / "facts.pkl"
 TICKERS_JSON = CACHE_DIR / "company_tickers.json"
+TAG_DIR = CACHE_DIR / "by_tag"
 
 # Only these tags are kept. num.txt holds millions of rows per quarter and
 # most of them are irrelevant; filtering at parse time is what keeps the
@@ -192,6 +193,38 @@ def load(rebuild: bool = False, **kw) -> pd.DataFrame:
     if FACTS_PKL.exists() and not rebuild:
         return pd.read_pickle(FACTS_PKL)
     return build(**kw)
+
+
+def split_by_tag(facts: pd.DataFrame | None = None, verbose: bool = True) -> None:
+    """Write one pickle per tag so callers never load the whole 23M-row table.
+
+    facts.pkl is 2 GB on disk and roughly twice that once pandas has it, so two
+    or three concurrent studies loading it will exhaust a 16 GB box. Almost
+    nobody needs all nineteen tags: a net-issuance study needs four, a
+    profitability study needs three. Splitting once turns a 4 GB load into a
+    200 MB one."""
+    if facts is None:
+        facts = load()
+    TAG_DIR.mkdir(parents=True, exist_ok=True)
+    for tag, grp in facts.groupby("tag"):
+        path = TAG_DIR / f"{tag}.pkl"
+        grp.reset_index(drop=True).to_pickle(path)
+        if verbose:
+            print(f"  {tag:<55} {len(grp):>9,} rows  "
+                  f"{path.stat().st_size / 1e6:6.1f} MB")
+
+
+def load_tags(tags: list[str] | tuple[str, ...]) -> pd.DataFrame:
+    """Load only the tags a study needs. Falls back to the full table (and
+    splits it for next time) if the per-tag files are not there yet."""
+    missing = [t for t in tags if not (TAG_DIR / f"{t}.pkl").exists()]
+    if missing:
+        split_by_tag(verbose=False)
+    frames = [pd.read_pickle(TAG_DIR / f"{t}.pkl") for t in tags
+              if (TAG_DIR / f"{t}.pkl").exists()]
+    if not frames:
+        raise FileNotFoundError(f"no data for tags {tags}")
+    return pd.concat(frames, ignore_index=True)
 
 
 def pit_panel(facts: pd.DataFrame, tag: str, tickers: list[str],
