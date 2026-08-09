@@ -23,3 +23,4 @@ scout/sleeve_bars.pkl
 scout/cache_*
 scout/cache_secbulk/
 scout/cache_bars_master.pkl
+scout/cache_deals_*.pkl
