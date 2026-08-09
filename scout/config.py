@@ -15,8 +15,26 @@ from dotenv import load_dotenv
 ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(ROOT / ".env")
 
-ALPACA_API_KEY = os.environ["ALPACA_API_KEY"]
-ALPACA_SECRET_KEY = os.environ["ALPACA_SECRET_KEY"]
+def _alpaca_credentials() -> tuple[str | None, str | None]:
+    """Load data-only credentials without copying secrets into this repo."""
+    key = os.environ.get("ALPACA_API_KEY")
+    secret = os.environ.get("ALPACA_SECRET_KEY")
+    credential_file = os.environ.get("ALPACA_CREDENTIAL_FILE")
+    if credential_file and (not key or not secret):
+        path = Path(credential_file).expanduser()
+        try:
+            lines = [line.strip() for line in path.read_text(encoding="utf-8").splitlines()
+                     if line.strip()]
+        except OSError as exc:
+            raise RuntimeError(f"cannot read ALPACA_CREDENTIAL_FILE: {path}") from exc
+        if len(lines) != 2:
+            raise RuntimeError("ALPACA_CREDENTIAL_FILE must contain exactly two non-empty lines")
+        key = key or lines[0]
+        secret = secret or lines[1]
+    return key, secret
+
+
+ALPACA_API_KEY, ALPACA_SECRET_KEY = _alpaca_credentials()
 
 SCOUT_DIR = ROOT / "scout"
 UNIVERSE_CSV = SCOUT_DIR / "universe.csv"
