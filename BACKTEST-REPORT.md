@@ -742,3 +742,295 @@ cannot be cross-checked, because the corporate-actions feed thins out for
 dead symbols. Treat pit500 numbers as carrying an extra, unquantified
 data-quality discount on top of the survivorship correction they already
 document.
+
+## H21 — short-horizon reversal, and whether news says when it is paid (scout/reversal_lab.py)
+
+Mechanism first: a one-week price move produced by uninformed liquidity
+DEMAND must be paid for, so it reverses — the reversal return is the fee
+earned by whoever absorbed the flow (Campbell-Grossman-Wang; Nagel 2012) —
+while a move produced by INFORMATION does not reverse, because it is the new
+price. This repo had tested momentum four times and measured it sorting
+nothing; reversal is the opposite sign at the opposite horizon and had never
+been tested here once. The cached news panel is the conditioner the mechanism
+asks for, which is what makes this a mechanism test rather than a scan.
+
+**Setup.** 120 point-in-time-liquid S&P 500 members as of 2016-01-04 (the same
+panel the news labs use), 2,664 sessions 2016-01-04 .. 2026-08-07, 272,653
+symbol-sessions eligible at h=5. Signal `close.shift(1)/close.shift(6) - 1` —
+the 5-session return ending at close(t-1), so the position's first session is
+SKIPPED. Book: long the bottom quintile, short the top, equal weight, held
+close(t)→close(t+5), weekly rebalance. Groups: whether the name carried any
+specific (non-templated, ≤10-tag) story in sessions t-5..t-1.
+
+### The unconditional result — right sign, no size, and it is beta
+
+| h | losers−winners (bps) | t | halves | beta to SPY | alpha (bps) | t_alpha |
+|---|---|---|---|---|---|---|
+| 1 | +1.44 | +0.54 | +2.66 / +0.23 | +0.29 | −0.39 | −0.15 |
+| **5** | **+6.95** [−12.32, +26.70] | **+0.69** | +7.31 / +6.59 | **+0.33** | **−3.35** | −0.35 |
+| 10 | −0.41 | −0.03 | −1.06 / +0.24 | +0.24 | −15.30 | −1.07 |
+| 21 | +19.64 | +0.94 | +34.07 / +5.23 | +0.15 | +0.73 | +0.03 |
+
+Rule 13 does the damage: buying five-day losers and shorting five-day winners
+is a **long-beta** position, because the name that just fell is temporarily the
+high-beta one. Market-adjusted, the h=5 spread is negative.
+
+### The hypothesis — the conditioning does not fire
+
+On the 1,488 dates where both legs are scorable, quiet **+9.70** vs news
+**−2.00**, difference **+11.69 bps [−12.71, +36.08], t = +0.94**. It fails both
+pre-registered failure conditions: halves **−10.23 / +33.61** (a sign flip),
+and the difference sits inside the news-label-shuffle null (+0.55 ± 7.61, 94th
+percentile, **p = 0.12**). At h=1 the difference carries the WRONG sign in both
+halves. Abnormal news volume in terciles — the sharper conditioner, ~38 names a
+bucket, no coverage problem — gives **+8.58 / +3.03 / +8.37**, a U rather than
+a slope; low minus high is **+0.05 bps, t = +0.01**.
+
+### Costs finish it
+
+| book | gross bps/wk | turnover | break-even | net %/yr at 10 bps |
+|---|---|---|---|---|
+| long/short, all names | +6.95 | 1.57 | **4.44 bps** | −4.40 |
+| long/short, quiet | +9.70 | 1.87 | 5.18 | −4.55 |
+| long-only losers, all | +6.57 | 0.78 | 8.45 | −0.61 |
+| **long-only losers, quiet** | +16.33 | 0.94 | **17.47** | **+3.52** |
+
+The single book that clears cost is long-only-quiet — and its halves are
+**−1.14 / +33.79**, and the sized random-subset null it must beat is +4.12 ±
+4.12, not zero. Per the H1b house rule that is a new hypothesis, not a result.
+
+### The one |t| > 2 cell, and why it is not quoted
+
+In the top-liquidity half the quiet-minus-news difference reads **+71.19 bps,
+t = 2.54**, and beats its own null at p = 0.000. It is measured on **159 dates
+— 31 independent weekly windows** — because inside the 50 most liquid names the
+quiet group has only 2.55 members in the loser cell. **158 of those 159 dates
+are 2016-2021 and none are 2024-2025**, so both "halves" of that series are the
+same era. At MIN_CELL=1 it halves to +39.75 on 910 dates. H7a is this repo
+having quoted the luckiest of six entry phases once already; this is the same
+shape and it is reported as a coverage artefact, not a finding.
+
+### NEW DATA DEBT: frozen quotes and reused tickers (distinct from the split debt)
+
+Alpaca keeps printing a delisted ticker at its last trade. In this 120-name
+panel **EMC** freezes at one price from 2016-09-06 (Dell closed the
+acquisition) and **MON** from 2018-06-06 (Bayer), after which a *different*
+company reuses MON on 2021-03-16 at 9.79 against the stale 127.95 — a
+fabricated **−92.4%** one-day return. Those two names alone account for **2,577
+of the panel's 4,288 exactly-zero one-day returns**, and because a delisted
+name also stops being written about, every one of those sessions is a permanent
+member of the NO-NEWS group with a guaranteed-zero forward return — on the
+exact leg this study measures. `reversal_lab.retire_stale` drops a symbol from
+its first run of ≥10 identical consecutive closes. Any study in this repo that
+conditions on quiet or low-volatility behaviour needs the same rule; the
+data-integrity audit above does not catch it, because a frozen price produces
+no large return to flag.
+
+### Verdict
+
+**REJECTED.** There is no unconditional short-horizon reversal in this large-cap
+panel worth conditioning (7 bps a week, t = 0.69, and all of it beta), and the
+news conditioning does not separate what the mechanism says it should. The
+controls behave — the date-shuffle destroys the effect, as a timing claim
+requires, and the offline selftest recovers a planted quiet-only reversal at
++185.7 bps and kills it with the news-label shuffle — so this is a null about
+the world, not about the pipeline. Scope: large caps, one publisher, no
+post-2016 additions, and Nagel's central VIX conditioning deliberately not run
+after the null, so as not to hunt a variant. Trial count +16.
+
+## Round 3 — the untouched data: news text, intraday bars, fundamentals
+
+Triggered by a fair complaint: Round 2 tested ONE family of ideas and wrote a
+verdict as if it had covered the space. This round opened the datasets this
+repo had never touched — Benzinga news back to 2015, minute bars back to 2016,
+and the SEC's bulk XBRL fundamentals — and pre-registered ten hypotheses
+across them. Five have reported; the rest are in flight.
+
+**Score so far: 5 tested, 5 rejected, 1 shipped rule demoted, 1 engine weight
+condemned.** Detail below; registry rows in `scout/hypotheses.md` H15-H28.
+
+### The table
+
+| # | hypothesis | verdict | the number that decided it |
+|---|---|---|---|
+| H15 | attention shock -> reversal | **REJECTED** | date-shuffled news reproduces the whole spread |
+| H16 | headline sentiment -> drift | **REJECTED** | wrong sign, every CI straddles zero |
+| H17 | novel news drifts, stale reverses | **REJECTED** | real effect sits inside all three nulls, \|z\| <= 0.61 |
+| H18 | equity premium accrues overnight | **REJECTED** | break-even 3.88 bps against a 5-10 bps cost band |
+| H25 | 52-week-high proximity as a signal | **REJECTED** | it is a beta sort; market-adjusted t = 0.29 |
+
+### 1. News carries volatility, not direction (H15, H16, H17)
+
+Three independent attacks on the news panel, 32 + 18 + 24 variants, and they
+converge on one sentence: **coverage forecasts the SIZE of the next move and
+almost none of its sign.**
+
+- Attention (H15): top-quintile next-session absolute move 1.45% vs 1.32% for
+  the bottom quintile and 1.34% for the pool. Signed returns: nothing.
+- Novelty (H17), a different measure entirely: stale-heavy names show
+  same-day \|return\| 1.807% vs 1.291% novel, next-session 1.530% vs 1.315%,
+  and signed next-session +7.82 vs +6.94 bps. Same finding, arrived at
+  independently.
+
+**What killed H15 is worth generalising.** The registered sign was right in
+16 of 16 cells and the best \|t\| anywhere was 2.92 — borderline against the
+repo's t>3 bar, and the kind of result a less careful round would have
+shipped. Then the date-shuffled control:
+
+| | h=1 | h=5 | h=21 | h=42 |
+|---|---|---|---|---|
+| real news dates | -2.31 | -3.42 | -15.81 | -23.56 bps |
+| **dates shuffled** | **-0.57** | **-2.61** | **-10.61** | **-21.90** bps |
+
+Destroying the timing barely dents the spread. The "signal" is a static
+property of *which stocks get heavily covered*, not of *when* they are
+covered. Timing-attributable residual: -1.74 / -0.82 / -5.19 / -1.66 bps.
+
+H16 adds a separate lesson: the pre-registered ALTERNATIVE explanation was
+also wrong. Tone was expected to be short-term reversal in a costume; in fact
+the same-session return predicts nothing here either (lambda t between +0.19
+and -0.76), and tone correlates with it at only 0.117. Two dead things, dead
+independently. Cost of trading tone at h=1: **43.3%/yr**.
+
+H17 also produced the round's most useful methodological result. Its
+difference-in-differences design is largely immune to the news-timestamp
+error that inflated H15's spread by 43%: re-run under deliberately wrong
+after-close attribution it gives +0.32/-4.43/-6.42/-3.92 against the honest
+-0.83/-3.91/-5.62/+3.85. Measured attenuation on planted leaks is 3.6x / 2.8x
+/ 1.7x as the leak grows, so **robustness, not immunity** — but it is the
+right shape for a design to have.
+
+### 2. Overnight returns: real, and not tradeable (H18)
+
+| leg | ann. return | Sharpe |
+|---|---|---|
+| SPY overnight (close -> open) | +9.54% | 0.86 |
+| SPY intraday (open -> close) | +5.97% | 0.50 |
+| SPY buy-and-hold | **+16.08%** | **0.94** |
+
+The direction of Lou-Polk-Skouras replicates — overnight beats intraday, and
+overnight wins in 83 of 114 individual names (73%, clearing the pre-registered
+two-thirds bar). But the famous form of the claim needs the intraday leg to be
+**zero or negative**, and here it is solidly positive. The market-level gap is
++1.22 bps/session with a permutation p of 0.561 — inside its own null.
+
+It also decays exactly as post-publication decay should: the EW-120 gap runs
++17.4/+2.3 %/yr in the first half and +8.3/+6.7 in the second, shrinking ~70%
+across a 2019 paper's publication date.
+
+**And the costs settle it.** An overnight-only book trades 252 round trips a
+year, so break-even round-trip cost equals the mean overnight return:
+
+| book | break-even | net at 5 bps | buy-and-hold |
+|---|---|---|---|
+| SPY | 3.88 bps | -3.43%/yr | +16.08% |
+| EW-120 | 5.05 bps | -0.61%/yr | +17.67% |
+| gated composite Q5 | 5.39 bps | +0.51%/yr | +9.81% |
+
+Against a 5-10 bps large-cap band, SPY fails outright and the other two scrape
+past the letter of the bar while failing its substance. Deflated Sharpe of the
+strongest net book: **0.140**.
+
+#### H18e — the H4 verdict, and it is a demotion, not a kill
+
+`scout/hypotheses.md` H4 ("enter at/near the CLOSE, never the open") is the
+only rule this repo ever shipped **with no local test at all**. Minute bars
+finally made it testable. On the shipped book size, 2,219 entry dates:
+
+| entry | 42-session outcome | hit rate |
+|---|---|---|
+| close(t) | **+2.70%** | 64.24% |
+| open(t+1) | +2.64% | 63.81% |
+
+Advantage of buying the close: **+5.29 bps/window, 95% CI [+0.39, +10.73],
+NW t = +2.07, positive in BOTH halves** (+7.87 / +2.72). At book size 5 it
+strengthens to +6.18 bps, t = +3.04.
+
+Then its own control: a **random pick of 2 names from the identical pool on
+the identical dates earns +4.51 bps** [p5 +2.45, p95 +6.79] — and +5.29 sits
+inside that interval. Pick-minus-pool edge: +0.68 bps, NW t = +0.44.
+
+**So H4 stays shipped, and its justification changes.** Buying the close is
+real and free, but it is a property of the overnight session generally, not
+of the engine's picks. It was being credited to the wrong thing. The rule
+costs nothing to keep and the honest reason to keep it is "the whole market's
+premium accrues overnight", not "our picks gap up".
+
+### 3. The 52-week high is a beta sort — and it is the engine's biggest weight (H25)
+
+`config.W_HIGH = 0.25` is the single largest weight in the composite, larger
+than 12-1 momentum, and until now it had never been tested on its own.
+
+S&P 1500, 109 monthly formations, 42-session holds. Deciles by proximity:
+
+| decile (low -> high proximity) | 1 | 2 | 5 | 8 | 10 | D10-D1 |
+|---|---|---|---|---|---|---|
+| raw return, bps/window | 388 | 302 | 264 | 237 | 205 | **-182.8** (t -1.84) |
+| **SPY beta** | **1.61** | **1.30** | **1.07** | **0.93** | **0.79** | |
+| market-adjusted | -21 | -30 | -7 | -0 | +3 | **+23.9** (t 0.29) |
+
+The beta column is the whole story: proximity orders the cross-section by beta
+almost perfectly, and the raw return profile is that beta profile priced at
+this decade's equity premium. Risk-adjust and **nothing remains** (t = 0.29).
+
+Run the identical machinery on 12-1 momentum and it behaves the opposite way —
+beta is U-shaped (1.49 / 0.98 / 1.15) so it *cannot* manufacture a monotone
+profile, and the market-adjusted spread is **+177.1 bps (t 2.11)**, i.e.
+momentum survives the adjustment that kills proximity.
+
+**The deciding test.** Proximity spread measured INSIDE momentum terciles:
+-151 / -62 / -173 bps (t -2.34 / -1.41 / **-3.31**) — negative in all three,
+the opposite of the registered sign. The reverse sort survives: momentum
+inside proximity terciles is +53 / +124 / +42 market-adjusted.
+
+Fama-MacBeth, top-to-bottom rank differences:
+
+| coefficient | estimate | t |
+|---|---|---|
+| high52 alone | -141.4 | -1.55 |
+| **high52, controlling for momentum** | **-298.6** | **-3.17** |
+| **momentum, controlling for high52** | **+265.0** | **+3.74** |
+
+Both cross this repo's t>3 bar, in opposite directions. And the date-shuffle
+control shows why: **a proximity snapshot a full year out of date reproduces
+69% of the spread.** It identifies a persistent stock type — high-beta
+laggards — not a timing state.
+
+Two further nails. George-Hwang's effect should GROW with horizon; measured at
+21/42/126 sessions it goes -142 / -183 / -538 bps, growing more negative. And
+their crash claim inverts: in bear formations proximity's spread is **-722 bps
+against momentum's -48**, with a worst window of -3095 bps.
+
+Break-even round-trip cost is **negative** (-83.2 bps ungated), meaning there
+is nothing to protect even at zero cost.
+
+**Consequence for the engine, stated plainly: the largest weight in the v5
+composite measures negative at t = -3.17 once momentum is controlled, while
+the momentum weights measure positive at t = +3.74.** That is the first
+result in three rounds that points at a specific, testable engine change
+rather than at a rejection. It is in-sample and the 2022-2026 holdout is
+retired, so it does not license a v6 by itself — but the standard of evidence
+for REMOVING a component that measures negative is not the standard for
+adding one, and this is now the highest-priority item in the agenda.
+
+An honesty note the lab earned: it **found and fixed a lookahead in its own
+control** mid-study. Drawing date-shuffle donors uniformly allowed donor
+dates after the formation date, reading closes inside the holding window; that
+version manufactured +130.5 bps out of nothing. Donors are now restricted to
+at least a year stale. The module retains the inverted-donor self-test that
+measures the contamination such a leak produces (+57 to +127 bps).
+
+### Round 3 caveats that apply to all of the above
+
+1. **The news universe is 120 large caps, point-in-time as of 2016-01-04** —
+   so no TSLA, no NVDA-as-a-mega-cap, no post-2016 index addition. That is
+   precisely the cohort retail-attention effects are loudest in. The news
+   rejections are scoped to large caps and should not be read as universal.
+2. **Price-data debt applies** (see the audit section): 5.1% of splits are
+   unadjusted and 146 further >50% one-day moves come from spin-offs and
+   reused tickers. H25 repaired 13 splits and masked 296 residual moves; the
+   AAPL case alone pinned its 52-week proximity at a fake 0.256 for a year.
+   Studies without the engine's vetoes must guard this explicitly.
+3. **Trial count.** These five labs ran 32 + 18 + 24 + 18 + 58 = 150 variants.
+   The repo's running N is now roughly 340, which raises the deflated-Sharpe
+   bar for everything that follows.

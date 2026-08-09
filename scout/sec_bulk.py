@@ -378,7 +378,9 @@ def _despike(col: pd.Series, tol: float = 0.35) -> pd.Series:
 
 
 def shares_panel(facts: pd.DataFrame, tickers: list[str], dates: pd.DatetimeIndex,
-                 adjust: bool = True) -> pd.DataFrame:
+                 adjust: bool = True,
+                 factors: dict[str, list[tuple[pd.Timestamp, float]]] | None = None
+                 ) -> pd.DataFrame:
     """Split-adjusted shares outstanding, point-in-time, with a tag fallback.
 
     No single tag covers the market, so each ticker takes the first tag in
@@ -388,13 +390,22 @@ def shares_panel(facts: pd.DataFrame, tickers: list[str], dates: pd.DatetimeInde
     Order of operations matters. Splits are applied at the FACT level, keyed on
     each fact's filing date (see adjust_facts_for_splits), and only then is the
     series forward-filled onto `dates`. Adjusting the forward-filled panel
-    instead is wrong and silently so."""
+    instead is wrong and silently so.
+
+    `factors` lets a caller supply corporate actions it has already fetched.
+    That matters at universe scale: split_factors() goes through
+    data_audit.fetch_splits, which PRINTS AND CONTINUES on an HTTP 429, so a
+    throttled chunk silently returns a partial split map and every share count
+    in it stays unadjusted — the exact NVDA-shaped corruption the docstring
+    above is about, arriving through the transport instead of the arithmetic.
+    scout/fundamental_lab.py passes intraday.split_events(), which retries."""
     df = facts[facts["ticker"].isin(tickers)]
     if "segments" in df.columns:
         df = df[df["segments"].isna() & df["coreg"].isna()]
     df = df[df["value"] > 0]
     if adjust:
-        df = adjust_facts_for_splits(df, split_factors(sorted(set(tickers))))
+        df = adjust_facts_for_splits(
+            df, factors if factors is not None else split_factors(sorted(set(tickers))))
 
     out = pd.DataFrame(index=dates, columns=tickers, dtype=float)
     chosen = {}
@@ -422,14 +433,16 @@ def shares_panel(facts: pd.DataFrame, tickers: list[str], dates: pd.DatetimeInde
 
 
 def net_issuance(facts: pd.DataFrame, tickers: list[str], dates: pd.DatetimeIndex,
-                 lookback: int = 252) -> pd.DataFrame:
+                 lookback: int = 252,
+                 factors: dict[str, list[tuple[pd.Timestamp, float]]] | None = None
+                 ) -> pd.DataFrame:
     """12-month log change in split-adjusted shares outstanding.
 
     Negative = net buyback. Pontiff-Woodgate (2008): managers issue when they
     believe the stock is overpriced and repurchase when underpriced, so this is
     a free quarterly read on insider valuation. Log change rather than percent
     so issuance and buybacks are symmetric."""
-    sh = shares_panel(facts, tickers, dates)
+    sh = shares_panel(facts, tickers, dates, factors=factors)
     return (sh / sh.shift(lookback)).apply(lambda c: c.map(
         lambda v: float('nan') if not (v and v > 0) else __import__('math').log(v)))
 
