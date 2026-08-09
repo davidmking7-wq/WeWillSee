@@ -51,7 +51,7 @@ All rejected with controls; details in BACKTEST-REPORT.md and hypotheses.md.
 | post-earnings drift (H26) | 89% priced by the day after; contemporaneous t = +15.4, forward ~0 |
 | intraday momentum (H19) | the closing half hour is the WORST of thirteen bins |
 | accruals (H27) | killed in verification: t = 3.0006 vs an analytic 2.9510 |
-| net share repurchase (H22) | killed in verification: one 2.7-year regime, half a sector tilt |
+| net share repurchase (H22) | killed in verification: **28% of sessions carried 81% of P&L** while the median split bisected that regime; half of the rest was a sector tilt |
 | idiosyncratic vol (H28), sentiment (H16), multi-asset trend sleeves | rejected |
 | **W_HIGH = 0 (H29) — RETRACTED** | the "fix" was +65.7 raw = -5.1 alpha + 71.8 beta. **Do not change config.W_HIGH.** |
 
@@ -92,38 +92,64 @@ need t > 3 and a deflated Sharpe at the running N (>700).**
 Rule 13 caught its own author's next mistake one level down — H29 adjusted the
 levels and forgot that a *difference* of two beta-laden sorts is beta-laden.
 
-## Round 5 results (complete)
+## Round 5 results (complete, verified)
 
-- **H32 workouts — REJECTED, but the first non-beta source found here.**
-  448 announced deals. Sleeve 6.68%/yr, Sharpe 0.718, **beta 0.271** (t~7
-  against 1.0), maxDD -16.5% vs SPY's -33.8%; COVID crash -8.28% vs -33.48%.
-  The placebo settles causation — same tickers 250 sessions earlier have beta
-  1.054. All three equal thirds positive; 7 of 7 entry offsets positive.
-  **Rejected because:** alpha t = 1.02, correlation to SPY is 0.511 (not ~0),
-  and break-even on ALPHA is 38 bps/side — added to SPY it is +0.049 Sharpe
-  gross, +0.006 at 25 bps, +0.000 at 50 bps. Buffett claimed 10-20%/yr largely
-  uncorrelated; measured 6.7%/yr at rho 0.51 — sixty years of competition.
-  **UNVERIFIED: all three verifiers died on the spend limit.**
+- **H31 construction — CONFIRMED, and the only non-beta structural result in
+  five rounds.** Cap-weighting the SAME holdings is worth **+0.150 Sharpe and
+  +3.48 pp/yr** (pit500; +0.160 on sp1500). The difference carries **beta
+  0.077**, is positive in both halves and all three thirds, and on the momentum
+  books runs +5.20 pp/yr at beta 0.06 (pit500) and +5.06 at beta 0.02 (sp1500) —
+  positive in every half and all six thirds across both universes.
+  **Externally confirmed by two real ETFs: SPY − RSP gives +0.180 Sharpe and
+  +3.43 pp/yr at beta 0.043**, against our internal +0.150 / +3.48. The lab and
+  the market agree to 0.03 of Sharpe.
+  **But it does not beat SPY** — it turns a book losing by 2.73 pp/yr into one
+  insignificantly ahead (t 0.46). A recovery, not an edge. Inverse-vol weighting
+  is the one scheme that does NOT help.
+- **H32 workouts — REJECTED, verification 1 of 3.** Two independent kills.
+  (a) **No risk-free rate anywhere in the lab** — for every other hypothesis
+  beta ≈ 1 so the `rf x (1 - beta)` bias is ~0; for the first beta-0.27 sleeve it
+  is maximal. Alpha +2.39% (t 1.02) → **+0.76% (t 0.33)**; the gain from adding
+  it to a SPY book goes +0.049 → **+0.006 GROSS and +0.000 at any cost level**.
+  (b) **The return is 18 bidding wars.** Of 448 deals, 18 topping bids (4.0%)
+  contribute +1.475 pp of the +1.728 pp total. Drop them and the sleeve goes
+  6.68%/yr → **2.82%/yr**, alpha → **−1.08% (t −0.46)**. Spread capture net of
+  breaks is +0.78%/yr — less than the round-trip cost these names quote. The
+  pre-registered mechanism earned zero. Reported skew +1.00 was those same 18
+  deals; remove the top 10 and it flips to **−4.41**.
+  The era story was the rate cycle (rf by thirds 1.23/1.05/4.43% vs raw alphas
+  1.69/1.50/5.02%, **correlation +1.000**).
+  **What survived:** the sample IS announcement-based (SEC form.idx, never the
+  completions feed), and the beta collapse is real — Dimson lead-lag betas
+  0.220/0.261/0.254/0.317 never recover toward 1.0. A target pinned to a fixed
+  cash price is a genuine risk property, just not a return source.
+  Caveat for reuse: 3-5% of the book holds the wrong company (T = AT&T the
+  acquirer, E = an Italian ADR, LEN = Lennar acquirer-side).
 - **H33 coverage — REJECTED** (51 variants). Not priced: +25.5 bps, t 0.53,
   thirds [-65.3, +166.7, -25.1]. The Hong-Lim-Stein interaction died four ways.
-  **But it reproduced the structural finding independently: weighting the same
-  102 names is worth +91.8 bps/window against a best selection spread of
-  +25.5 — construction beats selection 3.6 : 1.**
+  **It independently reproduced the construction finding: weighting the same 102
+  names is worth +91.8 bps/window against a best selection spread of +25.5 —
+  construction beats selection 3.6 : 1.**
 - **H34 partnership — REJECTED** (112 variants). At rho 0.511 the combination
   cannot reach a landslide.
-- **H31 construction — NEVER RAN** (spend limit). See below.
 
-## THE NEXT ACTION, and it is the only one that matters
+## THE NEXT ACTION
 
-**Run `python -m scout.construction_lab`.** It is committed and ready.
+The construction result is confirmed but **not significant on its own**
+(t 1.02-1.51 depending on universe and book). Its credibility rests on
+consistency — every half, every third, both universes, difference beta ~0.05 —
+and on the SPY-vs-RSP external check, not on a p-value.
 
-It asks whether cap-weighting recovers the -0.216 Sharpe construction handicap.
-That question is now supported by TWO independent measurements — Round 4's
--0.216 (construction) against +0.030 (selection), and H33's 3.6 : 1 on a panel
-Round 4 never touched. It is the largest measured effect in the project, it
-requires no signal, and it has never been tested.
+The cheapest way to act on it: **switch the engine's book from equal weight to
+cap weight.** It requires no new signal, reduces nothing, and is the only
+change five rounds of work support. It will not beat the market; it stops the
+book losing to it by ~2.7 pp/yr.
 
-Everything else in five rounds has been optimising the smaller layer.
+If you want to test further, the open question is whether the cap-vs-equal gap
+is a permanent property or a feature of the 2016-2026 mega-cap decade. It is
+almost certainly partly the latter — `gates_lab` already found cap-weight
+beating every equal-weight book in this window, and Fernholz's diversity theorem
+says the reverse should hold when concentration mean-reverts.
 
 ## The honest bottom line
 
