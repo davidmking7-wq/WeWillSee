@@ -267,3 +267,64 @@ session it was published in rather than the session it can be traded in would
 have produced a large POSITIVE "Tetlock effect" roughly 20x the honest number
 and with the opposite sign. Any news study in this repo that cannot point at
 its shift is presumed to be measuring that +6.80.
+
+### H18 — does the equity premium accrue overnight, and does the SHIPPED H4 rule survive? (registered 2026-08-09, BEFORE any run)
+
+Mechanism (Lou-Polk-Skouras JFE 2019; Cliff-Cooper-Gulen 2008;
+Hendershott-Livdan-Roesch 2020): the overnight window is a closed-market risk
+transfer — inventory cannot be hedged, information accrues with no continuous
+price, and whoever carries it demands compensation, which is paid in the
+opening gap; the intraday window is a continuous competitive auction where
+market makers flatten, so it pays for liquidity provision, not for bearing
+overnight risk. If true, close-to-open captures nearly all of the long-run
+equity premium and open-to-close contributes ~zero.
+
+**Why this matters HERE specifically: H4 above ("enter at/near the CLOSE,
+never the open") is the only shipped rule in this repo with no local test.**
+It was adopted from this literature on 2026-08-08 and shipped as a banner in
+picks.xlsx. H18e/H18f are its first honest test.
+
+Lab: `scout/overnight_lab.py`. Universe = the 120 most liquid S&P 500 members
+AS OF 2016-01-04 by point-in-time membership (`scout/pit.py`; the same panel
+the news labs use, so BRCM/CELG/EMC/TWX/ESRX/MON/AET/PXD are in and no
+post-2016 addition is) plus SPY as benchmark only. Daily SIP bars, official
+opening and closing auction prices, split-repaired against Alpaca's own
+corporate-actions feed.
+
+**The shift:** legs are built with exactly one backward shift,
+`close.shift(1)` -> `prev_close`; overnight(t) = open(t)/prev_close(t) - 1 and
+intraday(t) = close(t)/open(t) - 1, and every portfolio applies
+`W.shift(1) * leg`, so a signal computed through close(t) earns its first
+return in the close(t)->open(t+1) gap.
+
+| # | date | hypothesis (mechanism, one sentence) | expected sign | status |
+|---|---|---|---|---|
+| H18a | 2026-08-09 | SPY's equity premium accrues in the close-to-open leg; the open-to-close leg contributes ~zero or negative. | ann(overnight) >> ann(intraday), intraday <= 0 | REGISTERED — not yet run |
+| H18b | 2026-08-09 | The same holds in the cross-section: an equal-weight book of the 120 names earns its premium overnight, and the pattern replicates in a large majority of individual names (a market-level result driven by 6 of 120 stocks is not the LPS mechanism). | EW overnight > intraday; >= 2/3 of names agree | REGISTERED — not yet run |
+| H18c | 2026-08-09 | LPS's ACTUAL factor claim: classic 12-1 winner-minus-loser momentum earns its spread overnight and gives part of it back intraday (institutional momentum demand is expressed at the open). | WML overnight > 0 > WML intraday | REGISTERED — not yet run |
+| H18d | 2026-08-09 | The repo's OWN gated v4 composite book (long-only top quintile of the eligible pool) likewise earns its excess overnight. | book overnight > intraday | REGISTERED — not yet run |
+| H18e | 2026-08-09 | **THE DECIDING ROW FOR H4.** On identical picks, a 42-session swing trade entered at close(t) beats the same trade entered at open(t+1), because the entry price forgone is exactly one overnight return, which the mechanism says is positive. Book size 2 (the shipped size). | mean(close-entry) - mean(open-entry) > 0, hit rate higher | REGISTERED — not yet run |
+| H18f | 2026-08-09 | H18e at book size 5 (sensitivity, reported whatever it says). | same sign as H18e | REGISTERED — not yet run |
+| H18g | 2026-08-09 | An overnight-only strategy (buy the close, sell the open, every session) survives realistic costs. Registered as the expected-NEGATIVE row: it trades a full round trip every day, so break-even round-trip cost equals the mean daily overnight return in bps. | break-even >= 5 bps to be tradeable | REGISTERED — expected to FAIL; RESEARCH-AGENDA.md already lists overnight-only trading as dead |
+
+Diagnostics registered alongside (reported in full, not searched over):
+price-only (`adjustment=split`) reruns of H18a/H18b to size how much of any
+overnight premium is simply the dividend, which lands in the overnight leg by
+construction; cost grid 0/5/10 bps round trip; both halves split at the median
+date on every row.
+
+Controls (nulls, not trials): (i) within-date LEG-LABEL permutation — a
+sign-flip randomisation of the overnight-minus-intraday difference, 10,000
+draws, with the SE-ratio print Rule 14 requires; (ii) moving-block bootstrap
+by date; (iii) for H18e/H18f a RANDOM-PICK control drawing the same number of
+names from the identical eligible pool (200 draws), which is what separates
+"momentum picks gap up at the open" from "the whole market drifts up
+overnight"; (iv) matched benchmarks — buy-and-hold close-to-close, and SPY.
+
+Failure conditions, stated in advance: H18a/H18b fail if the gap is inside the
+permutation null or flips sign across halves; H18c fails if the intraday leg
+of WML is not negative; **H18e fails — and takes the shipped H4 rule with it —
+if the close-entry advantage is not positive in both halves, or if it is
+statistically indistinguishable from the random-pick control** (in which case
+H4 is a market-wide drift statement, not a rule about picks); H18g fails if
+break-even round-trip cost is under 5 bps.
