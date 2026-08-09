@@ -11,9 +11,10 @@
 
 This is the current result. It uses next-day-open entries, 15 basis points of
 estimated round-trip trading friction, daily drawdown, a continuous one-buy /
-one-sell SPY comparison, and explicit data coverage. Alpaca returned 503 of
-504 requested current-S&P-500 symbols (99.80%); the missing symbol is recorded
-in `scout/backtest_results.json`.
+one-sell SPY comparison, and explicit data coverage. Alpaca returned all 504
+requested current-S&P-500 symbols. One name was silently omitted from the large
+batch and then recovered by the new individual-retry check; that recovery is
+recorded in `scout/backtest_results.json`.
 
 The best scanner version, v5, produced **+124.4%** compounded growth on the 53
 non-overlapping windows. Continuous SPY produced **+250.5%** over the same

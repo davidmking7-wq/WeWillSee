@@ -27,12 +27,12 @@
             "declared_artifact_status": null,
             "metadata": {
               "provenance_schema_version": 2,
-              "generated_at": "2026-08-09T22:35:15.230645+00:00",
-              "git_commit": "20bbb6cc7f289389c0d7e4f4c592c2a23611b364",
+              "generated_at": "2026-08-09T22:47:57.192529+00:00",
+              "git_commit": "2b8e209aade57039375f83378e590783272f10ce",
               "git_dirty": false,
-              "scout_source_hash": "a8e11de4b03d964d96efc7f8e1327b56fe00dc44c87d4eeffd829db4b3ff44a9",
+              "scout_source_hash": "e9a742a832dbe71c0c9f93a1a476e8571425f0b6dbb3fe1f8712ac848ab95c8b",
               "engine_config": "v5",
-              "data_fingerprint": "0137ee74b24419fa89b0127c94f678f87f71e09acda496265ace9098d2c208d3",
+              "data_fingerprint": "e5ff7a06e8b19ca0765b8c781a01f1e21ec95d676aec3affe4e7430a4f2c829f",
               "universe_mode": "sp500",
               "signal_span": [
                 "2017-07-10",
@@ -55,6 +55,7 @@
                       "chunk_number": 1,
                       "completed": true,
                       "errors": [],
+                      "phase": "batch",
                       "requested_symbols": [
                         "A",
                         "AAPL",
@@ -214,6 +215,7 @@
                       "chunk_number": 2,
                       "completed": true,
                       "errors": [],
+                      "phase": "batch",
                       "requested_symbols": [
                         "DXCM",
                         "EBAY",
@@ -373,6 +375,7 @@
                       "chunk_number": 3,
                       "completed": true,
                       "errors": [],
+                      "phase": "batch",
                       "requested_symbols": [
                         "MCK",
                         "MCO",
@@ -532,6 +535,7 @@
                       "chunk_number": 4,
                       "completed": true,
                       "errors": [],
+                      "phase": "batch",
                       "requested_symbols": [
                         "TTD",
                         "TTWO",
@@ -589,6 +593,17 @@
                         "ZTS"
                       ],
                       "returned_row_count": 131467
+                    },
+                    {
+                      "attempts": 1,
+                      "completed": true,
+                      "errors": [],
+                      "phase": "missing_symbol_recovery",
+                      "recovery_number": 1,
+                      "requested_symbols": [
+                        "DOW"
+                      ],
+                      "returned_row_count": 2553
                     }
                   ],
                   "coverage_schema_version": 1,
@@ -597,16 +612,14 @@
                     "name": "BACKTEST_MAX_MISSING_SYMBOL_FRACTION"
                   },
                   "feed": "sip",
-                  "missing_symbol_count": 1,
-                  "missing_symbol_fraction": 0.001984126984126984,
-                  "missing_symbols": [
-                    "DOW"
-                  ],
+                  "missing_symbol_count": 0,
+                  "missing_symbol_fraction": 0.0,
+                  "missing_symbols": [],
                   "observed_end": "2026-08-07T04:00:00+00:00",
                   "observed_start": "2016-06-13T04:00:00+00:00",
                   "provider": "alpaca",
-                  "requested_end": "2026-08-09T22:12:48.944163+00:00",
-                  "requested_start": "2016-06-12T22:32:48.944163+00:00",
+                  "requested_end": "2026-08-09T22:25:29.617658+00:00",
+                  "requested_start": "2016-06-12T22:45:29.617658+00:00",
                   "requested_symbol_count": 504,
                   "requested_symbols": [
                     "A",
@@ -1114,7 +1127,7 @@
                     "ZBRA",
                     "ZTS"
                   ],
-                  "returned_symbol_count": 503,
+                  "returned_symbol_count": 504,
                   "returned_symbols": [
                     "A",
                     "AAPL",
@@ -1259,6 +1272,7 @@
                     "DLTR",
                     "DOC",
                     "DOV",
+                    "DOW",
                     "DPZ",
                     "DRI",
                     "DTE",
@@ -1632,21 +1646,21 @@
                 "fields": {
                   "open": {
                     "rows": 2553,
-                    "columns": 503,
-                    "symbols_with_any_value": 503,
-                    "non_null_values": 1239336
+                    "columns": 504,
+                    "symbols_with_any_value": 504,
+                    "non_null_values": 1241889
                   },
                   "close": {
                     "rows": 2553,
-                    "columns": 503,
-                    "symbols_with_any_value": 503,
-                    "non_null_values": 1239336
+                    "columns": 504,
+                    "symbols_with_any_value": 504,
+                    "non_null_values": 1241889
                   },
                   "volume": {
                     "rows": 2553,
-                    "columns": 503,
-                    "symbols_with_any_value": 503,
-                    "non_null_values": 1239336
+                    "columns": 504,
+                    "symbols_with_any_value": 504,
+                    "non_null_values": 1241889
                   }
                 }
               },
@@ -1663,8 +1677,8 @@
               "missing_leg_policy": "total_loss"
             },
             "assumption_mismatches": {},
-            "declared_commit_source_hash": "a8e11de4b03d964d96efc7f8e1327b56fe00dc44c87d4eeffd829db4b3ff44a9",
-            "current_git_commit": "20bbb6cc7f289389c0d7e4f4c592c2a23611b364",
+            "declared_commit_source_hash": "e9a742a832dbe71c0c9f93a1a476e8571425f0b6dbb3fe1f8712ac848ab95c8b",
+            "current_git_commit": "2b8e209aade57039375f83378e590783272f10ce",
             "data_fingerprint_verified": true
           }
         ],
@@ -1816,10 +1830,10 @@
           "partial_legs": 0,
           "data_quality_legs": 0,
           "missing_or_partial_pct": 0.0,
-          "benchmark_membership_legs": 52710,
-          "benchmark_eligible_signal_close_legs": 51102,
+          "benchmark_membership_legs": 52815,
+          "benchmark_eligible_signal_close_legs": 51207,
           "benchmark_excluded_no_signal_close_legs": 1608,
-          "benchmark_signal_close_coverage_pct": 96.9493,
+          "benchmark_signal_close_coverage_pct": 96.9554,
           "benchmark_missing_entries": 0,
           "benchmark_partial_legs": 0,
           "benchmark_data_quality_legs": 0,
@@ -1878,6 +1892,7 @@
                 "chunk_number": 1,
                 "completed": true,
                 "errors": [],
+                "phase": "batch",
                 "requested_symbols": [
                   "A",
                   "AAPL",
@@ -2037,6 +2052,7 @@
                 "chunk_number": 2,
                 "completed": true,
                 "errors": [],
+                "phase": "batch",
                 "requested_symbols": [
                   "DXCM",
                   "EBAY",
@@ -2196,6 +2212,7 @@
                 "chunk_number": 3,
                 "completed": true,
                 "errors": [],
+                "phase": "batch",
                 "requested_symbols": [
                   "MCK",
                   "MCO",
@@ -2355,6 +2372,7 @@
                 "chunk_number": 4,
                 "completed": true,
                 "errors": [],
+                "phase": "batch",
                 "requested_symbols": [
                   "TTD",
                   "TTWO",
@@ -2412,6 +2430,17 @@
                   "ZTS"
                 ],
                 "returned_row_count": 131467
+              },
+              {
+                "attempts": 1,
+                "completed": true,
+                "errors": [],
+                "phase": "missing_symbol_recovery",
+                "recovery_number": 1,
+                "requested_symbols": [
+                  "DOW"
+                ],
+                "returned_row_count": 2553
               }
             ],
             "coverage_schema_version": 1,
@@ -2420,16 +2449,14 @@
               "name": "BACKTEST_MAX_MISSING_SYMBOL_FRACTION"
             },
             "feed": "sip",
-            "missing_symbol_count": 1,
-            "missing_symbol_fraction": 0.001984126984126984,
-            "missing_symbols": [
-              "DOW"
-            ],
+            "missing_symbol_count": 0,
+            "missing_symbol_fraction": 0.0,
+            "missing_symbols": [],
             "observed_end": "2026-08-07T04:00:00+00:00",
             "observed_start": "2016-06-13T04:00:00+00:00",
             "provider": "alpaca",
-            "requested_end": "2026-08-09T22:12:48.944163+00:00",
-            "requested_start": "2016-06-12T22:32:48.944163+00:00",
+            "requested_end": "2026-08-09T22:25:29.617658+00:00",
+            "requested_start": "2016-06-12T22:45:29.617658+00:00",
             "requested_symbol_count": 504,
             "requested_symbols": [
               "A",
@@ -2937,7 +2964,7 @@
               "ZBRA",
               "ZTS"
             ],
-            "returned_symbol_count": 503,
+            "returned_symbol_count": 504,
             "returned_symbols": [
               "A",
               "AAPL",
@@ -3082,6 +3109,7 @@
               "DLTR",
               "DOC",
               "DOV",
+              "DOW",
               "DPZ",
               "DRI",
               "DTE",
@@ -3455,21 +3483,21 @@
           "fields": {
             "open": {
               "rows": 2553,
-              "columns": 503,
-              "symbols_with_any_value": 503,
-              "non_null_values": 1239336
+              "columns": 504,
+              "symbols_with_any_value": 504,
+              "non_null_values": 1241889
             },
             "close": {
               "rows": 2553,
-              "columns": 503,
-              "symbols_with_any_value": 503,
-              "non_null_values": 1239336
+              "columns": 504,
+              "symbols_with_any_value": 504,
+              "non_null_values": 1241889
             },
             "volume": {
               "rows": 2553,
-              "columns": 503,
-              "symbols_with_any_value": 503,
-              "non_null_values": 1239336
+              "columns": 504,
+              "symbols_with_any_value": 504,
+              "non_null_values": 1241889
             }
           }
         },
@@ -3500,7 +3528,7 @@
     {
       "name": "start_phase",
       "status": "PASS",
-      "summary": "1.51 percentage-point spread across 6 start schedules",
+      "summary": "1.48 percentage-point spread across 6 start schedules",
       "details": {
         "phase_step": 7,
         "phases": [
@@ -3516,16 +3544,16 @@
             "phase": 1,
             "offset_tdays": 7,
             "windows": 53,
-            "avg_window_pct": 1.011,
-            "compounded_pct": 34.855132,
+            "avg_window_pct": 1.045,
+            "compounded_pct": 37.165972,
             "daily_max_drawdown_pct": -46.45
           },
           {
             "phase": 2,
             "offset_tdays": 14,
             "windows": 52,
-            "avg_window_pct": 1.299,
-            "compounded_pct": 58.440706,
+            "avg_window_pct": 1.261,
+            "compounded_pct": 55.466033,
             "daily_max_drawdown_pct": -49.87
           },
           {
@@ -3548,27 +3576,27 @@
             "phase": 5,
             "offset_tdays": 35,
             "windows": 53,
-            "avg_window_pct": 2.244,
-            "compounded_pct": 180.982528,
+            "avg_window_pct": 2.227,
+            "compounded_pct": 178.575284,
             "daily_max_drawdown_pct": -36.98
           }
         ],
-        "spread_pct_points": 1.515
+        "spread_pct_points": 1.481
       }
     },
     {
       "name": "random_pick_lift",
       "status": "FAIL",
-      "summary": "ranked return beat 70.0% of random controls; hit rate beat 92.0%",
+      "summary": "ranked return beat 73.0% of random controls; hit rate beat 91.5%",
       "details": {
         "dates": 105,
         "draws": 200,
         "actual_avg_end_pct": 2.116,
-        "random_avg_end_pct": 1.928,
+        "random_avg_end_pct": 1.861,
         "actual_hit_pct": 60.76,
-        "random_hit_pct": 57.89,
-        "return_percentile": 0.7,
-        "hit_percentile": 0.92
+        "random_hit_pct": 57.74,
+        "return_percentile": 0.73,
+        "hit_percentile": 0.915
       }
     },
     {
@@ -3581,10 +3609,10 @@
         "missing_entries": 0,
         "partial_legs": 0,
         "data_quality_legs": 0,
-        "benchmark_membership_legs": 52710,
-        "benchmark_eligible_signal_close_legs": 51102,
+        "benchmark_membership_legs": 52815,
+        "benchmark_eligible_signal_close_legs": 51207,
         "benchmark_excluded_no_signal_close_legs": 1608,
-        "benchmark_signal_close_coverage_pct": 96.949345,
+        "benchmark_signal_close_coverage_pct": 96.95541,
         "benchmark_missing_entries": 0,
         "benchmark_partial_legs": 0,
         "benchmark_data_quality_legs": 0,
@@ -3615,11 +3643,11 @@
           "spy_buy_and_hold_round_trips": 1,
           "spy_window_reset_growth_pct": 224.736197,
           "spy_window_reset_round_trips": 53,
-          "eqw_market_window_reset_growth_pct": 270.348364,
+          "eqw_market_window_reset_growth_pct": 269.103169,
           "eqw_market_window_reset_round_trips": 53,
           "strategy_daily_max_drawdown_pct": -40.67,
           "spy_window_reset_daily_max_drawdown_pct": -24.35,
-          "eqw_market_window_reset_daily_max_drawdown_pct": -23.86,
+          "eqw_market_window_reset_daily_max_drawdown_pct": -23.91,
           "daily_observations": 2227,
           "strategy_daily_equity": [
             1.0,
@@ -5861,11 +5889,11 @@
           "spy_buy_and_hold_round_trips": 1,
           "spy_window_reset_growth_pct": 199.919209,
           "spy_window_reset_round_trips": 53,
-          "eqw_market_window_reset_growth_pct": 242.045603,
+          "eqw_market_window_reset_growth_pct": 240.895569,
           "eqw_market_window_reset_round_trips": 53,
           "strategy_daily_max_drawdown_pct": -41.29,
           "spy_window_reset_daily_max_drawdown_pct": -24.91,
-          "eqw_market_window_reset_daily_max_drawdown_pct": -23.97,
+          "eqw_market_window_reset_daily_max_drawdown_pct": -24.02,
           "daily_observations": 2227,
           "strategy_daily_equity": [
             1.0,

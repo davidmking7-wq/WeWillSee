@@ -21,11 +21,13 @@ be run honestly with the available historical news and membership data.
 
 - Raw result: `scout/backtest_results.json`
 - Audit result: `experiments/results/backtest_audit_sp500.json`
-- Engine source commit recorded by the artifact: `20bbb6c`
+- Engine source commit recorded by the final artifact: `2b8e209`
 - Market data: adjusted Alpaca SIP daily bars
 - Requested coverage: 504 symbols
-- Returned coverage: 503 symbols (99.8016%)
-- Missing symbol: DOW
+- Returned coverage: 504 symbols (100%)
+- Batch recovery: DOW was omitted from the large batch and successfully
+  recovered by an automatic one-symbol retry
+- Missing symbols after recovery: none
 - Bar span: 2016-06-13 through 2026-08-07
 - Signal span: 2017-07-10 through 2026-05-18
 - Rule: five picks approximately every 21 trading days, held 42 trading days
@@ -58,7 +60,7 @@ be run honestly with the available historical news and membership data.
 | v5 scanner growth | +124.4% |
 | Continuous SPY growth | +250.5% |
 | SPY advantage | +126.0 percentage points |
-| Equal-weight market with window resets | +242.0% |
+| Equal-weight market with window resets | +240.9% |
 | v5 daily maximum drawdown | -41.3% |
 
 Verdict: FAIL. The scanner made money historically but did much worse than the
@@ -68,12 +70,12 @@ simple market holding, with a deep fall along the way.
 
 | Check | Result | Plain meaning |
 |---|---|---|
-| Data coverage | PASS | 503/504 names returned; the one omission is disclosed |
+| Data coverage | PASS | All 504 names returned after one automatic individual retry |
 | Registered-trial count | PASS | At least 117 prior hypothesis rows were counted |
-| Start-date sensitivity | PASS | Six starting schedules varied by 1.51 points |
+| Start-date sensitivity | PASS | Six starting schedules varied by 1.48 points |
 | Missing/delisted selected positions | PASS | No selected leg vanished or was silently dropped in this run |
 | Training/test separation | FAIL | Two training outcomes extended into the test period |
-| Random-pick comparison | FAIL | Return beat 70% and hit rate beat 92% of random controls; not strong enough for the locked bar |
+| Random-pick comparison | FAIL | Return beat 73% and hit rate beat 91.5% of random controls; not strong enough for the locked bar |
 | Trading friction and SPY | FAIL | Friction reduced results by 18.57 points and net growth lagged SPY by 126.04 points |
 | Current-member bias | WARN | Current-member average differed from the older point-in-time artifact by +0.65 points per window |
 
