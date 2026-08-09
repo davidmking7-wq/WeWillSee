@@ -202,23 +202,16 @@ out to be very nearly a no-op.
    is a dollar-volume sort wearing a different name, which is exactly why the
    invdv row tracks it and why the gate variable is the honest object of study.
 
-5. THE GATE, WHICH WAS THE POINT: IT BARELY BINDS, AND WHAT MOVEMENT THERE IS
-   FAVOURS KEEPING IT. Replaying the shipped v5 engine with the gate at $10M,
-   $1M and $0, 112 monthly entries, 5 picks, per-pick Corwin-Schultz costs:
-   net +1.97% / +1.82% / +1.77% per 42-session window against SPY's +2.57%.
-   Removing the gate widens the post-veto pool from 537 to 631 names and
-   raises the small-cap share of picks from 23.9% to 28.9%, but the median
-   pick still trades $75M a day and only 8.6% of picks fall below $10M -
-   because momentum, the 52-week high and the volatility band already select
-   liquid names. Ranking ONLY inside the discarded pool (the names the gate
-   deletes) gives net +1.74%/window against SPY's +1.72% in those windows,
-   with a median pick trading $6.3M/day - and that is measured on the MOST
-   survivorship-contaminated cohort in the panel, i.e. under conditions
-   maximally favourable to the no-gate case. **The gate is neither protective
-   nor restrictive. It is close to a no-op, and there is no case for removing
-   it.** Halves disagree on the sign of the difference (h1 favours the gate
-   +2.27 vs +1.68 gross, h2 favours no gate +3.10 vs +3.30), which is what
-   noise looks like.
+5. THE ENGINE-GATE REPLAY IS RETRACTED PENDING A CLEAN RERUN. The historical
+   numbers in this section used a signal-close entry for SPY while the picks'
+   corrected implementation now fills at the following open; the old
+   ``beat_spy`` comparison also used gross picks instead of returns after the
+   stated Corwin-Schultz cost. The code below now gives picks and SPY the same
+   next-open clock and compares costed picks with SPY, but no corrected data
+   artifact exists yet. Therefore the old $10M/$1M/$0 figures and the claim
+   that the gate is a no-op must not be cited. The cross-sectional
+   survivorship rejection in points 1-4 is a separate test and remains the
+   historical result recorded by this file.
 
 6. THE CAPACITY ASYMMETRY IS REAL - IT JUST HAS NOTHING TO BUY. The most
    illiquid quintile of the S&P 1500 still trades $5.92M a day at the median;
@@ -254,9 +247,10 @@ out to be very nearly a no-op.
    correction that removes the return.
 
 TRIAL COUNT: 46 registered cells and variants (24 universe x signal x window
-x horizon cells, 7 robustness variants, 4 engine gate configurations, 3 cost
-models, 2 point-in-time book cells, 2 guard-sensitivity runs, 2 positive
-controls, 2 null controls), all reported above and in liquidity_results.json.
+x horizon cells, 7 robustness variants, 4 now-invalidated engine-gate
+configurations, 3 cost models, 2 point-in-time book cells, 2 guard-sensitivity
+runs, 2 positive controls, 2 null controls). Invalidated trials remain in the
+count; their old engine-gate numbers are not evidence and require regeneration.
 """
 from __future__ import annotations
 
@@ -706,7 +700,7 @@ def engine_gate_test(bars: dict, cs_panel: np.ndarray, dv20: np.ndarray,
 
     Costs are charged per pick as its OWN Corwin-Schultz spread at the entry
     date (one round trip), not a flat rate."""
-    from . import backtest, signals
+    from . import backtest, execution, signals
     o = bars["open"][keep]
     c = bars["close"][keep]
     v = bars["volume"][keep]
@@ -714,8 +708,11 @@ def engine_gate_test(bars: dict, cs_panel: np.ndarray, dv20: np.ndarray,
     h = config.HORIZON_TDAYS
     frames = signals.feature_frames(o, c, v)
     colpos = {s: j for j, s in enumerate(cols)}
-    positions = list(range(270, len(idx) - h - 1, step))
-    spy = c[MARKET]
+    positions = list(range(270, len(idx) - h, step))
+    zero_shared_costs = execution.ExecutionAssumptions(
+        entry_timing="next_open", spread_bps=0,
+        slippage_bps=0, commission_bps=0,
+    )
     out = []
     saved = config.MIN_DOLLAR_VOL
     try:
@@ -737,12 +734,20 @@ def engine_gate_test(bars: dict, cs_panel: np.ndarray, dv20: np.ndarray,
                 if len(snap) < MIN_ELIGIBLE:
                     continue
                 top = list(snap.index[:n_picks])
-                oc = backtest.window_outcomes(c, pos, top, h)
+                oc = backtest.window_outcomes(
+                    c, pos, top, h, open_prices=o,
+                    assumptions=zero_shared_costs,
+                )
                 picks = [(s, oc[s]) for s in top if s in oc]
                 if not picks:
                     continue
-                spy_r = float(spy.iloc[pos + h] / spy.iloc[pos] - 1) \
-                    if pos + h < len(idx) else np.nan
+                # Match the picks' signal-close -> next-open convention.  The
+                # stock-specific Corwin-Schultz cost is deducted below, while
+                # SPY remains gross here, making the net comparison conservative.
+                spy_sim = execution.simulate_window(
+                    o, c, pos, [MARKET], h, zero_shared_costs,
+                )
+                spy_r = float(spy_sim["equity"][-1] - 1)
                 for s, p in picks:
                     j = colpos[s]
                     rows.append(dict(
@@ -783,7 +788,10 @@ def summarise_gate(rows: pd.DataFrame, gate: float, seg: dict,
         cost_pct=100 * float(per_date["cs"].mean()),
         net_pct=100 * float(net.mean()),
         spy_pct=100 * float(per_date["spy"].mean()),
-        beat_spy_pct=100 * float((per_date["end"] > per_date["spy"]).mean()),
+        beat_spy_pct=100 * float((net > per_date["spy"]).mean()),
+        beat_spy_gross_pct=100 * float(
+            (per_date["end"] > per_date["spy"]).mean()
+        ),
         small_share_pct=100 * float(
             r["sym"].map(lambda s: seg.get(s, "large") == "small").mean()),
         mid_share_pct=100 * float(

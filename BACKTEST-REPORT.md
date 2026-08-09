@@ -1,5 +1,12 @@
 # Stock Scout — Final Backtest Report (engines v1 / v3 / v4 / v5)
 
+> **RETRACTED PRE-CORRECTION ARTIFACT — DO NOT CITE.** The numbers below were
+> produced before next-open execution, explicit costs, non-reweighted missing
+> companies, continuous SPY, daily drawdown, and clean-code/data provenance
+> were enforced. They remain only so `python -m scout.audit` can detect the old
+> claims. A fresh result may replace this banner only after the strict audit
+> passes from a clean commit.
+
 Run 2026-08-08 on 10 years of dividend-adjusted Alpaca SIP daily bars,
 via `python -m scout.backtest` (machine-readable results:
 `scout/backtest_results.json` for the current-S&P-500 universe,

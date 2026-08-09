@@ -1,4 +1,6 @@
 {
+ "_artifact_status": "STALE_PRE_CORRECTNESS_FIX_DO_NOT_CITE",
+ "_artifact_warning": "Regenerate only from a clean committed engine with next-open timing, declared costs, explicit missing-data handling, and daily drawdown. scout.audit must pass before any claim is reused.",
  "span": [
   "2017-07-10",
   "2026-05-18"

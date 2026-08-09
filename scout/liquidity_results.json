@@ -1,4 +1,6 @@
 {
+ "_artifact_status": "STALE_EXECUTION_ASSUMPTIONS_DO_NOT_CITE_ENGINE_GATE",
+ "_artifact_warning": "The engine-gate rows used mismatched signal-close/next-open timing and a gross beat-SPY comparison. The corrected code requires a fresh data run. Cross-sectional historical rows are retained, but engine-gate conclusions are retracted.",
  "params": {
   "windows": [
    21,
