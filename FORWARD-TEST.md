@@ -49,6 +49,13 @@ Then run the test under these rules:
    must pass the exact metric written in the contract.
 6. Publish every result, including failures, missing prices, and delistings.
 
+The minimum calendar span is **six months**, with **twelve months the default**.
+There is no early PASS because the first few observations look good. If the
+frozen contract requires more time or more completed outcomes, that longer gate
+wins; six or twelve months is then only an interim checkpoint. A valid failure
+may be recorded when its prewritten failure condition is met, but the rule may
+not be replaced mid-test.
+
 Possible outcomes are **PASS**, **FAIL**, or **INCONCLUSIVE**. Only PASS can
 proceed to the next gate. “Promising” is not PASS.
 

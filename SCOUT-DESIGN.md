@@ -322,8 +322,9 @@ paper-forward and `main` promotion rules in `FORWARD-TEST.md`.
   reintroduced as an active path.
 - A backtest winner may live in a lab or disabled research branch. It may not
   become current `main` behavior until its exact rules are frozen, tracked on
-  genuinely future data in paper only, and judged against the success rule
-  written before the test began.
+  genuinely future data in paper only for at least six months (twelve months
+  by default, or longer if its frozen contract says so), and judged against the
+  success rule written before the test began.
 - Passing that merge gate changes research behavior only. It never grants
   permission for live execution.
 

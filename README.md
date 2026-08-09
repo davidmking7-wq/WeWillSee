@@ -65,7 +65,9 @@ signals can never silently reuse probability tables fitted to old rankings.
 
 Backtests are not permission to trade. Any change that alters rankings,
 probabilities, portfolio construction, or sell guidance must first run as a
-frozen, paper-only forward test on genuinely future data. Only a candidate
+frozen, paper-only forward test on genuinely future data for at least six
+months (twelve months by default, or longer when its locked contract requires
+it). Only a candidate
 that passes the success rule written down before that test may be considered
 for `main`. Even then, merging it does **not** authorize live execution.
 

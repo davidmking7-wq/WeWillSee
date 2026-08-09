@@ -76,6 +76,9 @@ begin, and that cost must be applied to every reported result. Do not skip or
 replace a row after seeing a gap. Older scorecard or backtest rows may use a
 historical reference price; they are not executable forward evidence.
 
+Track a frozen candidate for at least six months, with twelve months the
+default. If its written contract requires longer, the longer gate wins.
+
 A strategy may become current research behavior only after a frozen
 paper-forward PASS and the main-branch merge gate in FORWARD-TEST.md. Passing
 those gates still does not allow live execution.
