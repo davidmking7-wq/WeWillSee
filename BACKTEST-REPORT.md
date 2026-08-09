@@ -1034,3 +1034,178 @@ measures the contamination such a leak produces (+57 to +127 bps).
 3. **Trial count.** These five labs ran 32 + 18 + 24 + 18 + 58 = 150 variants.
    The repo's running N is now roughly 340, which raises the deflated-Sharpe
    bar for everything that follows.
+
+### 4. Volatility forecasting: the forecast wins, the trade does not (H20)
+
+The only CONFIRMED row in Round 3, and it is confirmed on one of its two
+halves. QLIKE on 1,861 dates, 52,453 symbol-sessions, 29 names:
+
+| forecaster | QLIKE (lower better) |
+|---|---|
+| **HAR on log realised variance (5-min)** | **0.3971** |
+| HAR pooled | 0.4017 |
+| EWMA on realised variance | 0.4556 |
+| EWMA on daily squared returns | 0.4957 |
+| **`growth.blended_vol` (the incumbent)** | **0.4980** |
+| random walk on RV | 0.5583 |
+| unconditional mean | 0.6368 |
+| date-shuffled RV (control) | 0.6951 |
+
+Best model beats the incumbent by **20.3% of QLIKE, t = -6.46, in 29 of 29
+symbols and in both halves.** MSE agrees.
+
+**The mechanism row (H20c) is the one that matters.** Hold the estimator and
+lambda fixed at 0.94 and swap only the INPUT — 5-minute realised variance for
+daily squared returns: -0.0401, t = -6.83, halves -0.0386/-0.0415. The daily
+EWMA beats the incumbent in only 17 of 29 names; the RV-fed version wins
+29 of 29. So the gain is the intraday DATA, not a badly specified incumbent.
+
+The date-shuffle control lands the forecast **worse than the expanding sample
+mean** (+0.0583, t = +4.42). Destroying the timing destroys the skill — the
+exact test H15's attention signal could not survive.
+
+**The payoff is rejected.** Volatility-targeting SPY with each forecast:
+
+| book | Sharpe | halves | maxDD (vol-matched) | break-even |
+|---|---|---|---|---|
+| buy and hold | 0.8631 | 0.601 / **1.322** | -33.84% | — |
+| voltgt, incumbent | 0.8857 | 0.644 / 1.138 | -25.16% | 12.5 bps |
+| voltgt, EWMA-RV | 0.9257 | 0.646 / 1.218 | -27.71% | 34.5 bps |
+| voltgt, HAR-log | 0.9587 | 0.811 / 1.109 | -26.72% | 7.0 bps |
+
+Every second half is BELOW buy-and-hold's 1.322 — H11's exact failure shape.
+All Sharpe differences have bootstrap CIs straddling zero and sit inside the
+shuffled-leverage null (76th-90th percentile). At 10 bps the best forecast
+underperforms outright.
+
+**The tell, reported by the lab against its own result:** adding one MORE day
+of lag RAISES the best book's Sharpe from 0.959 to 1.044 and its second half
+from 1.109 to 1.249. A real timing edge degrades when lagged; this improves.
+The +0.096 point estimate is noise and was not defended.
+
+Two structural ceilings worth keeping: only **59.9% of close-to-close variance
+is open-to-close** — the rest is the overnight gap, permanently a
+one-observation estimate — and vol targeting de-levers into volatility, which
+is structurally short the case where conditional mean and conditional variance
+move together. No variance model fixes that, because only one of the two is
+being forecast.
+
+**What it is worth.** Not a strategy. The repo uses daily-close volatility in
+three places that are risk management rather than timing: `VOL_BAND` and
+`VETO_VOL_DECILE` in signals.py, `SELL_DISASTER_SIGMA x sigma42` for the
+per-stock disaster level, and the volatility tercile in calibration. A 20%
+better variance forecast improves all three without betting on it.
+
+### 5. Intraday momentum: the mechanism names the wrong half hour (H19)
+
+Gao-Han-Li-Zhou's rule — first half hour predicts last half hour — has the
+**wrong sign on all three instruments**: -0.815 / -0.497 / -0.273 bps per
+session on SPY / QQQ / IWM, hit rates 48.3 / 49.1 / 49.1% (below a coin).
+The paper's own regression fails to replicate: b = -0.061 / -0.011 / -0.031
+against their reported +0.05 at t 3-5.
+
+**The term structure refutes it without needing a significance threshold.**
+Hold sign(first half hour) through each of the twelve later half-hour bins:
+
+| bin | 11:00 (peak) | ... | **15:30-16:00** |
+|---|---|---|---|
+| SPY / QQQ / IWM, bps | +1.25 / +1.02 / +1.09 | mildly positive | **-0.81 / -0.50 / -0.27** |
+
+Continuation is mildly positive across the middle of the session, and the
+closing half hour — the one the mechanism names — is the **only bin negative
+on all three instruments**. It is the worst of the thirteen.
+
+The mid-day variant is the only survivor and it is the opposite claim:
+sign(r1) -> 10:00-15:30 earns +2.06 / +4.91 / +3.93 bps, positive in both
+halves on all three. That is generic same-day continuation smeared across the
+session — the autocorrelation alternative — not a close-specific effect. Its
+break-even is 2.07 / 4.93 / 3.96 bps against a 5-10 bps band, so untradeable
+regardless. 61 variants.
+
+### 6. Post-earnings drift: priced in two days (H26)
+
+The repo rejected PEAD once already (H2b) sorted on the PRICE REACTION. H26
+is the honest version — sorted on the actual earnings surprise (SUE), which
+required fundamentals the repo did not have until this round.
+
+**Strict point-in-time SUE deciles**, entry at close of the session AFTER the
+later of the 8-K date and the filing date: D10-D1 = +11.11 / -2.46 / +21.19 /
+-1.58 bps at h = 5/21/42/63, t = +0.77 / -0.07 / +0.45 / -0.03, sign flipping
+across halves at three of four horizons. 41,378 ranked events.
+
+**The positive control is what makes this interesting.** Mean 2-day
+announcement reaction by SUE decile:
+
+| decile | 1 | 2 | 5 | 8 | 10 | D10-D1 |
+|---|---|---|---|---|---|---|
+| bps | -117.0 | -89.4 | +42.8 | +117.7 | +186.1 | **+303.1** (t **+15.43**) |
+
+That is the only t-statistic in the entire study clearing the repo's t>3 bar,
+and it sits on the row saying **the surprise is already in the price**.
+
+Event-time cumulative abnormal return confirms it: **89% of the entire
+63-session spread is already paid by the close of the day after the
+announcement.** The residual ~39 bps over three months is inside every error
+bar in the file.
+
+The firm-level date shuffle finishes it: the single cell carrying the
+registered sign (announcement-anchored h=21, +51.36 bps, positive in both
+halves) has a shuffle null of +27.88 — **54% of it survives destroying its
+timing completely.**
+
+Two further notes. H2b replicated to within 0.06pp (+5% reactors end +1.88%,
+-5% reactors +1.94%), so the pipelines agree. And the size pattern **inverts**
+the documented one: what little drift exists is in LARGE caps here
+(h=63 liquidity-HIGH +153.41, t=+1.73) and negative down-cap, the opposite of
+the literature. 65 variants.
+
+**A data-integrity finding larger than the hypothesis.** With frozen-quote
+retirement switched off, the unwinsorised h=63 spread reads **+896.68 bps**
+(halves +2053 / -274) against the clean run's -3.16. Delisted and halted names
+printing an unchanged close manufacture an enormous fake drift. This is a
+THIRD price defect beyond the unadjusted splits and the spin-offs: 23 symbols
+were dropped at their first run of 10 identical closes, plus 377 zero-volume
+sessions blanked. Any study on this data must retire frozen quotes explicitly.
+
+### 7. Net share repurchase: the one signal still standing (H22) — INCONCLUSIVE
+
+Point-in-time S&P 500, 2,664 sessions, mean 490 eligible names.
+
+| | h=42 | CI | NW t | halves |
+|---|---|---|---|---|
+| **net repurchase** (-1 x 12m log change in shares) | **+1.748 bps/day** | [-0.151, +3.720] | 1.81 | +2.009 / +1.488 |
+| gross profit / assets | -0.412 bps/day | [-3.079, +2.099] | -0.298 | +0.984 / -1.807 |
+
+Gross profitability is **rejected** — wrong sign, halves flip, and the
+high-profitability quintile underperformed its own pool (12.59% vs 14.76%/yr).
+
+Net repurchase is the only signal in three rounds with all of the following at
+once, and it still does not clear the bar:
+
+- **Not beta** (Rule 13): beta -0.001, alpha 4.42%/yr. Contrast H25, where the
+  entire effect was beta.
+- **Monotone in horizon**: +1.631 / +1.748 / +1.819 at h = 21 / 42 / 126.
+- **Same sign in both halves**, and it clears its placebo null (z = 2.80).
+- **Genuinely independent of the engine**: Spearman to raw 12-1 momentum
+  **-0.015**, to the gated v5 composite **+0.010**, over 113 monthly dates —
+  an order of magnitude inside the 0.2 independence threshold. This is the
+  first non-price signal ever tested here and it is orthogonal.
+- **Cost-insensitive**: the signal is quarterly, so turnover is 0.0131x/day
+  and the **break-even round-trip cost is 267 bps against the 10 charged** —
+  27x headroom. Nothing else in this repo has that property.
+
+Why it is INCONCLUSIVE rather than confirmed:
+
+1. **t = 1.81 against a t>3 bar.** On 56 strictly non-overlapping 42-session
+   windows it is +0.685%/window at t = 1.587, positive in 57.1%. Deflated
+   Sharpe 0.470.
+2. **It dies exactly where the engine lives.** Double-sorted, the net-repurchase
+   spread is +94.4 / +88.2 / **+13.0** bps across momentum terciles T1/T2/T3 —
+   the effect is gone in the top momentum tercile, which is precisely where the
+   v5 gates confine the engine. An independent signal that vanishes inside your
+   own eligible pool is not usable as an overlay on that pool.
+3. Q5 net 17.12%/yr at Sharpe 0.819 against SPY's 15.82% at 0.884 — beats on
+   return, **loses on Sharpe**, which was the pre-registered failure condition.
+
+Verdict: the most promising thing found in three rounds, and still not
+shippable. It earns a live-tracking slot, not a weight. 58 variants.

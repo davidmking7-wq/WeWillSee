@@ -179,24 +179,25 @@ printed by `report()` and stored in intraday_momentum_results.json.)
    breaks even at 0.98 / 1.02 / 0.38 bps. This repo calls a sign flip noise.
 
 6. FIFTY SINGLE LARGE CAPS DO NOT RESCUE IT EITHER. The equal-weight book
-   earns **-0.53 bps/session (NW t = -1.12)**, block-bootstrap CI
-   [-1.47, +0.20], negative in both halves (-0.69 / -0.37), hit 48.55%.
-   Only **13 of 50** names are positive and **5 of 50** are positive in both
-   halves. The cross-sectional top-third-minus-bottom-third book is -0.80 bps
-   (t = -1.82), negative in both halves. The prev-day placebo is -0.18 bps.
-   Read plainly: negative everywhere, significant nowhere.
+   earns **-0.54 bps/session (NW t = -1.16)**, block-bootstrap CI
+   [-1.49, +0.20], negative in both halves (-0.76 / -0.33), hit 48.22%.
+   Only **14 of 50** names are positive and **5 of 50** are positive in both
+   halves. The cross-sectional top-third-minus-bottom-third book is -0.91 bps
+   (t = -2.08), negative in both halves (-1.64 / -0.18). The prev-day placebo
+   is -0.22 bps. Read plainly: negative everywhere, significant nowhere at
+   this repo's t > 3 bar.
    RULE 14, APPLIED TO THIS LAB'S OWN FIRST DRAFT — the methodological point
    of the round. The obvious null here (an independent coin per name, then
-   average) puts the book **3.5 SD below it at p = 1.000** and would have
+   average) puts the book **3.7 SD below it at p = 1.000** and would have
    licensed a confident "significantly negative". That null is WRONG and its
    SE-ratio says so: it diversifies away the market factor that the signs and
    the returns SHARE — on most sessions the whole market's first half hour
-   points one way — so it comes out at **SE-ratio 0.32** (three times tighter
-   than the book's own Newey-West SE of 0.472 bps). `book_nulls` therefore
+   points one way — so it comes out at **SE-ratio 0.31** (three times tighter
+   than the book's own Newey-West SE of 0.468 bps). `book_nulls` therefore
    also runs `rowshuf`, which permutes whole CROSS-SECTIONS across dates so
-   the within-date sign correlation survives; it widens to SE-ratio 0.58 and
+   the within-date sign correlation survives; it widens to SE-ratio 0.59 and
    still under-states, so **the number actually quoted is the Newey-West t of
-   -1.12 and a CI that straddles zero**, not any permutation p-value. The
+   -1.16 and a CI that straddles zero**, not any permutation p-value. The
    self-test reproduces the failure mode on demand on a synthetic
    market-correlated panel (SE-ratio 1.05 for rowshuf vs 0.29-0.30 for the
    per-name nulls).
@@ -204,7 +205,7 @@ printed by `report()` and stored in intraday_momentum_results.json.)
 7. COSTS WOULD HAVE KILLED IT EVEN IF THE SIGN HAD BEEN RIGHT — the point
    the task made in advance. At 252 round trips a year the SPY row loses
    **-4.6% / -7.0% / -13.7% a year at 1 / 2 / 5 bps** and the 50-stock book
-   loses **-3.8% / -6.2% / -13.1% / -23.4% at 1 / 2 / 5 / 10 bps**. The
+   loses **-3.9% / -6.3% / -13.1% / -23.4% at 1 / 2 / 5 / 10 bps**. The
    break-even round-trip cost of every close-specific row in the study is
    NEGATIVE, so there is no cost low enough to make it work — and even the one
    positive row (mid-day) breaks even at 2.1-4.9 bps, under the band.

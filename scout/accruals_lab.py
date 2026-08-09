@@ -502,6 +502,7 @@ def run_universe(name: str, acc: pd.DataFrame, close: pd.DataFrame,
             q5=np.nanmean(q[:, N_Q - 1]) * 100, pool=np.nanmean(pool) * 100,
             spread=b["mean"] * 100, lo=b["lo"] * 100, hi=b["hi"] * 100, t=b["t"],
             q1_excess=be["mean"] * 100, t_excess=be["t"],
+            q5_excess=float(np.nanmean(q[:, N_Q - 1] - pool)) * 100,
             half1=float(np.mean(spread[idx[:half]])) * 100,
             half2=float(np.mean(spread[idx[half:]])) * 100,
             ph_min=float(np.nanmin(ph)) * 100, ph_max=float(np.nanmax(ph)) * 100,
@@ -976,9 +977,9 @@ def main() -> None:
                               badf, rng)
     _hdr("PRIMARY: full table")
     print(res1[["h", "n_dates", "n_names", "q1", "q2", "q3", "q4", "q5", "pool",
-                "spread", "lo", "hi", "t", "q1_excess", "t_excess", "half1",
-                "half2", "turn_lo", "turn_hi"]].to_string(index=False,
-                                                          float_format=_fmt))
+                "spread", "lo", "hi", "t", "q1_excess", "t_excess", "q5_excess",
+                "half1", "half2", "turn_lo", "turn_hi"]].to_string(
+                    index=False, float_format=_fmt))
     print("\nq1..q5/pool are RAW bucket returns in % over the h-session hold")
     print("(they contain the market; spread and q1_excess do not).")
     print("MONOTONICITY IS PART OF THE HYPOTHESIS: Sloan's accrual effect is a")
@@ -987,6 +988,11 @@ def main() -> None:
     print("different (and weaker) claim than a monotone sort.")
     print("q1_excess = CONTROL (d), the matched benchmark: the LOW-accrual")
     print("quintile minus the eligible-pool mean = the long-only claim.")
+    print("q5_excess = the SAME thing for the HIGH-accrual quintile, and it is")
+    print("the leg Sloan's mechanism is actually about. Sloan says high-accrual")
+    print("firms are OVER-VALUED, so q5_excess must be NEGATIVE. If the whole")
+    print("spread sits in q1_excess, the result is 'one extreme bucket did well',")
+    print("which is not the hypothesis that was registered.")
 
     _hdr("RULE 9: the entry-phase sweep (H7a quoted the luckiest of six)")
     print("A monthly formation with an h-session hold hides `stride` disjoint")
@@ -1300,6 +1306,15 @@ def main() -> None:
           .to_string(index=False, float_format=_fmt))
     print("\nshares are % of all symbol-date slots in that bucket, h=42, sp1500.")
 
+    av = accs.to_numpy()
+    print("\naccrual level actually held in each bucket (NI - CFO over average")
+    print("assets; the sign convention is Sloan's, so negative = cash exceeds")
+    print("reported earnings):")
+    for qi in range(N_Q):
+        v = av[(lab42 == qi) & np.isfinite(av)]
+        print(f"  Q{qi + 1}  median {np.median(v):+7.3f}   mean {v.mean():+7.3f}   "
+              f"p10 {np.percentile(v, 10):+7.3f}  p90 {np.percentile(v, 90):+7.3f}")
+
     mcap = shares.reindex(index=form, columns=tickers) * closef.loc[form]
     lm = np.log(mcap.to_numpy())
     print("\nmedian log market cap by bucket (a size bet would show here):")
@@ -1367,7 +1382,7 @@ def main() -> None:
 
     # ---------------------------------------------------------- machine-readable
     out = dict(
-        generated=pd.Timestamp.utcnow().isoformat(),
+        generated=pd.Timestamp.now("UTC").isoformat(),
         registered_sign="LOW accruals minus HIGH accruals is POSITIVE",
         primary_h=PRIMARY_H, cost_bps=COST_BPS,
         form_start=str(form[0].date()), form_end=str(form[-1].date()),

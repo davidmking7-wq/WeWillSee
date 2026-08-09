@@ -89,9 +89,52 @@ CONTROLS (four, none optional)
            14 requires so its anti-conservatism is visible
   bench    equal weight of the eligible pool, and SPY
 
-VERDICT (measured 2026-08-09; every number below is printed by __main__)
-  See scout/hypotheses.md H22a-H22g. Headline is in the RESULT block at the
-  bottom of `report()`, filled in from the actual run.
+VERDICT (measured 2026-08-09; every number here is printed by __main__)
+  2,664 sessions, 2016-01-04 .. 2026-08-07, mean 490 eligible names per date.
+
+  H22b/H22d/H22e/H22f REJECTED. H22c CONFIRMED. H22a NOT PROVEN — and the
+  reason is sample size, not sign.
+
+  H22a  net repurchase, h=42: +1.748 bps/day, block-bootstrap CI [-0.151,
+        +3.720], NW t = 1.81. Both halves agree (+2.009 / +1.488), the sign is
+        monotone in horizon (+1.631 / +1.748 / +1.819 at 21/42/126), Rule 13
+        finds no beta (-0.001, alpha 4.42%/yr), the PLACEBO null is cleared
+        (real +1.748 vs -0.050 +/- 0.643, z = 2.80), turnover is 0.013x/day so
+        the break-even round-trip cost is 267 bps against the 10 bps charged,
+        and Q5/Q1/pool annualise at 17.21 / 12.81 / 14.36%. Everything about it
+        is right EXCEPT that it is not distinguishable from zero: on the honest
+        effective sample — 56 NON-OVERLAPPING 42-session windows — it earns
+        +0.685% per window at t = 1.59, positive in 57% of them. The repo's
+        standalone bar is t > 3. DSR with the registry's N=14 is 0.470.
+  H22b  GP/AT, h=42: -0.412 bps, WRONG SIGN, CI [-3.079, +2.099], and the
+        halves flip (+0.984 / -1.807). Inside the placebo null (z = -0.40,
+        p = 0.67). Rejected on its own pre-registered failure condition.
+  H22c  THE DECIDING ROW, and the one durable result. Spearman to 12-1
+        momentum is -0.015 (net repurchase) and +0.047 (GP/AT); to the GATED v5
+        composite, computed with signals.composite_at exactly as the scan
+        computes it, +0.010 and +0.042. These are ORTHOGONAL to everything this
+        repo owns — the first signal here that is not a function of past prices.
+        But read the double sort before celebrating: the net-repurchase spread
+        is +94.4 / +88.2 / +13.0 bps across momentum terciles T1/T2/T3. It is
+        real where momentum is weak and GONE where momentum is strong — which
+        is precisely the region the v5 gates (SMA200, positive 6-month return)
+        confine the engine to. Orthogonal and inaccessible at the same time.
+  H22d  combo +1.272 < net repurchase alone +1.748. Fails.
+  H22e  Q5 net 17.12%/yr at Sharpe 0.819 vs SPY 15.82% at Sharpe 0.884. Beats
+        SPY on RETURN, loses on Sharpe. Fails as pre-registered.
+  H22f  derived-GP and direct-tag GP agree (-0.412 vs -0.306), so the
+        Revenue-minus-COGS derivation is not what killed H22b.
+  H22g  21 monthly phases: mean +1.756, sd 0.049, min +1.655, max +1.846
+        against a phase-pooled +1.748. Phase choice is worth 2.8% of the
+        effect; Rule 9 is satisfied and the estimator is not a lucky schedule.
+
+  METHOD NOTE worth more than the verdict. `n_eff` computed from the daily
+  series reports 3,220 at h=42 against n_days = 2,664 — MORE independent
+  observations than there are days. That is not a bug, it is what happens when
+  a long-short book's daily returns are serially uncorrelated while its
+  POSITIONS turn over quarterly. Any lab here that quotes a daily-series n_eff
+  for a slow signal is flattering itself by ~50x. The number to read is
+  n_indep: 56 windows.
 
 RUN
   python -m scout.fundamental_lab              # everything (~6 min warm)

@@ -28,7 +28,7 @@ against SPY over each event's identical calendar window, forward returns
 winsorised at their own 1%/99% (the unwinsorised number is printed beside every
 headline), circular moving-block bootstrap over SESSIONS with block = holding
 period, 2,000 draws. n = 41,378 ranked events at h=21 out of 42,119 usable, on
-2,026 distinct entry sessions, 1,389 firms, 2017-01..2026-05.
+2,026 distinct entry sessions, 1,389 firms, 2017-01..2026-03.
 
 1. THE SIGNAL IS NOT BROKEN - THE POSITIVE CONTROL IS EMPHATIC. Mean two-day
    announcement reaction by SUE decile, in bps:
@@ -65,7 +65,8 @@ period, 2,000 draws. n = 41,378 ranked events at h=21 out of 42,119 usable, on
 
    No horizon reaches |t| = 1, the sign flips across halves at three of four
    horizons, and the decile profile is not monotone at any of them (at h=21 the
-   worst decile is D5 at -31.2 and D1 is the second BEST at +7.3). Unwinsorised:
+   worst decile is D5 at -31.2, and D1 - the decile the mechanism says should
+   be worst - is the BEST at +7.3, with D10 only second at +4.9). Unwinsorised:
    +8.81 / -16.59 / +17.45 / -3.16. Not market-adjusted: +8.47 / -22.84 / +4.49
    / -17.43. Rule 13 finds nothing to strip - trailing 252-session beta is
    1.04-1.10 across all ten deciles, so the market adjustment moves the answer
@@ -104,8 +105,9 @@ period, 2,000 draws. n = 41,378 ranked events at h=21 out of 42,119 usable, on
    +181.48, t=+2.33; LOW -76.74). Livnat-Mendenhall put PEAD in the smallest,
    least-liquid names; in this universe the only cells with the registered sign
    are the largest and most liquid, which is what a multiple-comparison artefact
-   looks like and not what the mechanism predicts. Twelve such cells were cut;
-   two clear |t| = 2.
+   looks like and not what the mechanism predicts. Twenty-four such cells were
+   cut across the two entry specs; two clear |t| = 2, which is one more than
+   chance would hand out.
 
 7. THE LATE-WINDOW PLACEBO SAYS THERE IS NO DRIFT CLOCK. Sessions +63..+126
    after the same surprise earn +18.72 bps, +0.30 bps per session, against the

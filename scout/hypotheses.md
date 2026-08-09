@@ -341,13 +341,13 @@ return any signal can touch is close(t) -> close(t+1).
 
 | # | date | hypothesis (mechanism, one sentence) | expected sign | status |
 |---|---|---|---|---|
-| H22a | 2026-08-09 | Low net issuance (net repurchase) beats high net issuance: the quintile spread on -1 x the 12-month log change in split-adjusted shares outstanding is positive at a 42-session hold. | Q5-Q1 > 0 | REGISTERED — not yet run |
-| H22b | 2026-08-09 | High gross profit / total assets beats low: the quintile spread on GP/AT is positive at a 42-session hold. | Q5-Q1 > 0 | REGISTERED — not yet run |
-| H22c | 2026-08-09 | **THE DECIDING ROW.** Both signals are INDEPENDENT of the repo's existing price composite: the cross-sectional rank correlation to 12-1 momentum and to the gated v5 composite score is small, and the fundamental spread survives inside every momentum tercile. A signal that re-expresses momentum adds nothing to a momentum engine no matter how well it sorts on its own. | \|rho\| < 0.2 AND spread > 0 in all 3 momentum terciles | REGISTERED — not yet run |
-| H22d | 2026-08-09 | The two signals combine: an equal-weight average of the two cross-sectional ranks spreads wider than either alone (they proxy different frictions, so their errors are weakly correlated). | combined spread >= max(single spreads) | REGISTERED — not yet run |
-| H22e | 2026-08-09 | The long-only top quintile — the only form this repo could actually trade — beats SPY on Sharpe after 10 bps round trip. | Sharpe(Q5 net) > Sharpe(SPY) | REGISTERED — expected to FAIL on Sharpe; registered because long-only is the shipped form and the answer must be measured, not assumed |
-| H22f | 2026-08-09 | ROBUSTNESS, registered ex ante so it cannot be used as a rescue: the GP/AT result holds on the subset of names that tag `GrossProfit` directly, without the Revenue-minus-COGS derivation. | same sign, similar magnitude | REGISTERED — not yet run |
-| H22g | 2026-08-09 | RULE 9 COMPLIANCE: a 21-td ("monthly") rebalance gives the same answer as the phase-pooled daily-formation estimator, and the spread across the 21 possible entry phases is small relative to the effect. | phase spread << effect | REGISTERED — not yet run |
+| H22a | 2026-08-09 | Low net issuance (net repurchase) beats high net issuance: the quintile spread on -1 x the 12-month log change in split-adjusted shares outstanding is positive at a 42-session hold. | Q5-Q1 > 0 | **NOT PROVEN — right sign, every control passed, not enough independent windows.** +1.748 bps/day at h=42, CI **[-0.151, +3.720]**, NW t=1.81. Halves agree (+2.009/+1.488); monotone in horizon (+1.631/+1.748/+1.819 at 21/42/126); Rule 13 clean (beta **-0.001**, alpha 4.42%/yr); clears the PLACEBO null (-0.050±0.643, **z=2.80**); break-even **267 bps** round trip vs 10 charged; Q5/Q1/pool = 17.21/12.81/14.36%/yr. But on the honest effective sample — **56 non-overlapping 42-session windows** — it is +0.685%/window at **t=1.59**, positive in 57%. Bar is t>3. **DSR=0.470** at N=14. Not rejected; under-powered. |
+| H22b | 2026-08-09 | High gross profit / total assets beats low: the quintile spread on GP/AT is positive at a 42-session hold. | Q5-Q1 > 0 | **REJECTED — wrong sign and the halves flip.** -0.412 bps/day at h=42 (registered direction was positive), CI [-3.079, +2.099], NW t=-0.30; halves **+0.984 / -1.807**. Sits inside the placebo null (z=-0.40, p=0.67); 62 non-overlapping windows give t=-0.34 and a 41.9% win rate; Q5 12.59% vs pool 14.76%/yr — the high-GP/AT quintile UNDERPERFORMED the pool it was drawn from. Break-even cost is negative. Fails its own pre-registered sign-flip condition. |
+| H22c | 2026-08-09 | **THE DECIDING ROW.** Both signals are INDEPENDENT of the repo's existing price composite: the cross-sectional rank correlation to 12-1 momentum and to the gated v5 composite score is small, and the fundamental spread survives inside every momentum tercile. A signal that re-expresses momentum adds nothing to a momentum engine no matter how well it sorts on its own. | \|rho\| < 0.2 AND spread > 0 in all 3 momentum terciles | **CONFIRMED for net repurchase, and it is the one durable result of the round — but read the second half.** Spearman to raw 12-1 momentum: **-0.015** (net repurchase, sd 0.095) and +0.047 (GP/AT); to the **GATED v5 composite** computed with `signals.composite_at` exactly as the scan computes it: **+0.010** and +0.042, over 113/115 monthly dates. An order of magnitude inside the 0.2 threshold — the first signal in this repo that is not a function of past prices. The double sort passes the letter of the test (net-repurchase spread **+94.4 / +88.2 / +13.0** bps in momentum terciles T1/T2/T3, positive in all three) and fails its spirit: the effect is **gone in the top momentum tercile**, which is exactly where the v5 gates (SMA200, positive 6-month return, lottery vetoes) confine the engine. Orthogonal and inaccessible at once. GP/AT and the combo do not even pass the letter (+6.4/+67.2/**-50.8** and +27.8/+108.7/**-59.1**). |
+| H22d | 2026-08-09 | The two signals combine: an equal-weight average of the two cross-sectional ranks spreads wider than either alone (they proxy different frictions, so their errors are weakly correlated). | combined spread >= max(single spreads) | **REJECTED.** Combined +1.272 bps/day at h=42 against net repurchase alone at **+1.748** — the combination is WORSE than its better leg, which is what averaging a live signal with a dead one does. Halves flip (+3.328 / -0.782), CI [-1.122, +3.677], and it costs coverage: the intersection where both signals exist is 206.9 names/date against 345.2 for net repurchase alone. |
+| H22e | 2026-08-09 | The long-only top quintile — the only form this repo could actually trade — beats SPY on Sharpe after 10 bps round trip. | Sharpe(Q5 net) > Sharpe(SPY) | **REJECTED, as pre-registered — and the failure is instructive.** Net-repurchase Q5 after 10 bps: **17.12%/yr at Sharpe 0.819** against **SPY 15.82%/yr at Sharpe 0.884**. It BEATS SPY on return by 1.30pp/yr and still loses on Sharpe, because an equal-weight 69-name book carries more volatility than the cap-weighted index — the same shape ALPHA-STACK.md found. GP/AT Q5 12.56% (Sharpe 0.648) and combo 16.64% (Sharpe 0.839) also lose. Excess over the matched equal-weight pool is only +1.098 bps/day, so most of Q5's 17.12% is "S&P 500 names went up", not selection. |
+| H22f | 2026-08-09 | ROBUSTNESS, registered ex ante so it cannot be used as a rescue: the GP/AT result holds on the subset of names that tag `GrossProfit` directly, without the Revenue-minus-COGS derivation. | same sign, similar magnitude | **PASSES — and it exonerates the derivation, not the signal.** Restricting to the 237 tickers that tag `GrossProfit` directly gives -0.306 bps/day at h=42 against -0.412 for the full panel: same sign, same magnitude, same null (halves +1.705 / -2.316). So H22b did not die of the Revenue-minus-COGS reconstruction; GP/AT simply does not sort this cohort. Coverage cost of the restriction is severe — 158.7 names/date (31.9% of members) against 250.7 (50.4%). |
+| H22g | 2026-08-09 | RULE 9 COMPLIANCE: a 21-td ("monthly") rebalance gives the same answer as the phase-pooled daily-formation estimator, and the spread across the 21 possible entry phases is small relative to the effect. | phase spread << effect | **CONFIRMED.** All 21 monthly entry phases for net repurchase: mean **+1.756** bps, sd **0.049**, min +1.655, max +1.846, against the phase-pooled daily-formation estimator's +1.748. Phase choice is worth **2.8%** of the effect, and turnover is identical (0.0132 vs 0.0131x/day). GP/AT likewise (mean -0.412, sd 0.058). Unlike H7a — where the repo had been quoting the luckiest of six schedules — a slow quarterly signal genuinely does not care when you start. |
 
 Sensitivity reported for H22a/H22b whatever it says: holds of 21, 42 and 126
 sessions (fundamental signals are slow; 42 is this repo's horizon and is the
@@ -390,6 +390,80 @@ ticker, so acquired and renamed companies silently vanish — a survivorship lea
 in the FUNDAMENTAL data even though the price universe is point-in-time).
 `GrossProfit` is tagged by 237 of them; the rest need the Revenue-minus-COGS
 derivation, and financials do not report a gross profit at all.
+
+### H22 results (2026-08-09) — one signal survives its controls and dies of sample size; the other is simply dead
+
+Ran on 2,664 sessions, 2016-01-04 .. 2026-08-07, mean 496.9 point-in-time
+members and 490.0 eligible names per date. `python -m scout.fundamental_lab`,
+875s warm; 25/25 offline selftests pass, including the lookahead proof
+(unshifted same-day signal earns +416 bps, shifted +(-0.19) bps).
+
+**Coverage is the binding constraint and it is worse for profitability than for
+issuance.** Net issuance is present on **345.2 names/date (69.4% of members)**;
+GP/AT on **250.7 (50.4%)**; GP/AT restricted to direct `GrossProfit` taggers on
+**158.7 (31.9%)**; the two-signal intersection on **206.9 (41.6%)**. Of 742
+point-in-time members only **593 map to a CIK at all** in the SEC's ticker
+file, which maps CIK to the CURRENT ticker — so acquired and renamed companies
+vanish. **The price universe is point-in-time; the fundamental universe is
+not.** That is a survivorship leak in the fundamental layer, it biases toward
+survivors, and no amount of `pit.py` fixes it.
+
+**The one durable result is H22c, and it is a negative for the engine even
+though it is a positive for the signal.** Net repurchase correlates **-0.015**
+with 12-1 momentum and **+0.010** with the gated v5 composite. This repo has
+never had a signal that was not a function of past prices, and now it does. But
+the double sort says the spread is **+94.4 / +88.2 / +13.0** bps across
+momentum terciles T1/T2/T3: the information lives where momentum is weak and
+evaporates where momentum is strong. The v5 gates (SMA200, positive 6-month
+return, vol and lottery vetoes) exist precisely to keep the engine in T3. **The
+signal is orthogonal to the engine and inaccessible to it for the same reason.**
+
+**Method note that outranks the verdict — a daily `n_eff` can exceed `n_days`.**
+The lab's own `_n_eff`, computed from the daily long-short series, reports
+**3,220 effective observations at h=42 against 2,664 days**. That is not a bug:
+a long-short book's DAILY returns are near-serially-uncorrelated even when its
+POSITIONS turn over quarterly, so the daily series looks independent while the
+bets are not. The honest count is non-overlapping windows — **56** of them —
+and on those the headline is **+0.685% per window at t = 1.587**, positive in
+57.1%. The daily statistic flattered the sample by roughly **50x**.
+`nonoverlap_blocks` had been written for exactly this and was never called; it
+is now wired into `report()`. **Rule 16 for the house: never quote an n_eff
+computed from a daily series for a signal whose positions turn over slowly —
+quote non-overlapping windows, and if n_eff > n_days, that IS the bug report.**
+
+**Rule 14 fires again, hardest yet.** The within-date SHUFFLE and RANDOM nulls
+are **12.1x and 11.0x TIGHTER** than the Newey-West SE of the real series, and
+both return p = 0.000. Quoting them would have "confirmed" a t = 1.59 result at
+three decimals. The PLACEBO null — each symbol keeps its own signal series,
+only the pairing breaks — is 1.51x, and it is the only one worth reading. It
+does clear (z = 2.80), which is why H22a is "not proven" rather than rejected.
+
+**Data debt, handled with BOTH guards.** Alpaca's own corporate-actions feed
+repaired **3 unapplied splits** — AAPL 2020-08-31 (4:1, 1,173 bars rescaled,
+the exact -74.2% fake in BACKTEST-REPORT.md) and ROL twice (1.5:1 in 2018 and
+2020) — **13 further events were ambiguous** and left to the mask, and **138
+cells with |1-day return| > 45%** were removed from eligibility AND P&L.
+
+**A new item of data debt, specific to SEC share counts: UNIT SWITCHES.**
+Filers change scale between filings and the SEC bulk data preserves it. MCD's
+diluted share count goes 7.413e8 (2023-02) then 732.3 (2024-02); COP 1.246e6
+(2016) then 1.278e9 (2023); GRMN alternates 1.9e5 and 1.9e8 every year because
+the 10-K reports thousands and the 10-Qs report units. Untreated, MCD reads as
+a 99.9999% buyback and lands in the extreme quintile of every sort.
+`sec_bulk._despike` cannot catch these — a permanent scale change looks like a
+corporate event and an alternating one has no agreeing neighbours.
+`fundamental_lab.normalize_share_units` divides each observation by 10^(3k)
+where k is its log10 distance from the ticker's own median scale, rounded to a
+multiple of 3, which cannot fire below a ~31x deviation and so cannot erase a
+real issuance. It rescaled **4,538 daily cells over 18 tickers**; a further
+**2,795 cells** with |12m log share change| > 1 were dropped as residual
+filing artefacts. Any future study using SEC share counts must do this.
+
+**What would change the verdict.** Not more variants — more independent
+windows, or a cohort where the effect is not confined to weak-momentum names.
+Net issuance is the best non-price candidate this repo has found; at 56
+independent windows it cannot be confirmed here, and pretending otherwise is
+how the two retracted headlines happened.
 
 Controls (nulls, not trials): (i) within-date LEG-LABEL permutation — a
 sign-flip randomisation of the overnight-minus-intraday difference, 10,000
@@ -1021,8 +1095,8 @@ independently-computed `first30_ret`/`last30_ret` — measured difference
 | H19e | 2026-08-09 | GHLZ's OWN r1, which is measured from the PREVIOUS CLOSE and so contains the overnight gap, works where the open-to-10:00 version does not. | > 0 | **REJECTED** — -0.28 / -0.04 / **-1.44** bps; IWM t = -1.97 with CI [-2.85, -0.02], i.e. the only CI in the study excluding zero points the WRONG way. This is also the only row a split defect could touch (its signal crosses the overnight), which is why the AAPL 2020-08-31 repair is not optional. |
 | H19f | 2026-08-09 | The MID-DAY control: if 09:30-10:00 also predicts 10:00-15:30, the effect is generic same-day autocorrelation and NOT the close-specific mechanism. Registered as the row that DISCRIMINATES, with no directional prediction. | close-specific => midday ~ 0 | **THE MECHANISM'S DISCRIMINATING TEST FIRES AGAINST IT.** Mid-day is the only thing alive in the study: **+2.06 / +4.91 / +3.93 bps**, positive in BOTH halves on all three (+1.75/+2.37, +5.06/+4.76, +2.37/+5.50), date-shuffle p = 0.104 / 0.014 / 0.037 at Rule-14 SE-ratios 1.00 / 1.10 / 0.98, and beating its always-long benchmark (+1.21 / +1.39 / -0.43). So continuation exists and is smeared across the middle of the session — the alternative hypothesis — while the close is the one place it is absent. **Untradeable regardless: break-even +2.07 / +4.93 / +3.96 bps against a 5-10 bps band.** |
 | H19g | 2026-08-09 | GHLZ's other and stronger predictor, the SECOND-to-last half hour (r12), predicts r13. | > 0 | **NOT REJECTED ON SIGN, REJECTED ON EVERYTHING ELSE.** +0.97 / +1.01 / +0.37 bps (t = 1.45 / 1.32 / 0.50, shuffle p = 0.085 / 0.114 / 0.309) but the sign **flips across halves on all three** (+2.12/-0.17, +2.68/-0.66, +1.51/-0.77) — this house calls that noise — and break-even is 0.98 / 1.02 / 0.38 bps. |
-| H19h | 2026-08-09 | It works on single large caps, where the late-day flow is less index-driven but the spreads are wider (registered expecting a WEAKER gross effect and a much worse net one). | book > 0 gross | **REJECTED.** Equal-weight book of **50** large caps: **-0.53 bps/session, NW t = -1.12**, block-bootstrap CI [-1.47, +0.20], both halves negative (-0.69 / -0.37), hit 48.55%; only **13 of 50** names positive and **5 of 50** positive in both halves. Cross-sectional top-third-minus-bottom-third: -0.80 bps (t = -1.82), negative in both halves. Prev-day placebo -0.18 bps. Negative everywhere, significant nowhere — **and the reason that last clause is phrased carefully is the Rule 14 note below, which is about this lab's own first draft.** |
-| H19i | 2026-08-09 | COSTS DECIDE IT: at 252 round trips a year the break-even round-trip cost must clear the 5-10 bps large-cap band. | break-even >= 5 bps | **FAILED, AND NOT NARROWLY.** Break-even is NEGATIVE for every close-specific row in the study, so no cost is low enough. Net annualised: SPY -4.6% / -7.0% / -13.7% at 1 / 2 / 5 bps; the 50-stock book -3.8% / -6.2% / -13.1% / -23.4% at 1 / 2 / 5 / 10 bps. The only positive row in the whole study (H19f mid-day) breaks even at 2.07 / 4.93 / 3.96 bps, still under the band. |
+| H19h | 2026-08-09 | It works on single large caps, where the late-day flow is less index-driven but the spreads are wider (registered expecting a WEAKER gross effect and a much worse net one). | book > 0 gross | **REJECTED.** Equal-weight book of **50** large caps: **-0.54 bps/session, NW t = -1.16**, block-bootstrap CI [-1.49, +0.20], both halves negative (-0.76 / -0.33), hit 48.22%; only **14 of 50** names positive and **5 of 50** positive in both halves. Cross-sectional top-third-minus-bottom-third: -0.91 bps (t = -2.08), negative in both halves (-1.64 / -0.18). Prev-day placebo -0.22 bps. Negative everywhere, significant nowhere at the t>3 bar — **and the reason that last clause is phrased carefully is the Rule 14 note below, which is about this lab's own first draft.** |
+| H19i | 2026-08-09 | COSTS DECIDE IT: at 252 round trips a year the break-even round-trip cost must clear the 5-10 bps large-cap band. | break-even >= 5 bps | **FAILED, AND NOT NARROWLY.** Break-even is NEGATIVE for every close-specific row in the study, so no cost is low enough. Net annualised: SPY -4.6% / -7.0% / -13.7% at 1 / 2 / 5 bps; the 50-stock book -3.9% / -6.3% / -13.1% / -23.4% at 1 / 2 / 5 / 10 bps. The only positive row in the whole study (H19f mid-day) breaks even at 2.07 / 4.93 / 3.96 bps, still under the band. |
 | H19j | 2026-08-09 | DIAGNOSTIC, reported in full: hold sign(r1) through each of the 12 later half hours. If the mechanism is right the profit concentrates in the LAST bin. | max at j=13 | **THE CLEANEST REFUTATION IN THE ROUND, and it needs no significance threshold.** Continuation is mildly POSITIVE through the middle of the session (peak at the 11:00 bin: +1.25 / +1.02 / +1.09 bps) and the 15:30-16:00 bin is **the only one negative on all three instruments** (-0.81 / -0.50 / -0.27). The mechanism names the last half hour; it is the worst of the thirteen. |
 | H19k | 2026-08-09 | Exiting in the OFFICIAL CLOSING AUCTION rather than at the last 16:00 tape print rescues it, because the auction is the venue the mechanism actually names and a 5-minute bar cannot isolate that print. | auction > tape | **REJECTED — NO DIFFERENCE.** -0.70 / -0.41 / -0.17 bps against the tape version's -0.82 / -0.50 / -0.27. The auction print differs from the 16:00 tape print by a median 8.0e-05 to 1.3e-04 in log units, so there was never much room for it to matter. |
 
@@ -1049,18 +1123,18 @@ part of this round.**
   under which within-date permutation is valid.
 - On the 50-NAME BOOK it fired, against this lab's own first draft. The
   obvious null — an independent coin per name, then average — scored the book
-  at **3.5 SD below the null, one-sided p = 1.000**, which would have licensed
+  at **3.7 SD below the null, one-sided p = 1.000**, which would have licensed
   a confident "significantly negative". It is wrong, and its SE-ratio is
-  **0.32**: the real book's signs are correlated across names (on most
+  **0.31**: the real book's signs are correlated across names (on most
   sessions the whole market's first half hour points the same way), so the
   real book is close to a levered bet on the market's last half hour, while an
   independent-sign null diversifies that factor away and comes out three times
-  TIGHTER than the book's own Newey-West SE of 0.472 bps. `book_nulls`
+  TIGHTER than the book's own Newey-West SE of 0.468 bps. `book_nulls`
   therefore also runs **`rowshuf`**, which permutes whole CROSS-SECTIONS across
   dates so the within-date sign correlation survives and only the date pairing
   is destroyed; the report labels the other two "do not quote". `rowshuf`
-  widens to SE-ratio 0.58 and still under-states, so **the quoted statistic is
-  the Newey-West t of -1.12 with a CI straddling zero, not any permutation
+  widens to SE-ratio 0.59 and still under-states, so **the quoted statistic is
+  the Newey-West t of -1.16 with a CI straddling zero, not any permutation
   p-value.** The self-test reproduces the failure mode on demand on a synthetic
   market-correlated panel: SE-ratio 1.05 for `rowshuf` against 0.29-0.30 for
   the per-name nulls.
@@ -1077,14 +1151,14 @@ the one statistical luxury this hypothesis has over every other lab in the
 file. What is NOT independent is the three instruments: SPY, QQQ and IWM share
 every date and nearly all of their market factor, so they are one experiment
 shown three ways; and the 50 stocks are collapsed to one book number per
-session before anything is tested (48.8 names per session on average, minimum
-22 — the panel is unbalanced because a few names list part-way through).
+session before anything is tested (49.2 names per session on average, minimum
+23 — the panel is unbalanced because a few names list part-way through).
 
-Data integrity, printed by the lab: **14,939,515 bars over 59 symbols**, 57
-passing the 750-session bar, **120,597 symbol-sessions -> 119,412 kept**; 1,005
+Data integrity, printed by the lab: **15,362,973 bars over 61 symbols**, 59
+passing the 750-session bar, **124,909 symbol-sessions -> 123,680 kept**; 1,041
 half-days dropped (volume-detected UNION the hardcoded NYSE calendar, because
 on a 13:00 close Alpaca keeps printing after-hours bars to 15:55 and a naive
-grid builds a fake r13 out of them); 178 incomplete grids dropped; **2** extreme
+grid builds a fake r13 out of them); 186 incomplete grids dropped; **2** extreme
 prints dropped and enumerated (APP 2024-11-07, HOOD 2021-08-04), under BOTH the
 repo's standing |1-day return| > 45% rule and a |half-hour return| > 25% rule.
 
@@ -1099,7 +1173,7 @@ contaminate the core test even in principle, because r1 and r13 are both
 WITHIN-session ratios and a split factor cancels in both, and rescaling every
 bar strictly before an ex-date leaves every within-session ratio untouched.
 Only H19e's signal crosses the overnight, so the two false positives can move
-exactly two symbol-sessions of ~117,000. This split-insensitivity is why the
+exactly two symbol-sessions of ~124,000. This split-insensitivity is why the
 study could afford a universe the daily labs could not.
 
 Scope of the rejection, stated as narrowly as it deserves: three US index ETFs
@@ -1206,7 +1280,7 @@ the most-replicated anomaly in finance and its standard sort variable is SUE,
 **not** the price reaction that H2b already rejected. Until `scout/sec_bulk.py`
 existed this repo had no earnings-surprise measure at all.
 
-Universe TODAY's S&P 1500 (1,390 firms produce a usable SUE), 2017-01..2026-05,
+Universe TODAY's S&P 1500 (1,390 firms produce a usable SUE), 2017-01..2026-03,
 42,119 usable events on 2,026 entry sessions, 41,378 ranked at h=21.
 `SUE_q = (NI_q - NI_{q-4}) / sd(NI_j - NI_{j-4}, j=q-8..q-1)` on consolidated
 GAAP `NetIncomeLoss` LEVELS (the share count cancels, which also immunises it
@@ -1226,13 +1300,19 @@ table before any number prints.
 | H26f | 2026-08-09 | LATE-WINDOW PLACEBO: drift is over by ~60 sessions, so sessions +63..+126 on the same surprise must pay ~0. | ≈ 0, less than in-window | **NO DRIFT CLOCK.** +18.72 bps over the late window = **+0.30 bps/session against the in-window -0.03**. Both are zero; the late window is if anything the larger of the two. |
 | H26g | 2026-08-09 | Costs decide tradeability at 10 bps round trip. | break-even >= 10 bps | **FAILS.** Two-legged D10-D1 break-even 5.6 / -1.2 / 10.6 / -0.8 bps. The long-only D10-minus-pool form (the only tradeable shape here) is +0.21 / +15.92 / +8.55 / +10.92 bps at t = +0.02 / +0.86 / +0.29 / +0.33, best net **+0.71%/yr** against SPY's ~+15.8%/yr. |
 
-Registered variants, all reported (17): strict-PIT deciles x 4 horizons (4);
-unwinsorised x 4; raw/not-market-adjusted x 4; announcement-anchored x 4;
-quintiles instead of deciles (2 horizons); SUE winsorised ±8 (2); price-scaled
-SUE (2); |1-day|>45% excluded (2); liquidity terciles (6); segments (6); late
-window (1). Controls (nulls, not trials): random-pick 200 draws, firm-level
-date-shuffle 200 draws, price-reaction sort, matched pool + SPY, the positive
-control, the late-window placebo.
+Registered variants, all reported, counted from the run's own output: **53
+long-short decile/quintile sort cells** (strict-PIT x 4 horizons; raw
+not-market-adjusted x 4; announcement-anchored x 4; price-reaction x 4;
+quintiles x 2; SUE winsorised ±8 x 2 — a no-op by construction, see below;
+price-scaled SUE x 2; |1-day|>45% excluded x 2; liquidity terciles 3 x 2 on
+each of the two entry specs = 12; segments 3 x 2 on each = 12; late window 1),
+plus **4 unwinsorised reruns** and **8 long-only D10-minus-pool books** = **65
+cells**, plus one whole-study rerun with the frozen-quote guard off. The
+"winsorise SUE at ±8" row is reported as the no-op it is: clipping a variable
+used only through a rank cannot move a decile boundary, and it moves h=21 and
+h=63 by exactly 0.00 bps. Controls (nulls, not trials): random-pick 200 draws,
+firm-level date-shuffle 200 draws, price-reaction sort, matched pool + SPY, the
+positive control, the late-window placebo.
 
 Effective independent sample, stated because it is the binding constraint: the
 cross-section is collapsed to one row per SESSION before any statistic, so
@@ -1259,7 +1339,7 @@ must retire frozen quotes BEFORE it reports a number, because the artefact
 concentrates in one extreme bucket rather than spreading across the
 cross-section.**
 
-Trial count: N rises by **17** registered cells, taking the repo past ~360.
+Trial count: N rises by **65** registered cells, taking the repo past ~410.
 Controls are nulls and do not count. Best |t| in the registered direction
 anywhere in the study is **+2.33**, in a liquidity cell whose sign contradicts
 the mechanism; the only |t| that clears the house's t>3 bar is the **+15.43** on
