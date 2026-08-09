@@ -104,6 +104,57 @@ A stale-quote rule retires a symbol permanently from its first run of >= 10
 identical consecutive closes (how a delisted ticker's frozen quote and a
 reused-ticker splice present).
 
+VERDICT (measured 2026-08-09; every number below is printed by this file)
+------------------------------------------------------------------------
+**NOT PROVEN.** The registered sign is right and the primary universe clears
+this repo's t>3 bar at all four horizons — sp1500 Q1-Q5 = +0.53 / +1.06 /
++3.08 / +6.56 % per 21 / 42 / 126 / 252-session hold, t = 3.00 / 3.34 / 3.41 /
+3.75, positive in both halves, 124 formation dates. It is the first candidate
+in this round to survive Rule 13 (beta 0.14, alpha +0.68%, t = 2.34), the
+first whose costs are irrelevant (turnover 0.23 per 42-session window,
+break-even 461 bps against 10 charged), and it PASSES the independence test
+that decided whether to build it: rank correlation -0.043 to the v5 momentum
+composite and -0.065 to net issuance, return correlation +0.20 and -0.37.
+
+Four measurements stop it being a result, and three of them are about the
+MECHANISM rather than the statistics:
+
+1. THE SHORT LEG IS EMPTY AND THE SORT IS NOT MONOTONE. Bucket returns at
+   h=42 run 4.21 / 2.75 / 2.61 / 2.44 / 3.15 % against a pool of 3.03: Q1
+   beats the pool by +1.18% and Q5 beats it by **+0.12%**. Sloan's claim is
+   that high-accrual firms are over-valued and UNDERPERFORM; here they do not.
+   The entire spread is one extreme bucket (median accrual -0.116) doing well.
+2. NEARLY HALF OF IT IS A STATIC FIRM CHARACTERISTIC. Permuting each firm's
+   OWN accrual history across formation dates — right firms, wrong years —
+   still earns +0.45 of the +1.06%. The timing-attributable residual is
+   +0.60% at t = 1.91, which does not clear t>3.
+3. THE SIGNAL DOES NOT NEED TO BE CURRENT. A 12-month-STALE accrual earns
+   +1.12% (t=3.64), MORE than the fresh one, while the cross-sectional rank
+   autocorrelation over that year is only +0.49 and only 37% of names are
+   still within a fifth of their old percentile rank. An accrual that will
+   not be FILED for another 12 months earns
+   +0.90% — no better than the honest signal. Accounting news that arrives on
+   a filing date should not behave like that.
+4. ON POINT-IN-TIME MEMBERSHIP IT IS NOT SIGNIFICANT. pit500 h=42 = +0.42%,
+   CI [-0.06, +0.90], t = 1.70; long-only vs SPY +0.25% (t=0.90) with halves
+   +0.79 / -0.29. Nearest like-for-like comparison, large caps only:
+   today's-members S&P 500 gives +0.72% and each date's ACTUAL members give
+   +0.42%, so ~40% of the large-cap spread goes away when membership stops
+   being chosen with hindsight. (Not a clean decomposition — the two panels
+   also differ in XBRL coverage, 92.8% vs 76.1% — but it points one way.)
+
+Composition says the same thing descriptively: Q5 is **38.9% Financials**
+(pool 18.2%), where NI - CFO is not an accrual in any accounting sense, and
+Q1 is 25.0% Information Technology (pool 12.9%) and 9.6% Energy (pool 4.0%) —
+the two groups whose earnings sit furthest below their cash flow because of
+non-cash charges, and two of this decade's larger sector bets. Sector-neutral
+ranking keeps +0.71% of the +1.06% (t=3.19), so it is not ONLY a sector bet.
+
+The honest one-line summary: firms whose cash flow massively exceeds their
+reported earnings outperformed in 2016-2026, about half of that is knowing
+WHICH firms they are rather than WHEN they reported, the leg the anomaly is
+named after does nothing, and the survivorship-free universe cuts it by 60%.
+
 Run: python -m scout.accruals_lab              (full study)
      python -m scout.accruals_lab --selftest   (offline, no keys, no network)
 """

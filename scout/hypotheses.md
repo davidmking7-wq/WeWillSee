@@ -1345,3 +1345,93 @@ anywhere in the study is **+2.33**, in a liquidity cell whose sign contradicts
 the mechanism; the only |t| that clears the house's t>3 bar is the **+15.43** on
 the announcement-day reaction — i.e. on the row that says the surprise is
 already in the price.
+
+### H27 — the accruals anomaly: earnings that are not cash flow do not persist (registered 2026-08-09; statuses filled in after the run)
+
+Mechanism (Sloan 1996): the accrual component of earnings is less persistent
+than the cash component, and investors fixate on the headline number without
+decomposing it, so firms whose profits are mostly accruals are systematically
+over-valued and underperform as those accruals fail to convert into cash.
+
+Prior stated BEFORE the run so the result could not be re-framed afterwards:
+Green-Hand-Soliman (2011) document the effect's decay to insignificance in
+large caps after ~2003, Sloan's own hedge portfolio is dominated by microcaps,
+and McLean-Pontiff's post-publication haircut is ~58%. Index members over
+2016-2026 are the hardest possible cohort — **a null was the modal expected
+outcome**, and a null here is weak evidence about the small-cap tape.
+
+Lab: `scout/accruals_lab.py`. Signal = (NetIncomeLoss(qtrs=4) −
+NetCashProvidedByUsedInOperatingActivities(qtrs=4)) / average Assets(qtrs=0),
+the two flows INNER-JOINED on (ticker, fiscal year end) so the earnings and
+the cash flow always cover the same period. **The shift:** a record enters the
+panel at `max(filed)` of its four component facts, never at period end; within
+a ticker a later filing may only introduce a NEWER fiscal year (10-K
+comparatives can never overwrite a fresher number); the panel is then
+`shift(1)`ed so a filing dated t is used from t+1; returns are
+`close.shift(-h)/close - 1` at the same index t. Staleness cap 550 days.
+Universes: sp1500 (today's members, survivorship on the entry side, PRIMARY
+because the anomaly is documented down-cap) and pit500 (`scout/pit.py`, each
+date's ACTUAL members). 127 month ends 2016-02..2026-08, 13,658 usable annual
+records over 1,441 tickers, 133,627 symbol-formation-date legs at h=42.
+
+| # | date | hypothesis (mechanism, one sentence) | expected sign | status |
+|---|---|---|---|---|
+| H27a | 2026-08-09 | The LOW-accrual quintile beats the HIGH-accrual quintile at a 42-session hold, equal weight, monthly formation. | Q1−Q5 > 0 | **SIGN RIGHT, CLEARS t>3, AND STILL NOT PROVEN.** sp1500 Q1−Q5 = **+0.53 / +1.06 / +3.08 / +6.56 %** per 21/42/126/252-session hold, block-bootstrap t = **3.00 / 3.34 / 3.41 / 3.75**, positive in both halves (+1.37/+0.74 at h=42), no entry-phase luck (h=42 phases +1.04/+1.07 — Rule 9 clean, unlike H7a). Costs irrelevant: turnover 0.23/window, break-even **461 bps** against 10 charged. Annualised L/S Sharpe 0.85, deflated Sharpe **0.63** at N=58 — the highest in this repo by 4x. Rejected as a *result* by H27b/c/e below, not by its own t. |
+| H27b | 2026-08-09 | **DECIDING ROW 1 — the mechanism, not the sort.** Sloan's claim is that HIGH-accrual firms are over-valued, so the high quintile must underperform the matched equal-weight pool. | Q5 − pool < 0 | **REJECTED — THE SHORT LEG IS EMPTY.** Q5 − pool = **+0.06 / +0.12 / +0.37 / +0.95 %**, positive at every horizon. Q1 − pool = +1.18% (t=4.70) at h=42, so **100% of the spread is the long leg**. Bucket returns 4.21 / 2.75 / 2.61 / 2.44 / 3.15 against a pool of 3.03 are a U, not the monotone decline the anomaly predicts. |
+| H27c | 2026-08-09 | **DECIDING ROW 2 — the date shuffle.** Permuting each firm's OWN accrual history across formation dates keeps the firm and its accrual distribution and destroys only WHICH YEAR it accrued; Sloan's mechanism is a claim about the year, so most of the spread must die. | shuffled << actual | **HALF-FAILS.** The shuffle earns **+0.45 of the +1.06%** at h=42 (static share 43%; 51/49/56% at the other horizons). Timing-attributable residual **+0.60%, t = 1.91** — below the house t>3 bar. Rule 14 print, as required: the shuffle null's SD is **0.36x** the real block-bootstrap SE, so its p = 0.00 is an artefact of the null and is NOT quoted. The PLACEBO null (each symbol permanently assigned another symbol's whole accrual history) has SE ratio 0.77 and mean +0.01 ± 0.24, so the pairing itself is real; it is the TIMING that is not established. |
+| H27d | 2026-08-09 | **THE ROW THAT DECIDED WHETHER TO BUILD IT.** The signal is independent of what this repo already computes — the v5 momentum composite and `sec_bulk.net_issuance` (Pontiff-Woodgate note issuance and accruals are related by construction). | \|rho\| < 0.2 | **PASSES, CLEANLY — the one unambiguous positive in the round.** Cross-sectional Spearman **−0.043** to the v5 composite (sd 0.091) and **−0.065** to 12-month net issuance (sd 0.028); return correlation of the books **+0.201** and **−0.370**. Accruals are not momentum in a costume and not issuance in a costume. (Context: over these dates the v5 composite's own Q5−Q1 is −0.51%/hold and the low-issuance book −0.29%/hold.) |
+| H27e | 2026-08-09 | Survivorship: the primary universe is today's S&P 1500, so the result must survive on point-in-time membership. | pit500 spread > 0 and significant | **FAILS.** pit500 h=42 = **+0.42%, CI [−0.06, +0.90], t = 1.70**; long-only Q1 vs SPY +0.25% (t=0.90) with halves **+0.79 / −0.29**. Nearest like-for-like on large caps: today's members +0.72% vs each date's actual members +0.42%, i.e. ~40% of the large-cap spread goes away when membership stops being chosen with hindsight. Not a clean decomposition (XBRL coverage 92.8% vs 76.1%) but it points one way. |
+| H27f | 2026-08-09 | Rule 13: the dollar-neutral book is regressed on SPY before its sign is quoted. | alpha survives | **PASSES — the first candidate this round to do so.** ls_beta **+0.14** at h=42, alpha **+0.68%, t = 2.34** (sp1500); pit500 beta +0.01, alpha +0.38%, t = 1.59. Unlike H25 (52-week high), H21 (reversal) and H16 (tone), this is NOT a beta artefact. |
+| H27g | 2026-08-09 | Variant, registered as a staleness probe: the accrual known 12 MONTHS AGO should sort WORSE, because a mispricing corrects as the accruals fail to convert. | stale < fresh | **REJECTED — STALE IS NOT WORSE, IT IS BETTER.** +1.12% (t=3.64) against the fresh +1.06%, on a signal whose 12-month cross-sectional rank autocorrelation is only **+0.49** (37% of names still within a fifth of their old percentile). Companion diagnostic: an accrual that will not be FILED for another 12 months earns **+0.90%** — no better than the honest one. Accounting news that arrives on a filing date does not behave like this; a slow-moving firm type does. |
+| H27h | 2026-08-09 | Variants reported whatever they said (10 families, 58 cells): guard off, three size segments, sector-neutral ranks, deciles, ending-assets scaling, ex-financials/real-estate, the +12m peek diagnostic, the $10M liquidity gate, gross-profitability terciles. | n/a | Guard off +1.16 vs +1.06 (the bad-print exclusion is worth 0.10pp, and 8.00 vs 6.56 at h=252). Segments at h=42: large **+0.72** (t 2.46), mid **+1.57** (t 3.53), small **+0.79** (t 1.99) — mid-caps strongest, small-caps weakest, which is the opposite of the down-cap prior. Sector-neutral +0.71 (t 3.19) — two thirds survives, so it is not ONLY a sector bet. Deciles D1−D10 +1.32. Ending assets +1.07. Ex-financials/RE **+1.20**. Liquidity-gated +1.13 (t 3.73) — it is not hiding in untradeable names. Gross-profitability terciles: **+2.32 (t 3.53) / +1.02 / +0.84 (t 1.31)** from low to high profitability, so it is not the Novy-Marx quality premium in a costume — it is strongest where profitability is worst (41% GP coverage; weak evidence). |
+
+Controls (nulls, not trials): (i) RANDOM-PICK, labels permuted inside each
+formation date, 200 draws; (ii) PLACEBO PAIRING, each symbol permanently
+assigned another symbol's whole accrual history, 200 draws — the only honest
+null for a persistent characteristic (H16 Finding 2); (iii) DATE SHUFFLE, 200
+draws, the deciding one; (iv) MATCHED BENCHMARK, equal weight of the eligible
+pool, plus SPY; (v) Rule 13 regression. Every null is printed with the ratio of
+its SD to the real series' block-bootstrap SE, as Rule 14 requires.
+
+Data debt handled explicitly: 253 prints with |1-day return| > 45% over 152
+symbols (SIRI 2024-09-10 **+925.6%**, GPOR +585.0%, FTR +278.9%) — a
+(symbol, formation date) leg is DROPPED when one falls inside its holding
+window, and the whole study is re-run with the guard OFF so the choice is
+priced (+1.06 vs +1.16 at h=42). 40 symbols retired at a frozen-quote run of
+>=10 identical closes (the H21 defect).
+
+**Coverage, stated before the returns as the binding constraint.** 1,431 of
+1,505 current S&P 1500 members have a period-matched NI + CFO + assets record
+(95.1%); the 74 that do not tag consolidated earnings as `ProfitLoss` rather
+than `NetIncomeLoss`, which is not in `sec_bulk`'s tag set — a SYSTEMATIC
+exclusion (utilities, firms with minority interests), not noise. Only **557 of
+732** point-in-time S&P 500 members map at all (76.1%), and the missing ones
+are the DELISTED: `company_tickers.json` maps CIKs to CURRENT tickers, so an
+acquired company's facts are unreachable. **The survivorship-free universe is
+therefore survivorship-CONTAMINATED on the fundamental side**, which bounds
+what H27e can prove.
+
+Effective independent sample: the cross-section is collapsed to one spread per
+formation date before any statistic, so n is at most **127 dates**, not the
+133,627 legs — and with a 42-session hold on a monthly grid that is ~63
+non-overlapping windows per entry phase across 2 phases. At h=252 it is ~10.
+
+**H27 verdict: NOT PROVEN.** The registered sign is right, clears t>3 at four
+horizons, survives Rule 13, has no phase luck, costs nothing to trade, and is
+independent of everything this repo owns — and the leg the anomaly is named
+after does nothing, 43% of it is a static firm characteristic, a year-stale
+signal works better than a fresh one, and point-in-time membership cuts it by
+60%. What was measured is that **firms whose cash flow massively exceeds their
+reported earnings outperformed in 2016-2026** (Q1 median accrual −0.116, 25.0%
+Information Technology and 9.6% Energy against pool shares of 12.9% and 4.0%,
+versus a Q5 that is **38.9% Financials** where NI − CFO is not an accrual in
+any accounting sense). That is a firm-type premium with a plausible non-cash-
+charge explanation this repo cannot test — `sec_bulk` carries no
+depreciation or stock-compensation tag — not Sloan's mispricing correction.
+
+Trial count: N rises by **58** registered cells (4 horizons x 2 universes,
+guard-off 4, 3 segments x 4, sector-neutral 4, deciles 4, ending-assets 4,
+stale-12m 4, ex-financials 4, peek 4, liquidity 4, 3 GP terciles x 2).
+Controls are nulls and do not count. Deflated Sharpe of the best book at
+N=58: **0.63** — which is the highest in this repo and still describes a book
+whose own controls say it is a style tilt.

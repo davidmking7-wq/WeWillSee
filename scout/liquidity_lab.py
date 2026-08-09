@@ -130,7 +130,133 @@ Run: python -m scout.liquidity_lab                # full study
 =============================================================================
 VERDICT - filled in from the run; every number below is printed by this file
 =============================================================================
-(pending)
+REJECTED - but NOT for the reason the brief expected, and the difference
+matters. The classic finding is that the illiquidity premium is eaten by the
+cost of accessing it. That is NOT what this sample shows. Costs turn out to be
+almost irrelevant here, because illiquidity is so persistent that the book
+barely trades. What kills it is survivorship: the premium is large, monotone,
+control-surviving and present in both halves on TODAY'S S&P 1500, and it
+INVERTS on point-in-time membership. And the gate the study was aimed at turns
+out to be very nearly a no-op.
+
+1. THE REGISTERED SIGN IS RIGHT, LARGE, AND NOT A CONTROL ARTIFACT - ON THE
+   SURVIVORSHIP UNIVERSE. Primary (Amihud, W=21, h=42, S&P 1500, all guards):
+   Q5 - Q1 = +198.39 bps per 42-session hold, 95% moving-block CI
+   [+105.63, +295.45], t = +4.09. Positive in all 12 S&P 1500 cells, positive
+   in both halves (+241.52 / +155.28), positive on all 42 entry phases
+   (ph_wrong = 0). Controls behave: random quintiles -0.11 +/- 2.39 bps and
+   the symbol-pairing placebo -0.17 +/- 18.16 bps against +198.39. Positive
+   control passes enormously - signal quintiles 0.38 / 1.36 / 3.62 / 9.23 /
+   98.20 bps of price per $M traded map onto realised next-42-session
+   0.41 / 1.44 / 3.97 / 9.59 / 91.61.
+   AND, unlike H25 and H28, IT IS NOT A BETA SORT (Rule 13): quintile SPY
+   betas 0.96 / 1.03 / 1.09 / 1.14 / 1.12, the dollar-neutral book's beta is
+   +0.13 and its market-adjusted alpha +8.55%/yr at Newey-West t = +2.31. The
+   standing explanation for every monotone profile in this repo does not apply
+   to this one.
+
+2. AND IT INVERTS ON POINT-IN-TIME MEMBERSHIP. Same code, same dates, each
+   date's ACTUAL S&P 500 members with delisted names included: Amihud h=42
+   goes +198.39 -> -42.68 bps (t -0.85, CI [-139.61, +57.08]), and the
+   dollar-volume sort - the gate variable itself - goes +150.97 -> -86.16
+   (t -2.14, CI [-163.54, -7.66]), i.e. mildly WRONG-signed. The tradeable
+   book says the same thing in return space: on today's S&P 1500 the illiquid
+   quintile earns +28.31%/yr at Sharpe 1.13 with alpha +9.29%/yr (t +2.15);
+   on point-in-time membership it earns +14.71%/yr at Sharpe 0.59 with alpha
+   -4.20%/yr (t -1.06), LOSING to its own liquid quintile (+16.35%, Sharpe
+   0.94) and to SPY (+15.82%, Sharpe 0.90) in both halves (0.73/0.43 against
+   1.03/0.83). Even the pools disagree by the size of the whole effect: the
+   equal-weight S&P 1500 pool returns +19.61%/yr against the point-in-time
+   pool's +15.00%.
+   The segment gradient is the same story ordered by how much survivorship
+   each segment carries: large +138.89, mid +450.21, small +479.09 bps, and
+   the sub-$10M slice - the most contaminated cohort available - prints
+   +439.47 at t = 9.78. A monotone relationship between "how much hindsight is
+   in this bucket" and "how big the premium is" is not a premium.
+
+3. COSTS DO NOT DECIDE IT, AND THE CLASSIC FINDING DOES NOT REPRODUCE. This
+   was the part the brief expected to be fatal, so it is worth being exact.
+   Illiquidity is the most persistent characteristic in this repo, so the book
+   hardly trades: one-way turnover 0.85x/yr for Q5 and 0.65x/yr for Q1, 1.51x
+   for the pair. Charging each leg its OWN measured Corwin-Schultz round trip
+   (58.30 bps on Q1, 92.62 on Q5) takes the long-short from +11.92%/yr gross
+   to +10.75%/yr net, and the long-only Q5 book from +28.31% to +27.52%. The
+   BREAK-EVEN round-trip cost is 790.6 bps for the long-short and 1,463 bps
+   for Q5 against SPY. At h=21 costs DO bite - the same spread is paid twice
+   as often and every S&P 1500 net spread turns negative (-50.38 bps for the
+   primary signal) - which is the one place the classic mechanism shows up.
+   At the repo's 42-session horizon it does not.
+
+4. THE COST ESTIMATOR IS THE WEAKEST LINK, AND IT IS DISCLOSED, NOT HIDDEN.
+   Corwin-Schultz says SPY costs 28.4 bps round trip and AAPL/MSFT/JPM/XOM
+   49.0 bps, against this repo's own 5-10 bps large-cap standard and SPY's
+   real sub-1 bp spread; and it discriminates only 1.59x across a sort whose
+   dollar volume ranges 53x. Censoring negative two-day estimates at zero is a
+   one-sided bias, and daily-range noise survives the differencing. Two
+   consequences, both stated as results: (a) the cost numbers above are
+   PUNITIVE, so the cost conclusion in point 3 is conservative and safe; (b)
+   Corwin-Schultz is NOT usable as a stand-alone liquidity SORT here - with
+   negatives left uncensored the cs sort collapses from +257.43 to +16.43 bps
+   (t +0.60). The two measures agree only 0.385 in within-date rank, while
+   Amihud correlates 0.972 with minus dollar volume: in this universe Amihud
+   is a dollar-volume sort wearing a different name, which is exactly why the
+   invdv row tracks it and why the gate variable is the honest object of study.
+
+5. THE GATE, WHICH WAS THE POINT: IT BARELY BINDS, AND WHAT MOVEMENT THERE IS
+   FAVOURS KEEPING IT. Replaying the shipped v5 engine with the gate at $10M,
+   $1M and $0, 112 monthly entries, 5 picks, per-pick Corwin-Schultz costs:
+   net +1.97% / +1.82% / +1.77% per 42-session window against SPY's +2.57%.
+   Removing the gate widens the post-veto pool from 537 to 631 names and
+   raises the small-cap share of picks from 23.9% to 28.9%, but the median
+   pick still trades $75M a day and only 8.6% of picks fall below $10M -
+   because momentum, the 52-week high and the volatility band already select
+   liquid names. Ranking ONLY inside the discarded pool (the names the gate
+   deletes) gives net +1.74%/window against SPY's +1.72% in those windows,
+   with a median pick trading $6.3M/day - and that is measured on the MOST
+   survivorship-contaminated cohort in the panel, i.e. under conditions
+   maximally favourable to the no-gate case. **The gate is neither protective
+   nor restrictive. It is close to a no-op, and there is no case for removing
+   it.** Halves disagree on the sign of the difference (h1 favours the gate
+   +2.27 vs +1.68 gross, h2 favours no gate +3.10 vs +3.30), which is what
+   noise looks like.
+
+6. THE CAPACITY ASYMMETRY IS REAL - IT JUST HAS NOTHING TO BUY. The most
+   illiquid quintile of the S&P 1500 still trades $5.92M a day at the median;
+   a $10,000 order is 0.169% of that, and 76.7% of the bucket sits below the
+   $10M gate. So the structural claim in the hypothesis is correct: capacity
+   binds institutions here and does not bind this user. That is why this was
+   worth testing, and it is not sufficient - the compensation it was supposed
+   to unlock is not there once the universe stops knowing the future.
+
+7. THE GUARDS, MEASURED. Split repair: 5 events (AAPL 2020-08-31 4:1, SIRI
+   2024-09-10 0.1:1, ROL x2, DEA), the names this repo's audit found by hand.
+   Extreme-print guard: 250 bars over 149 symbols, 0.0064% of the panel, and
+   turning it off moves the primary by 0.01 bps - nil. Stale-quote retirement:
+   40 symbols, and turning it off moves the primary from +198.39 to +205.42,
+   i.e. 3.5% MORE positive, exactly the direction predicted in advance (a
+   frozen quote scores as the most liquid stock in the market and pays
+   nothing). The pre-registered worry was right about the sign and wrong about
+   the size; none of the three guards decides this study, and the universe
+   does.
+
+8. WHAT WOULD FALSIFY THIS REJECTION. A delisting-complete S&P 1500 - the
+   data debt RESEARCH-AGENDA already flags. The point-in-time control
+   available here is the S&P 500, whose least-liquid quintile still trades
+   tens of millions a day, so it CANNOT test the premium where Amihud's
+   mechanism is strongest. The honest statement of this sample is therefore
+   two-sided and both sides should be quoted: (a) in survivorship-clean US
+   large caps, 2016-2026, there is no illiquidity premium and if anything a
+   small negative one; (b) in genuinely illiquid US small caps the question
+   remains OPEN, because every dataset in this repo that reaches down there
+   also knows which of those companies survived. Deflated Sharpe of the
+   headline long-only book, at this repo's running trial count N=400, is
+   0.770 - which does not clear a 0.95 bar even before the survivorship
+   correction that removes the return.
+
+TRIAL COUNT: 46 registered cells and variants (24 universe x signal x window
+x horizon cells, 7 robustness variants, 4 engine gate configurations, 3 cost
+models, 2 point-in-time book cells, 2 guard-sensitivity runs, 2 positive
+controls, 2 null controls), all reported above and in liquidity_results.json.
 """
 from __future__ import annotations
 
@@ -1194,6 +1320,7 @@ def main() -> None:
     print("Corwin-Schultz round trip, and half of it (retail price")
     print("improvement on a small order).\n")
     spy_daily = simple[:, colpos[MARKET]]
+    sb = perf(spy_daily, spy_daily)
     books = {}
     rows_b = []
     lab_n = quintile_labels(sig[(PRIMARY_SIG, PRIMARY_W)], e,
@@ -1289,7 +1416,6 @@ def main() -> None:
     pb = perf(ladder(sub_pool, STRIDE), spy_daily)
     sub_pool_p = sub_portfolios(np.where(e_pit, 0, -1).astype(np.int8), 0, simple)
     pbp = perf(ladder(sub_pool_p, STRIDE), spy_daily)
-    sb = perf(spy_daily, spy_daily)
     print("\n  MATCHED BENCHMARKS (control d)")
     print(f"    equal-weight eligible pool : {pb['ann_ret']:+6.2f}%/yr  "
           f"vol {pb['ann_vol']:5.2f}%  Sharpe {pb['sharpe']:.2f}  "
@@ -1334,10 +1460,10 @@ def main() -> None:
 
     # ------------------------------------------------ the gate, as a gate
     _hdr("THE DECISION: what would the ENGINE have earned WITHOUT the $10M gate?")
-    print("The shipped v5 pipeline (signals.composite_at), replayed at three")
-    print("values of config.MIN_DOLLAR_VOL, monthly entries, 5 picks, 42-session")
-    print("hold - bit-identical to the live scan apart from the gate. Costs are")
-    print("each pick's OWN Corwin-Schultz round trip at the entry date.\n")
+    print("The shipped v5 pipeline (signals.composite_at), replayed at four")
+    print("settings of config.MIN_DOLLAR_VOL, monthly entries, 5 picks,")
+    print("42-session hold - bit-identical to the live scan apart from the gate.")
+    print("Costs are each pick's OWN Corwin-Schultz round trip at entry.\n")
     keep = [s for s in cols if s in seg or s == MARKET]
     grows = pd.DataFrame(engine_gate_test(cb, cs_cost, dv20, cols, keep))
     gsum = pd.DataFrame([summarise_gate(grows, g, seg, hf)

@@ -1209,3 +1209,94 @@ Why it is INCONCLUSIVE rather than confirmed:
 
 Verdict: the most promising thing found in three rounds, and still not
 shippable. It earns a live-tracking slot, not a weight. 58 variants.
+
+### 8. H20 verification — survives 2/3, with a mandatory correction to its own headline
+
+The three adversarial verifiers split 2-1 in favour, so H20's forecast result
+stands. But two of them independently found the same defect in its headline
+number, and it must be restated.
+
+**The claim was "-20.3% of QLIKE versus the incumbent". About 40% of that gap
+is a MODEL upgrade, not a DATA upgrade.**
+
+Of the twelve forecasters in the lab, every model that ESTIMATES a coefficient
+(`har_rv`, `har_log`, `har_log_pool`) is fed 5-minute realised variance, and
+every model fed daily closes (`blended_daily`, `ewma_daily_094`) is a frozen
+recipe with no fitted parameters anywhere. The comparison therefore prices
+measurement AND model class, and reports the total as measurement.
+
+Both verifiers built the missing cell — the lab's own HAR machinery, same
+walk-forward, same refit schedule, run on DAILY closes with no intraday bar
+ever touched — and got nearly identical answers:
+
+| forecaster | QLIKE | vs incumbent |
+|---|---|---|
+| `blended_daily` (incumbent) | 0.4980 | — |
+| **fitted HAR on daily squared returns** | **0.4575 - 0.4701** | **-6.2% to -8.1%** (free, no intraday data) |
+| `har_log` (5-minute) | 0.3971 | -20.3% total |
+| **genuine 5-minute component** | | **-13.1% to -16.3%** |
+
+The decomposition is exact: -0.0412 (model) + -0.0602 (data) = -0.1014
+(headline). **The honest number for what intraday data buys is -13% to -16%,
+not -20.3%**, and roughly a third of the advertised gain is available for free
+by fitting a HAR to data this repo already has.
+
+That correction does not overturn the result — the mechanism row (H20c) held
+the estimator and lambda fixed and swapped only the input, giving -0.0401 at
+t = -6.83 in both halves, and it is unaffected by this criticism. The intraday
+data genuinely helps. It helps about a third less than advertised.
+
+**What the lookahead verifier found (and did not find).** It reproduced the
+run exactly, then truncated the cached panel at 2024-01-03 and rebuilt every
+forecaster: all eleven deterministic forecasters returned max|diff| = 0.000
+with zero pattern mismatches, which a peek would have moved. It then wrote an
+independent walk-forward log-HAR with different refit anchoring and an
+explicit as-of training constraint, and matched. Two real defects were logged
+and neither touches the headline: a hardcoded log line claims a split-repair
+step that the cached-panel path never executes (the underlying repair is
+nonetheless real — ten in-sample splits verified clean), and the stated
+universe rule does not match the cache as it stands (26 further symbols
+qualify).
+
+**Round 3 correction log.** This is the second headline this round to be
+restated after verification, following H25's raw decile profile. Both were
+caught by controls the labs were required to run rather than by luck, which is
+the system working — but the pattern is worth naming: **a comparison is only
+as honest as its weakest arm.** H20 compared a fitted model to an unfitted
+one; H25 compared raw returns to nothing at all. Rule 16 follows.
+
+### 9. Accruals (H27) — NOT PROVEN, and its t-statistic did not survive
+
+The lab returned "the sign is right, it clears t>3, and its own controls empty
+it": Q1(low accruals) minus Q5(high) = +0.53 / +1.06 / +3.08 / +6.56% per
+21/42/126/252-session hold, block-bootstrap t = 3.00 / 3.34 / 3.41 / 3.75 on
+127 formation dates and 133,627 legs.
+
+The verifier reproduced every number to the printed decimal, confirmed the
+mechanism findings, and then killed the t-statistic:
+
+**At h=21 the stride is 1, so the block bootstrap IS the i.i.d. bootstrap of
+the mean, whose exact analytic value is mean/(sd/sqrt(n)) = 2.9510. The printed
+3.0006 clears the house bar by six ten-thousandths on a 5,000-replication
+estimate whose own Monte-Carlo standard deviation is 0.032.** Re-seeding the
+identical bootstrap 60 times gives mean t = 2.968, sd 0.032, and **85% of seeds
+land below 3.00.**
+
+So "clears t>3" at h=21 is a coin flip on the random seed. It clears at three
+of four horizons, not four, and the row that was headlined is the weakest one.
+
+The direction of the finding is unaffected and the verifier said so explicitly
+— nothing it did made accruals look better. But the framing "the statistics
+pass, the mechanism fails" is wrong: the statistics do not pass either, at this
+repo's own stated standard.
+
+**Rule 16: a bootstrap t-statistic that lands within its own Monte-Carlo noise
+of the acceptance threshold has not cleared it.** Report the analytic value
+where one exists, report the Monte-Carlo standard deviation of the bootstrap
+estimate itself, and re-seed before quoting a number within ~2 MC standard
+deviations of a bar. H27 cleared by 0.02 of one MC standard deviation.
+
+**Rule 17: give every arm of a comparison the same machinery.** H20 measured a
+fitted model against an unfitted one and charged the whole difference to its
+data source; a third of the gap was the fitting. Before attributing a gap to
+the thing you are testing, build the cell that isolates it.
