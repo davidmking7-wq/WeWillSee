@@ -27,13 +27,15 @@ Run the **/stock-scout** skill in Claude Code (it lives in
    and P(the stock drops -5% first).
 4. Web-researches the finalists (earnings dates inside the window, pending
    binary events, news) and only ever *downgrades* grades based on findings.
-5. Appends the final picks to `picks.xlsx`. **The recommended portfolio
-   is the top 2-3 of the Best Overall list** — the concentration level
-   the portfolio lab found best for the +5%-per-window goal (avg +2.5 to
-   +4.5% per window historically; see BACKTEST-REPORT.md); the Biggest
-   Gain list is context and alternatives, not extra positions.
+5. Appends the final research candidates to `picks.xlsx`. The lists are a
+   scorecard, not a prescribed portfolio size. Pooled tests found no reliable
+   return advantage from concentrating in the top 2 or 3 names; concentration
+   only made outcomes swing more. The Biggest Gain list is context, not a
+   second portfolio.
 
 It never buys anything. It is a research scorecard, not financial advice.
+There is no live-order path in this branch, and the rejected weekly executor
+is deliberately excluded.
 
 ## Signal engine: v5, universe: S&P 1500
 
@@ -42,21 +44,35 @@ over the **S&P 1500** — large caps plus the MidCap 400 and SmallCap 600,
 where under-the-radar candidates live; every pick is segment-labeled.
 See `SCOUT-DESIGN.md` for lineage and `BACKTEST-REPORT.md` for the full
 validation, including a **point-in-time S&P 500 test** (each date's actual
-members, delisted stocks included) that quantifies survivorship bias, and
-the S&P 1500 test where the engine reaches 63.6% hit rate with far more
-+10%/+15% runners and compounds even with SPY buy-and-hold.
+members, delisted stocks included) that quantifies survivorship bias. The
+S&P 1500 test reaches a 63.6% threshold-touch rate with more +10%/+15%
+runners, but that history is survivorship-biased and must not be read as
+evidence that the scanner beats SPY.
 
-**Honesty headline:** on the survivorship-corrected test the scout still
-does not beat buy-and-hold SPY on compounded returns — its edge is
-first-passage odds, speed and path safety for 2-month swing ideas, and it
-now beats the honest equal-weight market in a majority of windows. The
-report says this plainly; so should you.
+**Honesty headline:** no tested selection or portfolio beats buy-and-hold
+SPY. The scanner measures which names historically touched an upside level,
+how quickly, and how rough the path was. Those threshold statistics have not
+turned into extra compounded return. The report says this plainly; so should
+every user-facing explanation.
 
 Every pick row, scan and calibration is stamped with its engine version so
 track records never mix engines: pre-switch picks stay scored as `v1`.
 Changing `scout/signals.py` requires bumping `config.ENGINE` — the
 calibration cache is engine-tagged and rebuilds itself on mismatch, so new
 signals can never silently reuse probability tables fitted to old rankings.
+
+## Research-only gate
+
+Backtests are not permission to trade. Any change that alters rankings,
+probabilities, portfolio construction, or sell guidance must first run as a
+frozen, paper-only forward test on genuinely future data for at least six
+months (twelve months by default, or longer when its locked contract requires
+it). Only a candidate
+that passes the success rule written down before that test may be considered
+for `main`. Even then, merging it does **not** authorize live execution.
+
+See `FORWARD-TEST.md` for the plain-language checklist and `STATE.md` for the
+current conclusion. At present, no strategy has passed that gate.
 
 Manual CLI (same thing the skill drives), from the repo root:
 
@@ -111,4 +127,5 @@ ran, including the one already showing evidence against it.
 Key files: `scout/` (engine), `picks.xlsx` (the scorecard you open),
 `scout/calibration.json` (probability tables, generated),
 `SCOUT-DESIGN.md` (method + its honest limits), `BACKTEST-REPORT.md`
-(the validation), `SETUP.md` (install).
+(the full audit trail), `STATE.md` (current truth), `FORWARD-TEST.md`
+(promotion policy), and `SETUP.md` (install).

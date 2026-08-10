@@ -1,6 +1,6 @@
 ---
 name: stock-scout
-description: Scan the S&P 500 for the best 1-2 month picks expecting +5% upside, with calibrated reliability stats; updates the picks.xlsx scorecard with past and current picks. Use when the user asks for stock picks, short-term ideas, or to run/update their stock scout.
+description: Research S&P 1500 stocks for 1-2 month +5% candidates, with calibrated historical stats; updates the picks.xlsx research scorecard with past and current picks. Use when the user asks for stock ideas or to run/update their stock scout.
 ---
 
 # Stock Scout
@@ -16,7 +16,15 @@ average peak gain (big runners earn rank), P(+10%) and P(+15%) are quoted,
 and HIT picks keep being re-priced until their deadline. It quotes calibrated
 probabilities with honest uncertainty and keeps a running scorecard in
 `picks.xlsx` (predicted growth % AND realized growth % per pick).
-It never buys anything.
+It never buys anything. This repository has no broker-order path; the rejected
+weekly executor remains excluded and disabled.
+
+This is research only. A paper-forward signal is frozen after the market
+closes, the next trading day's open is its reference entry, and the cost
+assumption written before the test is applied to every result. Never use the
+signal-day close as a forward fill. No strategy becomes current behavior until
+it passes the frozen paper-forward gate and the `main` merge gate in
+`FORWARD-TEST.md`. Passing those gates still does not allow live execution.
 
 The signal engine is **v5** (`config.ENGINE`) over the **S&P 1500** —
 large caps plus mid/small caps, where under-the-radar candidates live;
@@ -25,8 +33,9 @@ non-large picks, users like knowing a name is off the beaten path). Every
 scan, calibration and recorded pick is engine-stamped. See
 `SCOUT-DESIGN.md` for lineage and `BACKTEST-REPORT.md` for validation —
 including the point-in-time survivorship correction and its honest limit:
-the tool does NOT beat buy-and-hold SPY; its edge is chance × speed ×
-path-safety for 2-month ideas. Never present it as market-beating.
+the tool does NOT beat buy-and-hold SPY. It measures chance, speed, and path
+safety for 2-month ideas, but those measurements have not produced extra
+return over SPY. Never present it as market-beating.
 
 Run commands from the repo root. Use the project venv's python if present
 (`.venv/bin/python`, on Windows `.venv\Scripts\python`), else `python3`.
@@ -139,8 +148,8 @@ Select TWO lists (a stock may appear in both — mark it "both"):
    `big_gain_order` (gain-weighted ranking; only stocks with Chance +5%
    ≥ 62% qualify). If fewer than 3 qualify — or none — say so honestly in
    the report; never pad the list with ineligible stocks. This list is
-   CONTEXT and alternatives — not extra positions on top of the
-   recommended 2-3.
+   CONTEXT and alternatives — not a second portfolio and not a reason to
+   increase concentration.
 
 "Research-cleared" = no unresearchable red flag; dropped stocks are replaced
 by the next in that same order. Write `scout/final_picks.json`:
@@ -164,7 +173,7 @@ research, never upgraded.
 python -m scout.cli record scout/final_picks.json
 ```
 
-Appends the picks to `picks.xlsx` (engine-stamped v3) and rebuilds the
+Appends the picks to `picks.xlsx` (stamped with `config.ENGINE`) and rebuilds the
 Track Record.
 
 ## Phase 5 — Report to the user
@@ -192,13 +201,14 @@ Show, in plain language (the user prefers no jargon):
    tight levels, lively ones get room). Be honest about what it is: at
    portfolio level it fired on 3 of 108 positions in ten years — real
    catastrophe insurance, not a return booster. And (2) otherwise sell at
-   the deadline. Every `update` run refreshes the live levels and flags
-   any pick whose signal says SELL — surface those prominently.
+   the deadline. Every `update` run refreshes the research levels and flags
+   any pick whose simulated signal says SELL — surface those prominently.
    **The old rule "once a pick touches +5%, never let it become a loss"
    is NO LONGER a rule** — tested at portfolio level it cut compounded
    return by about a third (hypotheses.md H6c), because momentum names
-   routinely dip back through the entry price and then run. Offer it only
-   if the user asks for a calmer ride, and say what it costs.
+   routinely dip back through the entry price and then run. Do not recommend
+   or offer this rejected rule as an optional exit. Mention it only as a
+   historical retraction if the user asks about the old rule.
 3. **Mandatory context line** (never omit): the regime base rate — e.g.
    "Right now X% of eligible S&P stocks touch +5% in 2 months anyway; these
    picks historically did it Y% of the time (lift Z)." A 65% P(hit) in a bull
@@ -206,26 +216,31 @@ Show, in plain language (the user prefers no jargon):
    Then the **portfolio goal tracker** (the user's stated goal is +5%+ per
    1-2 months on the whole portfolio). Use the CORRECTED numbers from
    BACKTEST-REPORT.md Round 2 — pooled across every entry schedule, not
-   the old single-schedule headline: expect roughly **+2% per 42-day
-   window**, with ≥+5% landing in **40-47%** of windows (never all of
+   the old single-schedule headline: the historical pooled estimate was
+   roughly **+2% per 42-day window**, not a forecast or promise, with ≥+5%
+   landing in **40-47%** of windows (never all of
    them — nothing documented achieves that), a worst window around
    **−18% to −25%**, multi-window losing streaks, and **no reliable edge
    over simply holding SPY** (+2.5%/window on the same decade). The
-   defensible value is reaching +5% sooner and more often than the index
-   with calibrated odds, not compounding faster. If the user is starting
-   a new book, mention the ladder: splitting capital across two entry
-   dates a month apart doesn't raise the average but roughly halves how
-   much the outcome depends on which day they happened to start.
+   scorecard's useful output is its measured chance, speed, and path, not a
+   claim that it compounds faster. If discussing the historical entry-date
+   study, explain that splitting observations across two dates did not raise
+   the average; it only reduced dependence on one lucky start date. Do not
+   turn that research control into allocation advice.
    Never suggest profit targets, static leverage, or 1-stock
    concentration to force the number (each is documented to destroy the
    edge or add only dispersion).
 4. The caveats from `last_scan.json`, briefly, plus: research scorecard, not
    financial advice; nothing was bought; and (from BACKTEST-REPORT.md) the
-   tool historically does NOT beat buy-and-hold SPY — its value is finding
-   likely-fast +5%+ movers with a safer path, not index outperformance.
-5. **The buy rule, in bold, every run:** buy at or near the market CLOSE —
-   never at the open, never chase a morning gap (it's the first thing in
-   the workbook's How To Read This sheet, in bold, for the same reason).
+   tool historically does NOT beat buy-and-hold SPY. It reports measured
+   chance, speed, and path; it does not promise index outperformance.
+5. **The paper-entry rule, in bold, every run:** this is not a buy
+   instruction. Freeze the signal after the market closes and use the next
+   trading day's OPEN as the paper reference entry. Never backfill the
+   signal-day close or skip a gap after seeing it. State the transaction-cost
+   assumption in the frozen forward-test contract and apply it to every
+   result. The strategy remains experimental unless it passes both gates in
+   `FORWARD-TEST.md`, and the repository never places an order.
 6. **Insider buying, when present** (the scan checks real SEC Form 4
    filings automatically): if a candidate's `insider_buyers` > 0, say so
    prominently — officers/directors buying their own stock before a pick
@@ -246,7 +261,11 @@ Show, in plain language (the user prefers no jargon):
 - If the universe/calibration fetch fails, the CLI falls back to cached
   files; note their age in the report.
 - Never buy anything, never upgrade a grade, never edit
-  `scout/calibration.json` by hand.
+  `scout/calibration.json` by hand. Do not add a broker-order path; the
+  rejected weekly executor stays excluded and disabled.
+- A ranking, probability, portfolio, entry, or exit change must pass the
+  frozen paper-forward test and `main` merge gate in `FORWARD-TEST.md` before
+  it can become current research behavior. A pass never authorizes live use.
 - Never tune signal weights or thresholds against the calibration panel
   (data snooping — see SCOUT-DESIGN.md). Engine changes require bumping
   `config.ENGINE` and a from-scratch recalibration (automatic).

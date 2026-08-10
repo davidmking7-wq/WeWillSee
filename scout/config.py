@@ -1,5 +1,8 @@
 """Scout settings. Reads Alpaca keys (data-only) from .env at the repo root.
 
+This project is research-only. The keys are used for market data, not order
+submission. There is no live execution path or weekly executor in this branch.
+
 All signal thresholds are frozen ex ante from the literature (see
 SCOUT-DESIGN.md) — do NOT tune them against the calibration panel, that's
 data snooping and would corrupt the reported probabilities.
@@ -12,8 +15,26 @@ from dotenv import load_dotenv
 ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(ROOT / ".env")
 
-ALPACA_API_KEY = os.environ["ALPACA_API_KEY"]
-ALPACA_SECRET_KEY = os.environ["ALPACA_SECRET_KEY"]
+def _alpaca_credentials() -> tuple[str | None, str | None]:
+    """Load data-only credentials without copying secrets into this repo."""
+    key = os.environ.get("ALPACA_API_KEY")
+    secret = os.environ.get("ALPACA_SECRET_KEY")
+    credential_file = os.environ.get("ALPACA_CREDENTIAL_FILE")
+    if credential_file and (not key or not secret):
+        path = Path(credential_file).expanduser()
+        try:
+            lines = [line.strip() for line in path.read_text(encoding="utf-8").splitlines()
+                     if line.strip()]
+        except OSError as exc:
+            raise RuntimeError(f"cannot read ALPACA_CREDENTIAL_FILE: {path}") from exc
+        if len(lines) != 2:
+            raise RuntimeError("ALPACA_CREDENTIAL_FILE must contain exactly two non-empty lines")
+        key = key or lines[0]
+        secret = secret or lines[1]
+    return key, secret
+
+
+ALPACA_API_KEY, ALPACA_SECRET_KEY = _alpaca_credentials()
 
 SCOUT_DIR = ROOT / "scout"
 UNIVERSE_CSV = SCOUT_DIR / "universe.csv"
@@ -82,16 +103,16 @@ GAIN_MIN_P5 = 0.62
 # Tested 2017-2026 train/holdout: ordinary stops/time/trend exits before
 # the deadline reduce returns (whipsaw + gap-through — daily single-stock
 # returns lean toward reversal, so stops sell dips right before the
-# expected bounce). What ships is PER-STOCK, guidance-only (HIT/MISS
-# labels never altered):
+# expected bounce). Current PER-STOCK guidance is deliberately narrow
+# (HIT/MISS labels are never altered):
 #  1. DISASTER stop at SELL_DISASTER_SIGMA x the stock's own expected
 #     42-day move (sigma42 = annualized 63d vol * sqrt(42/252)) below
 #     entry. Beat the fixed -15% stop on BOTH train and holdout
 #     (vstop200 vs stop15). Tail-capping, not return enhancement.
 #  2. No other stop before the deadline; the deadline is the exit.
-#  3. After a +5% touch: breakeven floor — never let a winner become a
-#     loss (be_hit; the peak-trailing variant sold ongoing runners and
-#     lost to this on holdout).
+# Touching +5% is a scorecard milestone, not a sell trigger. The former
+# breakeven-after-+5% rule was removed after the portfolio-level test showed
+# that it cut compounded return by about one third (BACKTEST-REPORT, Round 2).
 SELL_DISASTER_SIGMA = 2.0
 SELL_DISASTER_FALLBACK = 0.15   # rows recorded before per-stock levels
 

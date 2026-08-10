@@ -2,9 +2,15 @@
 
 Durable state for the project. If context is lost, resume from here.
 
+> **Current conclusion (supersedes interim decisions below):** no tested
+> selection or portfolio beats SPY. This is a research and scorekeeping tool,
+> with no live execution path. The weekly executor is deliberately excluded.
+> Old recommendations are retained below only where they explain the audit
+> trail; `STATE.md` and `FORWARD-TEST.md` control current behavior.
+
 ## What this is
 
-A **user-invoked skill** `/stock-scout` (no auto-buying, research only):
+A **user-invoked skill** `/stock-scout` (no order execution, research only):
 1. Finds best short-term picks — **1–2 month horizon, expecting ≥5% upside**
    (5% is the MINIMUM bar, not the target).
 2. States **how good/reliable each assessment is** (empirical probability +
@@ -19,7 +25,7 @@ Label definition (verbatim, used everywhere):
 ## Architecture
 
 - `scout/` package (Python 3.11+, Alpaca keys in `.env` at repo root):
-  - `universe.py` — current S&P 500 constituents cached in `scout/universe.csv`,
+  - `universe.py` — current S&P 1500 constituents cached in `scout/universe.csv`,
     refreshed when >60 days old.
   - `data.py` — Alpaca **SIP feed** daily bars (free for history >15 min old),
     adjustment=all — consolidated closes + real volume (IEX is ~2.5% of tape).
@@ -42,15 +48,17 @@ Label definition (verbatim, used everywhere):
   variance; bucket P **shrunk toward regime base rate** (K=20); cells with
   n_eff<20 refuse to quote P ("n/q"); companion stats P(-5% first),
   median & 5th-pct day-42 return.
-- Regime: bull/bear by SPY 200d; **crash flag** = bear + SPY 21d vol > q80
-  → skill recommends zero picks (momentum-crash state).
+- Regime: bull/bear by SPY 200d; **crash flag** = bear + SPY 21d vol > q80.
+  It lowers confidence because the historical sample is thin; it does not
+  force zero picks or an automatic sit-out. Round 2 tested that rule and
+  rejected it.
 - Known limits (documented in Excel About + report caveats): survivorship
   (today's constituents applied historically), single macro era 2016-2026,
   ~3 bear episodes. Rely on **lift over base rate**, not raw P.
 - Key empirical finding (v2): composite rank shows ~no lift over the gated
-  base rate in bull regimes; the honest edge = the gates' quality/asymmetry,
-  crash-regime avoidance, the event-research overlay, and the tracked
-  scoreboard — never oversell P(hit).
+  base rate in bull regimes. The useful output is the transparent scorecard,
+  base-rate comparison, and risk/event context — not a claim of extra return.
+  Never oversell P(hit).
 
 ## Ranking (v3 scoring model, unchanged since)
 
@@ -137,8 +145,9 @@ The findings that shape how this tool must be presented:
   The composite's edge is in first-passage odds, speed and path safety —
   NOT end-of-window outperformance. Never sell it as market-beating.
 - **Bear-regime warning:** post-v1 engines' average end return in bear
-  windows is ~0 on a tiny sample (~3 episodes). The honest posture in bear
-  regimes is fewer or zero picks, not confidence in the numbers.
+  windows is ~0 on a tiny sample (~3 episodes). Lower confidence and state
+  the uncertainty. Do not turn the flag into a forced sit-out; the later
+  portfolio-level test found that rule reduced returns.
 
 ### v4 (adopted 2026-08-07): gain-forward objective + leaner engine + earnings flag
 
@@ -197,7 +206,7 @@ mid-window drop out of picks AND benchmarks; SPY sits in the cross-sectional
 rank pool (1/500 distortion, consistent across scan/calibration/backtest);
 labtest's SECREL rank is post-gate.
 
-### Sell rules (2026-08-08, scout/exitlab.py)
+### Sell rules (2026-08-08, scout/exitlab.py) — historical first pass, corrected
 
 User directive: "if stock x does y you should sell, so losses are minimal —
 and account for it in testing"; later sharpened to "specific per stock,
@@ -207,21 +216,22 @@ redeploy-into-SPY accounting; simulations adversarially verified (no
 bugs); conclusions cross-checked against Kaminski-Lo 2014, Lei-Li 2009,
 Han-Zhou-Zhu. Full record in BACKTEST-REPORT.md. Verdict: ordinary
 stops/time/trend exits reduce returns (whipsaw + gap-through; daily
-single-stock autocorrelation has the wrong sign for stops). Shipped as
-PER-STOCK "Sell Signal" guidance (config.SELL_DISASTER_SIGMA):
+single-stock autocorrelation has the wrong sign for stops). The first pass
+temporarily shipped a post-hit breakeven rule; the later portfolio-level test
+rejected it. Current PER-STOCK "Sell Signal" guidance is limited to:
 (1) disaster stop at 2× the stock's own expected 42-day move (vstop200 —
 beat the fixed −15% on both train and holdout; level stored per pick in
-"Sell Below (Disaster)"); (2) otherwise the deadline is the exit;
-(3) after a +5% touch, breakeven floor (be_hit — beat the peak-trailing
-variant on holdout; a winner is never allowed to become a loss). scan
-emits per-stock `sell_if` with dollar levels, update refreshes them and
-flags "SELL" states. HIT/MISS labels are never altered by the guidance.
+"Sell Below (Disaster)"); (2) otherwise the deadline is the exit. Touching
++5% remains a scorecard event, not a sell trigger. `scan` emits per-stock
+`sell_if` with the disaster dollar level, `update` refreshes it, and HIT/MISS
+labels are never altered by the guidance.
 
 Loss forensics (what causes losses): the tail is event-driven (44% of
 <−10% enders contain an earnings-signature day; such windows have a 30%
 vs 7% tail rate); half of misses are slow stock-specific grinds in rising
 markets with no in-horizon recovery (57% still falling at deadline); a
-quarter are market-driven (crash-rule territory).
+quarter are market-driven. That fact did not produce a reliable market-state
+exit rule.
 
 Earnings, settled with REAL SEC EDGAR dates (8-K Item 2.02;
 scout/earnings_history.json, 21k dates; supersedes the proxy labs which
@@ -238,9 +248,11 @@ take-profit / protect at the cell's expected peak; scout/expectlab.py,
 train-frozen expectations, adversarially verified): ALL lost on holdout —
 losers rarely recover in-horizon and winners outrun their expected peaks.
 Rejected; the surviving per-stock personalization is the vol-scaled
-disaster level + breakeven floor + deadline. Weak-sector exclusion NOT
-shipped (train win, holdout wash). The 2022-2026 holdout is RETIRED —
-future rule changes need fresh out-of-sample evidence (live track record).
+disaster level plus the deadline. The former breakeven-after-+5% rule was
+removed after the portfolio-level test cut compounded return by about one
+third. Weak-sector exclusion was not shipped (train win, holdout wash). The
+2022-2026 holdout is RETIRED — future rule changes need a frozen, paper-only
+forward record on genuinely unseen dates.
 
 ### v5 (2026-08-08): S&P 1500 universe + liquidity gate + point-in-time tests
 
@@ -284,21 +296,36 @@ should account for each date's ACTUAL S&P candidates, not only today's."
   (fja05680/sp500) to kill survivorship; purged-CV validation; earnings
   calendar API (Claude web-search covers it per-run for now).
 
-### Portfolio lab (2026-08-08): the user's goal measured directly
+### Portfolio lab (2026-08-08): historical result and retraction
 
 Goal: "at least +5% (preferably more) every month or two" — portfolio
 level. scout/portfolio_lab.py measures exactly that per 42-td window
 across concentration levels (top-1/2/3/5), a bull-only variant, and a
 rolling sell-at-+5%-and-redeploy strategy, on sp1500 and pit500.
-Findings (full tables in BACKTEST-REPORT.md): top-2 concentration is the
-one configuration leading both halves (+4.3/+4.9%/window, 46-52% of
-windows >=+5%, worst -23%); the velocity strategy is regime-dependent;
-concentration collapses on the survivorship-corrected PIT-500 (top-1
-+0.34%/window) — much of the concentrated edge lives in mid/small caps.
-Independent literature review concurs: no documented strategy short of
-Medallion clears +5% every window; stops help momentum, profit targets
-hurt; vol-targeting adds consistency but no edge; static leverage adds
-crash depth. Verdict shipped into the skill's Phase-5 "portfolio goal
-tracker": expect +2.5-4.5%/window on a concentrated 2-3 pick book with
->=+5% in ~40-50% of windows — scored predicted-vs-realized, never
-promised.
+The first run appeared to favor top-2 concentration in both halves
+(+4.3/+4.9% per window). That conclusion was later retracted: the run had
+sampled the luckiest of six valid entry schedules. Pooled across all six,
+book sizes from 1 to 8 all returned roughly +2% per window versus SPY's
++2.5%. Concentration did not raise expected return; it only made results
+depend more on the start date and deepened drawdowns. The old top-2/3 and
++2.5% to +4.5% recommendation is not current guidance.
+
+No documented result supports +5% every window, and no portfolio tested here
+beats SPY. Any future portfolio change is research-only until it passes the
+paper-forward and `main` promotion rules in `FORWARD-TEST.md`.
+
+## Execution and promotion policy
+
+- This branch reads market data and records research. It does not place live
+  or paper broker orders.
+- The rejected weekly executor is not part of this branch and must not be
+  reintroduced as an active path.
+- A backtest winner may live in a lab or disabled research branch. It may not
+  become current `main` behavior until its exact rules are frozen, tracked on
+  genuinely future data in paper only for at least six months (twelve months
+  by default, or longer if its frozen contract says so), and judged against the
+  success rule written before the test began.
+- Passing that merge gate changes research behavior only. It never grants
+  permission for live execution.
+
+See `FORWARD-TEST.md` for the checklist.

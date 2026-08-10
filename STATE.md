@@ -5,10 +5,24 @@ picking the work up cold — it is the shortest path to not repeating anything.
 
 ## The one-line summary
 
-**Nothing tested beats SPY.** Five rounds, ~800 variants, 16 registered
-hypotheses, zero shipped signals, six retracted or killed headlines. What the
+**Nothing tested beats SPY.** Five rounds, ~800 variants, 18 registered
+hypotheses, 17 reported, zero shipped signals, seven retracted or killed
+headlines. What the
 project has instead is a data layer whose defects are known, a research process
 that catches itself, and one structural finding that reframes the whole effort.
+
+## Operational status
+
+- **Research only.** The repository reads data and updates a scorecard; it has
+  no live-order path.
+- **The weekly executor stays out.** Its strategy was rejected and the executor
+  is deliberately absent/disabled rather than waiting to be scheduled.
+- **Paper-forward before promotion.** A backtest result can enter a lab, but a
+  change that affects picks, probabilities, portfolio construction, or exits
+  cannot become current `main` behavior until it passes the frozen forward-test
+  contract in `FORWARD-TEST.md` on future data.
+- **A merge is not trading permission.** Passing the gate only permits a
+  research-code change. Live execution remains prohibited.
 
 ## What is PROVEN to work best, in order
 
@@ -36,7 +50,8 @@ a single stock is picked. The selection layer adds +0.030 back.**
 
 Four rounds optimised a component worth one seventh of a structural handicap
 nobody had measured. Portfolio CONSTRUCTION, not selection, is where the money
-went. H31 (running at time of writing) tests whether cap-weighting recovers it.
+went. H31 later confirmed that cap-weighting recovers most of this handicap,
+but still does not beat SPY.
 
 ## Do NOT re-test these
 
@@ -196,10 +211,12 @@ The construction result is confirmed but **not significant on its own**
 consistency — every half, every third, both universes, difference beta ~0.05 —
 and on the SPY-vs-RSP external check, not on a p-value.
 
-The cheapest way to act on it: **switch the engine's book from equal weight to
-cap weight.** It requires no new signal, reduces nothing, and is the only
-change five rounds of work support. It will not beat the market; it stops the
-book losing to it by ~2.7 pp/yr.
+The next research candidate is to switch the engine's paper book from equal
+weight to cap weight. It requires no new signal and is the only change five
+rounds of work support, but it is not yet approved behavior: freeze the exact
+rule, register its forward success bar, and run it through `FORWARD-TEST.md`.
+It will not beat the market; the historical result merely recovered roughly
+the 2.7 percentage points per year the equal-weight construction had lost.
 
 If you want to test further, the open question is whether the cap-vs-equal gap
 is a permanent property or a feature of the 2016-2026 mega-cap decade. It is
