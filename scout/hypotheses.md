@@ -1662,3 +1662,33 @@ indistinguishable from a random calendar of the same shape, twice over.**
 Downgrade tag `source_gap`; refresh condition: same-shape test on RSP/IWM where
 payroll-flow depth effects should be largest. 26 variants; registry N rises
 accordingly.
+
+### H40–H44 — the vNext real-backtest program (five labs, run 2026-08-12/13)
+
+The externally-authored execution handoff of 2026-08-12 preregistered five
+event-driven mechanisms against a +13–20 pp/yr-over-SPY objective. Full
+evidence, controls, and kill classes live in `SCOUT-VNEXT-REAL-RESULTS.md`
+(the program's canonical results file, written for independent review) and in
+each lab's `scout/h4X_results.json`. Designs were frozen in module docstrings
+before any return was computed; three verdicts were adversarially verified by
+independent agents before acceptance, which caught and fixed a CIK-inversion
+bug (273 events priced with the wrong company's returns — flattering the
+dying hypothesis), an unimplemented registered control, a dividend feed empty
+before mid-2019, and one false survival (revoked).
+
+| # | date | mechanism | result | status |
+|---|---|---|---|---|
+| H40 | 2026-08-12 | Pure news: residual of tone after removing the firm-state-predictable part (walk-forward ridge, OOS R² +0.055 — representation genuinely tested) | pure L/S gross −0.78%/yr at beta 0.00; **2.4th/8.0th pctile of its own two nulls** | **KILL_H40_SCALAR** — fifth confirmation news forecasts size, never sign |
+| H41 | 2026-08-13 | Lazy Prices: 10-K year-over-year similarity, 6,603 pairs/684 firms, filing-date entry +1mo, 9mo hold, expanding quintiles | Q5−Q1 **−2.36%/yr** (t −0.73); 2020+ era **−3.67%/yr**; Jaccard agrees | **KILL_H41** — wrong sign, worst post-publication |
+| H42 | 2026-08-12 | Opportunistic vs routine insider purchases (CMP classifier verbatim, 404k purchase rows, filing-date entry) | routine α +7.73 vs opportunistic **−0.74**; real book at **18.7th pctile** of its timing null; 2x costs zero it | **KILL_H42** — no detectable effect on PIT large caps (MDE ~13%/yr; source_gap for small-cap version) |
+| H43 | 2026-08-12 | Repurchase authorization (8-K FTS) × PIT B/M undervaluation — the EVENT, not H22's accounting flow | value − glamour **−4.74%/yr** at h126 (backwards); random firms on the same dates match it; thirds flip sign | **KILL_H43** — structural this decade |
+| H44 | 2026-08-13 | Dividend-reinvestment forced flow, low vs high price payers, payment-window entries proven public per event | active-span L−H +7.87%/yr t 1.61 — but flow window holds NONE of it, dose-response reversed, **one 3-yr window = 96% of P&L** (remainder t 0.13) | **KILL_H44** — initial survival REVOKED by 3-lens verification |
+
+**Program verdict: `INSUFFICIENT_FINAL_SLEEVES` — zero of the required three
+independent sleeves survived. The +13–20 pp/yr objective is not met and not
+approachable from these five mechanisms on this data.** ~60 registered
+variants across the five labs (per-lab `variants_tried` lists); registry N
+rises accordingly. The only still-alive findings in the repo remain H31
+(construction: cap-weighting, +0.15 Sharpe) and H35 (trend overlay as a
+drawdown tool, not a return edge); §K of the results file names the next
+falsification worth running (H35 on 2000-2015 data from a second vendor).
