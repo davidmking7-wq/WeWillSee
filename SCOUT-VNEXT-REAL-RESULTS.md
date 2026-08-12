@@ -179,3 +179,12 @@ not a synthetic "effective bets ≥ 3".
   retuned into survival.
 
 ## K. ChatGPT review targets — final section, written when all blocks close
+
+---
+## RESUME NOTE (written at 90% usage)
+If this session dies: H44 rerun (`h44_run2.log`), H40 (`h40_run.log`) and the
+H41 fetch (`h41_fetch.log`) may still be running or finished in scratchpad.
+To close the program: read each log tail, `python -m scout.h41_lazy_prices
+--run` once its fetch completes, paste each verdict into its block above,
+then write sections H-K (no survivor so far → likely
+INSUFFICIENT_FINAL_SLEEVES). All labs are committed; nothing is lost.
