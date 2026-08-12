@@ -69,45 +69,60 @@ pairs cached in `scout/cache_h41_similarities.csv` (resumable).
   years (same insider–firm pair); routine = same calendar month in all three
 - timing: filing DATE only in the datasets → entry at close of first session
   strictly after filing (conservative, per handoff 9.2)
-- h63 gross, long-only vs SPY (Rule 13):
+- **The kill was adversarially verified by three independent agents before
+  being accepted** (implementation / power / null-construction lenses). One
+  found a real identity bug — a last-row-wins CIK inversion pricing 273
+  events with the WRONG company's returns and zero-filling dead columns —
+  which had been FLATTERING the mechanism. The numbers below are the
+  corrected run under filing-symbol-verified identity (`resolve_cik`, with
+  `ISSUERTRADINGSYMBOL` cross-check; unresolvable collisions dropped and
+  counted). The null-construction lens reproduced the shuffle bit-for-bit
+  and quantified two pro-null biases at ~1pt combined — not enough to matter.
+- h63 gross, long-only vs SPY (Rule 13), corrected identity:
 
 | bucket | n | ann %/yr | t | alpha %/yr | t(alpha) |
 |---|---:|---:|---:|---:|---:|
-| all | 7,985 | +21.29 | 3.73 | +4.88 | 1.07 |
-| routine | 577 | +17.40 | 2.08 | **+7.19** | 0.82 |
-| opportunistic | 556 | +16.77 | 2.26 | **+0.84** | 0.13 |
-| unclassifiable | 6,852 | +19.11 | 3.55 | +2.70 | 0.70 |
+| all | 7,620 | +22.07 | 3.72 | +5.07 | 1.05 |
+| routine | 573 | +17.92 | 2.13 | **+7.73** | 0.88 |
+| opportunistic | 531 | +15.40 | 2.00 | **−0.74** | −0.11 |
+| unclassifiable | 6,516 | +20.26 | 3.67 | +3.15 | 0.80 |
 
-- **the mechanism's own ordering is BACKWARDS** (routine > opportunistic), and
-- **the timing-shuffle null explains the level**: the real opportunistic book
-  sits at the **33.7th percentile** of issuer-date-rotated versions of itself —
-  random re-timing does better. The headline return is beta plus firm mix.
-- kill class (handoff §16): **structural kill on this universe**, with one
-  scoping caveat carried to §J: CMP's original effect concentrated in small
-  caps; the PIT S&P 500 is the large-cap cohort. A small-cap retest is a NEW
-  preregistered hypothesis, not a rescue of this one.
+- three independent kill grounds: **the mechanism's ordering is BACKWARDS**
+  (routine α +7.73 vs opportunistic −0.74); **the timing-shuffle null is not
+  approached** (real book at the **18.7th percentile** of issuer-date-rotated
+  versions of itself — random re-timing does better); **2x costs zero the
+  market-adjusted excess**.
+- kill classification (power lens, adopted): **no detectable effect on PIT
+  S&P 500 large caps.** The design's minimum detectable alpha at t=2 is
+  ~13%/yr against a plausible post-publication large-cap effect of 1–4%/yr,
+  so this kills the TRADE on this universe without adjudicating the canonical
+  small-cap mechanism — `source_gap`, carried to §J. A small-cap retest is a
+  NEW preregistered hypothesis, not a rescue.
 - production-approved: **NO**
 
 ## F. H43 result block — KILL_H43
 
 - 24,488 8-K filings matching `"repurchase program" "authorized"` (FTS,
-  quarterly chunks) → 6,023 PIT-matched → **2,040 events** after the 365-day
-  per-company cooldown → **1,467 with point-in-time B/M** (filing-date
-  discipline, consolidated rows, split-adjusted shares)
+  quarterly chunks) → 4,842 PIT-matched under date-aware identity → **1,985
+  events** after the 365-day per-company cooldown → **1,425 with
+  point-in-time B/M** (filing-date discipline, consolidated rows,
+  split-adjusted shares). Numbers below are the corrected re-run after the
+  identity hardening that H42's verification forced (the verdict was
+  unchanged by it).
 - h126 gross, long-only vs SPY (Rule 13):
 
 | bucket | n | ann %/yr | t | alpha %/yr | t(alpha) |
 |---|---:|---:|---:|---:|---:|
-| value | 464 | +15.02 | 2.59 | **−1.53** | −0.35 |
-| mid | 473 | +16.11 | 3.43 | +0.15 | 0.06 |
-| glamour | 500 | +19.73 | 4.54 | **+3.29** | 1.32 |
+| value | 442 | +15.30 | 2.58 | **−1.48** | −0.33 |
+| mid | 464 | +15.45 | 3.32 | −0.80 | −0.30 |
+| glamour | 489 | +20.04 | 4.66 | **+3.50** | 1.40 |
 
-- **the value conditioning is BACKWARDS**: value − glamour = **−4.71%/yr** at
+- **the value conditioning is BACKWARDS**: value − glamour = **−4.74%/yr** at
   h126; the mechanism predicted the opposite sign
 - matched control: value-bucket events are **indistinguishable from random
   PIT firms on the same sessions** (the calendar, not the announcement,
   carries the return)
-- V−G thirds `[−15.28, +6.91, −5.77]` — sign flips across eras
+- V−G thirds `[−15.25, +7.59, −6.57]` — sign flips across eras
 - kill class (handoff §16): **structural kill on this decade** — with the
   honest macro note that 2016-2026 was historically hostile to value as a
   style; §J records what could reopen it
