@@ -5,7 +5,19 @@
   "after_filters": 210434,
   "dropped_not_pit_or_uncovered": 200807,
   "dropped_publicness_check": 2,
-  "events": 9620
+  "events": 9620,
+  "events_by_year": {
+   "2019": 55,
+   "2020": 1138,
+   "2021": 1463,
+   "2022": 1497,
+   "2023": 1515,
+   "2024": 1524,
+   "2025": 1541,
+   "2026": 887
+  },
+  "first_active_session": "2019-07-12",
+  "active_span_note": "all statistics computed on the ACTIVE span only; the feed is empty before mid-2019"
  },
  "declaration_gate": "anticipatory legs FAIL CLOSED (no declaration dates in feed); payment-window entries proven public per event via ex_date <= entry session; 2 events dropped by that check",
  "by_bucket": {
@@ -61,102 +73,102 @@
    "n_events": 3242,
    "payday": {
     "gross": {
-     "ann_pct": -0.431,
+     "ann_pct": -0.646,
      "t_nw": -0.08,
-     "beta": 0.42,
-     "alpha_ann_pct": -7.075,
-     "t_alpha": -1.32,
+     "beta": 0.51,
+     "alpha_ann_pct": -9.222,
+     "t_alpha": -1.16,
      "halves": [
-      -3.02,
-      2.16
+      3.33,
+      -4.63
      ],
      "thirds": [
-      -0.04,
-      3.38,
-      -4.63
+      0.44,
+      -2.94,
+      0.57
      ]
     },
     "net_1x": {
-     "ann_pct": -25.631,
-     "t_nw": -4.63,
-     "beta": 0.42,
-     "alpha_ann_pct": -32.275,
-     "t_alpha": -6.02,
+     "ann_pct": -25.846,
+     "t_nw": -3.12,
+     "beta": 0.51,
+     "alpha_ann_pct": -34.422,
+     "t_alpha": -4.32,
      "halves": [
-      -28.22,
-      -23.04
+      -21.87,
+      -29.83
      ],
      "thirds": [
-      -25.24,
-      -21.82,
-      -29.83
+      -24.76,
+      -28.14,
+      -24.63
      ]
     },
     "net_2x": {
-     "ann_pct": -50.831,
-     "t_nw": -9.19,
-     "beta": 0.42,
-     "alpha_ann_pct": -57.475,
-     "t_alpha": -10.72,
+     "ann_pct": -51.046,
+     "t_nw": -6.16,
+     "beta": 0.51,
+     "alpha_ann_pct": -59.622,
+     "t_alpha": -7.49,
      "halves": [
-      -53.42,
-      -48.24
+      -47.07,
+      -55.03
      ],
      "thirds": [
-      -50.44,
-      -47.02,
-      -55.03
+      -49.96,
+      -53.34,
+      -49.83
      ]
     },
     "top10_abs_share": 3.106
    },
    "hold20": {
     "gross": {
-     "ann_pct": 12.245,
-     "t_nw": 2.45,
-     "beta": 0.753,
-     "alpha_ann_pct": 0.334,
-     "t_alpha": 0.09,
+     "ann_pct": 18.346,
+     "t_nw": 2.48,
+     "beta": 0.915,
+     "alpha_ann_pct": 2.968,
+     "t_alpha": 0.61,
      "halves": [
-      12.16,
-      12.33
+      22.69,
+      14.0
      ],
      "thirds": [
-      -0.04,
-      23.23,
-      13.54
+      31.58,
+      6.6,
+      16.88
      ]
     },
     "net_1x": {
-     "ann_pct": 10.985,
-     "t_nw": 2.2,
-     "beta": 0.753,
-     "alpha_ann_pct": -0.926,
-     "t_alpha": -0.25,
+     "ann_pct": 17.086,
+     "t_nw": 2.31,
+     "beta": 0.915,
+     "alpha_ann_pct": 1.708,
+     "t_alpha": 0.35,
      "halves": [
-      10.9,
-      11.07
+      21.43,
+      12.74
      ],
      "thirds": [
-      -1.3,
-      21.97,
-      12.28
+      30.32,
+      5.34,
+      15.62
      ]
     },
     "net_2x": {
-     "ann_pct": 9.725,
-     "t_nw": 1.95,
-     "beta": 0.753,
-     "alpha_ann_pct": -2.186,
-     "t_alpha": -0.6,
+     "ann_pct": 15.826,
+     "t_nw": 2.14,
+     "beta": 0.915,
+     "alpha_ann_pct": 0.448,
+     "t_alpha": 0.09,
      "halves": [
-      9.64,
-      9.81
+      20.17,
+      11.48
      ],
      "thirds": [
-      -2.56,
-      20.71,
-      11.02
+      29.06,
+      4.08,
+      14.36
      ]
     },
     "top10_abs_share": 0.081
@@ -166,102 +178,102 @@
    "n_events": 3134,
    "payday": {
     "gross": {
-     "ann_pct": 3.026,
+     "ann_pct": 4.534,
      "t_nw": 0.65,
-     "beta": 0.424,
-     "alpha_ann_pct": -3.675,
-     "t_alpha": -0.83,
+     "beta": 0.515,
+     "alpha_ann_pct": -4.117,
+     "t_alpha": -0.63,
      "halves": [
-      3.66,
-      2.39
+      0.07,
+      8.99
      ],
      "thirds": [
-      -0.27,
-      0.34,
-      9.0
+      10.93,
+      -4.5,
+      7.18
      ]
     },
     "net_1x": {
-     "ann_pct": -22.174,
-     "t_nw": -4.75,
-     "beta": 0.424,
-     "alpha_ann_pct": -28.875,
-     "t_alpha": -6.5,
+     "ann_pct": -20.666,
+     "t_nw": -2.96,
+     "beta": 0.515,
+     "alpha_ann_pct": -29.317,
+     "t_alpha": -4.47,
      "halves": [
-      -21.54,
-      -22.81
+      -25.13,
+      -16.21
      ],
      "thirds": [
-      -25.47,
-      -24.86,
-      -16.2
+      -14.27,
+      -29.7,
+      -18.02
      ]
     },
     "net_2x": {
-     "ann_pct": -47.374,
-     "t_nw": -10.15,
-     "beta": 0.424,
-     "alpha_ann_pct": -54.075,
-     "t_alpha": -12.18,
+     "ann_pct": -45.866,
+     "t_nw": -6.56,
+     "beta": 0.515,
+     "alpha_ann_pct": -54.517,
+     "t_alpha": -8.31,
      "halves": [
-      -46.74,
-      -48.01
+      -50.33,
+      -41.41
      ],
      "thirds": [
-      -50.67,
-      -50.06,
-      -41.4
+      -39.47,
+      -54.9,
+      -43.22
      ]
     },
     "top10_abs_share": 1.063
    },
    "hold20": {
     "gross": {
-     "ann_pct": 7.404,
+     "ann_pct": 11.094,
      "t_nw": 1.23,
-     "beta": 0.787,
-     "alpha_ann_pct": -5.05,
-     "t_alpha": -1.23,
+     "beta": 0.957,
+     "alpha_ann_pct": -4.984,
+     "t_alpha": -0.93,
      "halves": [
-      1.39,
-      13.42
+      6.05,
+      16.14
      ],
      "thirds": [
-      -0.31,
-      6.58,
-      15.94
+      7.79,
+      6.76,
+      18.73
      ]
     },
     "net_1x": {
-     "ann_pct": 6.144,
-     "t_nw": 1.02,
-     "beta": 0.787,
-     "alpha_ann_pct": -6.31,
-     "t_alpha": -1.54,
+     "ann_pct": 9.834,
+     "t_nw": 1.09,
+     "beta": 0.957,
+     "alpha_ann_pct": -6.244,
+     "t_alpha": -1.17,
      "halves": [
-      0.13,
-      12.16
+      4.79,
+      14.88
      ],
      "thirds": [
-      -1.57,
-      5.32,
-      14.68
+      6.53,
+      5.5,
+      17.47
      ]
     },
     "net_2x": {
-     "ann_pct": 4.884,
-     "t_nw": 0.81,
-     "beta": 0.787,
-     "alpha_ann_pct": -7.57,
-     "t_alpha": -1.84,
+     "ann_pct": 8.574,
+     "t_nw": 0.95,
+     "beta": 0.957,
+     "alpha_ann_pct": -7.504,
+     "t_alpha": -1.4,
      "halves": [
-      -1.13,
-      10.9
+      3.53,
+      13.62
      ],
      "thirds": [
-      -2.83,
-      4.06,
-      13.42
+      5.27,
+      4.24,
+      16.21
      ]
     },
     "top10_abs_share": 0.103
@@ -271,102 +283,102 @@
    "n_events": 3244,
    "payday": {
     "gross": {
-     "ann_pct": 3.414,
+     "ann_pct": 5.116,
      "t_nw": 0.6,
-     "beta": 0.472,
-     "alpha_ann_pct": -4.048,
-     "t_alpha": -0.77,
+     "beta": 0.573,
+     "alpha_ann_pct": -4.518,
+     "t_alpha": -0.59,
      "halves": [
-      1.17,
-      5.65
+      -2.17,
+      12.4
      ],
      "thirds": [
-      -0.23,
-      -1.85,
-      12.32
+      0.7,
+      -0.0,
+      14.64
      ]
     },
     "net_1x": {
-     "ann_pct": -21.786,
-     "t_nw": -3.81,
-     "beta": 0.472,
-     "alpha_ann_pct": -29.248,
-     "t_alpha": -5.59,
+     "ann_pct": -20.084,
+     "t_nw": -2.35,
+     "beta": 0.573,
+     "alpha_ann_pct": -29.718,
+     "t_alpha": -3.88,
      "halves": [
-      -24.03,
-      -19.55
+      -27.37,
+      -12.8
      ],
      "thirds": [
-      -25.43,
-      -27.05,
-      -12.88
+      -24.5,
+      -25.2,
+      -10.56
      ]
     },
     "net_2x": {
-     "ann_pct": -46.986,
-     "t_nw": -8.23,
-     "beta": 0.472,
-     "alpha_ann_pct": -54.448,
-     "t_alpha": -10.4,
+     "ann_pct": -45.284,
+     "t_nw": -5.29,
+     "beta": 0.573,
+     "alpha_ann_pct": -54.918,
+     "t_alpha": -7.17,
      "halves": [
-      -49.23,
-      -44.75
+      -52.57,
+      -38.0
      ],
      "thirds": [
-      -50.63,
-      -52.25,
-      -38.08
+      -49.7,
+      -50.4,
+      -35.76
      ]
     },
     "top10_abs_share": 15.942
    },
    "hold20": {
     "gross": {
-     "ann_pct": 6.993,
-     "t_nw": 1.42,
-     "beta": 0.765,
-     "alpha_ann_pct": -5.107,
-     "t_alpha": -1.73,
+     "ann_pct": 10.477,
+     "t_nw": 1.43,
+     "beta": 0.929,
+     "alpha_ann_pct": -5.143,
+     "t_alpha": -1.48,
      "halves": [
-      4.66,
-      9.33
+      6.62,
+      14.34
      ],
      "thirds": [
-      -0.14,
-      7.03,
-      14.09
+      14.53,
+      4.24,
+      12.67
      ]
     },
     "net_1x": {
-     "ann_pct": 5.733,
-     "t_nw": 1.17,
-     "beta": 0.765,
-     "alpha_ann_pct": -6.367,
-     "t_alpha": -2.16,
+     "ann_pct": 9.217,
+     "t_nw": 1.26,
+     "beta": 0.929,
+     "alpha_ann_pct": -6.403,
+     "t_alpha": -1.84,
      "halves": [
-      3.4,
-      8.07
+      5.36,
+      13.08
      ],
      "thirds": [
-      -1.4,
-      5.77,
-      12.83
+      13.27,
+      2.98,
+      11.41
      ]
     },
     "net_2x": {
-     "ann_pct": 4.473,
-     "t_nw": 0.91,
-     "beta": 0.765,
-     "alpha_ann_pct": -7.627,
-     "t_alpha": -2.59,
+     "ann_pct": 7.957,
+     "t_nw": 1.09,
+     "beta": 0.929,
+     "alpha_ann_pct": -7.663,
+     "t_alpha": -2.2,
      "halves": [
-      2.14,
-      6.81
+      4.1,
+      11.82
      ],
      "thirds": [
-      -2.66,
-      4.51,
-      11.57
+      12.01,
+      1.72,
+      10.15
      ]
     },
     "top10_abs_share": 0.126
@@ -382,49 +394,80 @@
   "high_hold20",
   "lmh_payday",
   "lmh_hold20",
-  "null_within_month"
+  "null_within_month",
+  "placebo_clean_preex",
+  "liquidity_terciles",
+  "regime_excision"
  ],
  "low_minus_high_payday": {
-  "ann_pct": -3.845,
+  "ann_pct": -5.761,
   "t_nw": -0.57,
-  "beta": -0.052,
-  "alpha_ann_pct": -3.027,
-  "t_alpha": -0.45,
+  "beta": -0.063,
+  "alpha_ann_pct": -4.704,
+  "t_alpha": -0.46,
   "halves": [
-   -4.2,
-   -3.49
+   5.5,
+   -17.03
   ],
   "thirds": [
-   0.19,
-   5.22,
-   -16.95
+   -0.26,
+   -2.94,
+   -14.07
   ]
  },
  "low_minus_high_hold20": {
-  "ann_pct": 5.252,
-  "t_nw": 1.6,
-  "beta": -0.012,
-  "alpha_ann_pct": 5.441,
+  "ann_pct": 7.869,
+  "t_nw": 1.61,
+  "beta": -0.014,
+  "alpha_ann_pct": 8.111,
   "t_alpha": 1.66,
   "halves": [
-   7.51,
-   3.0
+   16.07,
+   -0.33
   ],
   "thirds": [
-   0.1,
-   16.2,
-   -0.55
+   17.05,
+   2.36,
+   4.21
   ]
  },
  "null_within_month_rank_permutation": {
-  "real_ann_pct": 5.252,
-  "null_mean": 0.003,
-  "null_sd": 2.32,
+  "real_ann_pct": 7.869,
+  "null_mean": 0.005,
+  "null_sd": 3.477,
   "pctile_of_real": 99.2
  },
+ "placebo_clean_preex": {
+  "ann_pct": -9.496,
+  "share_of_real": -1.207,
+  "note": "a no-flow window reproducing the spread means the spread is a low-nominal-price factor loading, not flow"
+ },
+ "lmh_by_liquidity": {
+  "illiquid": {
+   "n": 3205,
+   "lmh_ann_pct": 8.21
+  },
+  "mid": {
+   "n": 3204,
+   "lmh_ann_pct": 12.34
+  },
+  "liquid": {
+   "n": 3205,
+   "lmh_ann_pct": 7.33
+  }
+ },
+ "regime_excision": {
+  "best_3yr_window": [
+   "2019-07-12",
+   "2022-07-13"
+  ],
+  "share_of_total_pnl": 0.959,
+  "lmh_ex_window_ann_pct": 0.57,
+  "lmh_ex_window_t": 0.13
+ },
  "verdict": {
-  "call": "SURVIVES_TO_GATES",
-  "why": "reinvestment-pressure ordering holds and survives its null \u2014 to the section-12 gates, not production.",
+  "call": "KILL_H44",
+  "why": "one 3-year window ('2019-07-12', '2022-07-13') carries 96% of P&L and the remainder is noise (t 0.13) \u2014 the H22 pattern",
   "production_approved": false
  }
 }

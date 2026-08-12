@@ -48,7 +48,7 @@ results JSON (`variants_tried`).
 | H41a | 10-K textual change | yes | cosine/jaccard × EW/VW × eras | RUNNING (fetch) | — |
 | H42 | opportunistic insider purchases | yes — CMP classifier verbatim | 4 buckets × 4 horizons + contrast + buckets + null | **routine α +7.73 vs opportunistic −0.74 (h63); real book at 18.7th pctile of its own timing null; 2x costs zero the excess** | **KILL_H42** — 3-lens adversarially verified |
 | H43 | repurchase announcement × valuation | yes | 3 buckets × 4 horizons + V−G + matched null | **V−G = −4.74%/yr (backwards); random-firm null not beaten; thirds flip sign** | **KILL_H43** |
-| H44 | dividend reinvestment flow | yes | 3 price terciles × 2 windows + L−H + permutation null | **L−H +5.25%/yr at beta −0.01 (t 1.66), 99.2nd pctile of its null — but thirds [+0.1, +16.2, −0.6] and the payment-day window itself NEGATIVE** | **SURVIVES_TO_GATES**, 3-lens verification in flight |
+| H44 | dividend reinvestment flow | yes | 3 terciles × 2 windows + L−H + permutation null + pre-ex placebo + regime excision | **active-span L−H +7.87%/yr t 1.61 — but one 3-yr window carries 96% of P&L (remainder t 0.13), flow window holds none of it, dose-response reversed** | **KILL_H44** — survival revoked by 3-lens verification |
 
 ## C. H40 result block — RUNNING
 
@@ -128,33 +128,43 @@ pairs cached in `scout/cache_h41_similarities.csv` (resumable).
   style; §J records what could reopen it
 - production-approved: **NO**
 
-## G. H44 result block — SURVIVES_TO_GATES (verification in flight)
+## G. H44 result block — KILL_H44 (initial survival REVOKED by verification)
 
-- 357,528 dividend rows → 210,434 after regular/domestic filters → **9,620
-  PIT events** (declaration gate: anticipatory legs FAIL CLOSED; payment-
-  window publicness proven per event via ex-date ≤ entry, 2 dropped)
-- +20-session window, gross, long-only vs SPY:
+- The lab's first run said SURVIVES_TO_GATES. Three adversarial verification
+  agents voided it, and the hardened lab (fail-closed active span, registered
+  pre-ex placebo, the liquidity control the first run had registered but not
+  implemented, an H22-pattern regime-excision rule) reaches KILL by its own
+  rules. This is the program's third self-revocation-grade catch and the
+  reason survivals get verified harder than kills.
+- DATA HOLE found by verification: the dividend feed is EMPTY before mid-2019
+  (2016: 2 rows, 2017: 0, 2018: 1). True span **2019-07-12..2026-08-07**;
+  events by year 2019: 55 → 2020-2026: ~1,100-1,550/yr; the original "+0.10
+  first third" was two active sessions diluted over 888 empty days.
+- active-span numbers (9,620 events): L−H +20s **+7.87%/yr, t 1.61**, at the
+  99.2nd pctile of the within-month permutation null — and then:
+  - **regime excision (the kill)**: the best 3-year window (2019-07..2022-07)
+    carries **96% of cumulative P&L**; excised, the remainder is **t 0.13**
+  - **mechanism voided** (verification): the flow window (days 0-2) holds
+    −0.1 bps pooled; the spread accrues days 3-19 with no decay; dose-response
+    REVERSED (low-yield half carries more); the paying leg is the HIGH-price
+    leg lagging SPY (α −5.14) — the book shorts expensive payers, it does not
+    ride DRIP pressure
+  - **null miscalibrated for factor risk** (verification): dependence-
+    respecting p ≈ 0.04-0.06 one-sided; a clean PRE-EX placebo in the
+    verifier's construction reproduced ~89% of the spread where no flow can
+    exist (the hardened lab's own placebo variant prints −9.5%/yr — window
+    construction matters, and neither supports a flow reading)
+  - liquidity terciles (the registered control, now implemented): spread in
+    all three (7.3-12.3%/yr) — not an illiquidity artifact, consistent with a
+    factor loading
+- kill class (handoff §16): **structural on the mechanism** (timing, dose-
+  response and leg attribution all contradict flow) and **regime-concentrated
+  on the return** (one window = 96%). What could reopen it: nothing about
+  THIS design; a declaration-dated feed with pre-2019 coverage would allow a
+  different, properly anticipatory design as a NEW preregistration.
+- production-approved: **NO**
 
-| bucket | n | ann %/yr | t | alpha %/yr |
-|---|---:|---:|---:|---:|
-| low price | 3,242 | +12.24 | 2.45 | +0.33 |
-| mid | 3,134 | +7.40 | 1.23 | −5.05 |
-| high price | 3,244 | +6.99 | 1.42 | −5.11 |
-
-- **L−H: +5.25%/yr at beta −0.012** (α +5.44, t 1.66), at the **99.2nd
-  percentile** of the within-month rank-permutation null (mean 0.00, sd 2.32)
-- the survival is provisional and two facts are flagged AGAINST it, both
-  under adversarial verification before this block is final: **the thirds
-  are [+0.10, +16.20, −0.55]** (one era carries everything — the H22 death
-  pattern), and **the registered payment-DAY window is itself negative**
-  (−3.85%/yr), so the spread lives inside the +20 sessions rather than at
-  the mechanical-flow moment
-- note also: every bucket's alpha is ≤ +0.33 — dividend payers as a class
-  underperformed SPY this decade; the spread is "low-price payers fell less,"
-  not "low-price payers beat the market"
-- production-approved: **NO** (and cannot be from this block; §12 gates next)
-
-## H. Standalone survivor table — pending (no survivors yet; H42 dead)
+## H. Standalone survivor table — empty. H42, H43, H44 all killed; H40/H41 pending
 
 ## I. Combined Scout result — pending
 
