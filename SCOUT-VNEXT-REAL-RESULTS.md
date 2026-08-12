@@ -44,17 +44,38 @@ results JSON (`variants_tried`).
 
 | Trial | Mechanism | Frozen before result? | Variants (see JSON) | Result | Decision |
 |---|---|---|---|---|---|
-| H40a | pure/unexpected news (scalar) | yes — docstring pre-registration | raw/predictable/pure × 5 horizons + 2 nulls | RUNNING | — |
+| H40a | pure/unexpected news (scalar) | yes — docstring pre-registration | raw/predictable/pure × 5 horizons + 2 nulls | **OOS R² +0.055 (representation tested); pure L/S gross −0.78%/yr at beta 0.00, at the 2.4th/8.0th pctile of its own nulls** | **KILL_H40_SCALAR** |
 | H41a | 10-K textual change | yes | cosine/jaccard × EW/VW × eras | RUNNING (fetch) | — |
 | H42 | opportunistic insider purchases | yes — CMP classifier verbatim | 4 buckets × 4 horizons + contrast + buckets + null | **routine α +7.73 vs opportunistic −0.74 (h63); real book at 18.7th pctile of its own timing null; 2x costs zero the excess** | **KILL_H42** — 3-lens adversarially verified |
 | H43 | repurchase announcement × valuation | yes | 3 buckets × 4 horizons + V−G + matched null | **V−G = −4.74%/yr (backwards); random-firm null not beaten; thirds flip sign** | **KILL_H43** |
 | H44 | dividend reinvestment flow | yes | 3 terciles × 2 windows + L−H + permutation null + pre-ex placebo + regime excision | **active-span L−H +7.87%/yr t 1.61 — but one 3-yr window carries 96% of P&L (remainder t 0.13), flow window holds none of it, dose-response reversed** | **KILL_H44** — survival revoked by 3-lens verification |
 
-## C. H40 result block — RUNNING
+## C. H40 result block — KILL_H40_SCALAR
 
-Lab `scout/h40_pure_news.py`, results `scout/h40_results.json` when done.
-Universe scope stated in advance: 120 TODAY-liquid names (survivorship-tilted
-cohort; the only positive outcome is ADVANCE_TO_H40B, never production).
+- 464,430 stories → wire/broadtape filtered → 42,230 (date, firm) tone rows;
+  796 tradeable formations at h21 (≥12 eligible names each)
+- **positive control PASSED**: walk-forward ridge OOS R² = **+0.055** — tone
+  IS predictable from the firm's prior state, so the residual ("pure") tone
+  was genuinely isolated and the mechanism genuinely tested (this is a real
+  kill, not INCONCLUSIVE_REPRESENTATION)
+- h21 long-short, gross, beta vs SPY:
+
+| signal | ann %/yr | t | beta | alpha %/yr |
+|---|---:|---:|---:|---:|
+| raw tone | −2.70 | −1.72 | −0.10 | −1.18 |
+| predictable tone | −2.38 | −1.17 | −0.07 | −1.28 |
+| pure tone | **−0.78** | −1.37 | 0.00 | −0.83 |
+
+- the real pure-tone book sits at the **2.4th percentile** of the within-date
+  permutation null and the **8.0th** of the timing-shuffle null — WORSE than
+  randomly assigned scores; there is nothing here even before costs (net-2x
+  at h21 is −10.4%/yr, mostly deterministic cost drag at that turnover)
+- fifth independent confirmation of the repo's standing result: news content
+  forecasts the SIZE of the next move and none of its SIGN (H15/H16/H17/H24
+  before it) — removing the predictable component does not change that
+- scope: 120 today-liquid large caps; the paper's full-article embeddings are
+  NOT tested by this scalar proxy (handoff 7.1 said exactly this in advance)
+- production-approved: **NO**
 
 ## D. H41 result block — RUNNING (fetch stage)
 
@@ -164,7 +185,7 @@ pairs cached in `scout/cache_h41_similarities.csv` (resumable).
   different, properly anticipatory design as a NEW preregistration.
 - production-approved: **NO**
 
-## H. Standalone survivor table — empty. H42, H43, H44 all killed; H40/H41 pending
+## H. Standalone survivor table — empty. H40, H42, H43, H44 killed; H41 pending
 
 ## I. Combined Scout result — pending
 
