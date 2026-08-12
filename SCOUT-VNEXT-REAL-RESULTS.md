@@ -48,7 +48,7 @@ results JSON (`variants_tried`).
 | H41a | 10-K textual change | yes | cosine/jaccard × EW/VW × eras | RUNNING (fetch) | — |
 | H42 | opportunistic insider purchases | yes — CMP classifier verbatim | 4 buckets × 4 horizons + contrast + buckets + null | **routine α +7.73 vs opportunistic −0.74 (h63); real book at 18.7th pctile of its own timing null; 2x costs zero the excess** | **KILL_H42** — 3-lens adversarially verified |
 | H43 | repurchase announcement × valuation | yes | 3 buckets × 4 horizons + V−G + matched null | **V−G = −4.74%/yr (backwards); random-firm null not beaten; thirds flip sign** | **KILL_H43** |
-| H44 | dividend reinvestment flow | yes | 3 price terciles × 2 windows + L−H + permutation null | RUNNING | — |
+| H44 | dividend reinvestment flow | yes | 3 price terciles × 2 windows + L−H + permutation null | **L−H +5.25%/yr at beta −0.01 (t 1.66), 99.2nd pctile of its null — but thirds [+0.1, +16.2, −0.6] and the payment-day window itself NEGATIVE** | **SURVIVES_TO_GATES**, 3-lens verification in flight |
 
 ## C. H40 result block — RUNNING
 
@@ -128,12 +128,31 @@ pairs cached in `scout/cache_h41_similarities.csv` (resumable).
   style; §J records what could reopen it
 - production-approved: **NO**
 
-## G. H44 result block — RUNNING
+## G. H44 result block — SURVIVES_TO_GATES (verification in flight)
 
-Lab `scout/h44_dividend_flow.py`. 357,528 dividend rows harvested.
-Declaration-date gate: anticipatory legs FAIL CLOSED (feed has no declaration
-dates); payment-window entries proven public per event (ex-date session ≤
-entry session, violations dropped and counted).
+- 357,528 dividend rows → 210,434 after regular/domestic filters → **9,620
+  PIT events** (declaration gate: anticipatory legs FAIL CLOSED; payment-
+  window publicness proven per event via ex-date ≤ entry, 2 dropped)
+- +20-session window, gross, long-only vs SPY:
+
+| bucket | n | ann %/yr | t | alpha %/yr |
+|---|---:|---:|---:|---:|
+| low price | 3,242 | +12.24 | 2.45 | +0.33 |
+| mid | 3,134 | +7.40 | 1.23 | −5.05 |
+| high price | 3,244 | +6.99 | 1.42 | −5.11 |
+
+- **L−H: +5.25%/yr at beta −0.012** (α +5.44, t 1.66), at the **99.2nd
+  percentile** of the within-month rank-permutation null (mean 0.00, sd 2.32)
+- the survival is provisional and two facts are flagged AGAINST it, both
+  under adversarial verification before this block is final: **the thirds
+  are [+0.10, +16.20, −0.55]** (one era carries everything — the H22 death
+  pattern), and **the registered payment-DAY window is itself negative**
+  (−3.85%/yr), so the spread lives inside the +20 sessions rather than at
+  the mechanical-flow moment
+- note also: every bucket's alpha is ≤ +0.33 — dividend payers as a class
+  underperformed SPY this decade; the spread is "low-price payers fell less,"
+  not "low-price payers beat the market"
+- production-approved: **NO** (and cannot be from this block; §12 gates next)
 
 ## H. Standalone survivor table — pending (no survivors yet; H42 dead)
 
