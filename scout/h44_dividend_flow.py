@@ -36,10 +36,24 @@ ENTRY       close of the last session STRICTLY BEFORE the payment date
             returns from the next session (= the payment session) onward.
 CONTROLS    within-month rank permutation (shuffle which same-month payer is
             "low price" — kills any calendar/market effect); top-10 event
-            concentration; halves and thirds; Rule 13 beta/alpha; 10 bps/leg
-            at 1x, 2x stress; liquidity terciles.
+            concentration; halves and thirds ON THE ACTIVE SPAN; Rule 13
+            beta/alpha; 10 bps/leg at 1x, 2x stress; liquidity terciles;
+            and the decisive one, added after adversarial verification
+            (2026-08-12): a CLEAN PRE-EX PLACEBO — the identical books on a
+            20-session window ending the session before each event's ex-date,
+            where no reinvestment flow can exist. If the placebo reproduces
+            the spread, the "effect" is a low-nominal-price factor loading,
+            not flow.
+DATA HOLE   The corporate-actions dividend feed is EMPTY before mid-2019
+            (2016: 2 rows, 2017: 0, 2018: 1, then 1,895 in 2019). The lab
+            FAILS CLOSED onto the active span (first session with a live
+            event) and reports it; the first verification round found the
+            original run quoting 2016-2026 while a third of its sessions had
+            zero exposure, and the "+0.10 positive first third" that passed
+            the era gate was two active sessions diluted over 888 empty days.
 KILL        (handoff 11.4) low-minus-high must be positive and survive the
-            permutation and costs; a one-era result dies.
+            permutation and costs; a one-era result dies; a placebo window
+            with no flow mechanism reproducing >50% of the spread dies.
 
 Run:
   python -m scout.h44_dividend_flow --fetch
@@ -168,13 +182,22 @@ def build_events(P, verbose=True) -> tuple[pd.DataFrame, dict]:
         if not np.isfinite(px):
             continue
         ev_rows.append({"symbol": sym, "j_entry": j_entry, "j_pay": j_pay,
-                        "price": float(px), "rate": float(e["rate"] or 0),
+                        "j_ex": j_ex, "price": float(px),
+                        "rate": float(e["rate"] or 0),
                         "month": str(naive[j_pay])[:7]})
     ev = pd.DataFrame(ev_rows)
+    # ---- FAIL CLOSED onto the active span: the feed has no dividends before
+    # mid-2019, and statistics over dead air are not statistics
+    first_active = int(ev["j_pay"].min())
     meta = {"rows_raw": int(n0), "after_filters": int(len(raw)),
             "dropped_not_pit_or_uncovered": int(dropped_notpit),
             "dropped_publicness_check": int(dropped_order),
-            "events": int(len(ev))}
+            "events": int(len(ev)),
+            "events_by_year": ev.groupby(ev["month"].str[:4]).size().to_dict(),
+            "first_active_session": str(naive[first_active].date()),
+            "active_span_note": "all statistics computed on the ACTIVE span "
+                                "only; the feed is empty before mid-2019"}
+    ev.attrs["first_active"] = first_active
 
     # price terciles WITHIN each payment month
     ev["bucket"] = None
@@ -189,14 +212,22 @@ def build_events(P, verbose=True) -> tuple[pd.DataFrame, dict]:
 
 
 def cohort_series(ev: pd.DataFrame, ret: pd.DataFrame, span: str):
-    """span: 'payday' (payment session only) or 'hold20' (pay..pay+19)."""
+    """span: 'payday' | 'hold20' (pay..pay+19) | 'placebo_preex'
+    (the 20 sessions ENDING the session before the ex-date — a window where
+    no reinvestment flow can exist; the identical machinery otherwise)."""
     n = len(ret.index)
     book = np.zeros(n)
     active = np.zeros(n)
     contrib = []
     for _, e in ev.iterrows():
-        j0 = int(e["j_pay"])
-        j1 = j0 if span == "payday" else min(j0 + HOLD_SESSIONS - 1, n - 1)
+        if span == "placebo_preex":
+            j1 = int(e["j_ex"]) - 1
+            j0 = max(0, j1 - (HOLD_SESSIONS - 1))
+            if j1 <= j0:
+                continue
+        else:
+            j0 = int(e["j_pay"])
+            j1 = j0 if span == "payday" else min(j0 + HOLD_SESSIONS - 1, n - 1)
         r = ret[e["symbol"]].iloc[j0:j1 + 1].fillna(0.0).to_numpy()
         w = 1.0 / (1 if span == "payday" else HOLD_SESSIONS)
         book[j0:j0 + len(r)] += w * r
@@ -227,6 +258,14 @@ def run(quick: bool = False, verbose: bool = True) -> dict:
     P = build_panel("2016-01-04", "2026-08-07", extra=("SPY", "BIL"))
     ret, spy = P.ret, P.ret["SPY"]
     ev, meta = build_events(P, verbose)
+    first_active = ev.attrs["first_active"]
+
+    def act(s: pd.Series) -> pd.Series:
+        """Statistics live on the ACTIVE span only (fail-closed on the feed
+        hole): a series averaged over 886 structurally-empty sessions is
+        diluted, and its 'first third' is dead air, not evidence."""
+        return s.iloc[first_active:]
+    spy_a = act(spy)
     out = {"hypothesis": "H44 (handoff H40) dividend reinvestment flow",
            "events": meta,
            "declaration_gate": "anticipatory legs FAIL CLOSED (no declaration "
@@ -248,9 +287,9 @@ def run(quick: bool = False, verbose: bool = True) -> dict:
             cost1 = COST_BPS_LEG / 100 * (252 / (1 if span == "payday" else 20))
             c = pd.DataFrame(contrib, columns=["sym", "d", "pnl"])
             tot = c["pnl"].sum()
-            blk[span] = {"gross": block(s, spy, lag),
-                         "net_1x": block(s, spy, lag, cost_ann_pct=cost1),
-                         "net_2x": block(s, spy, lag, cost_ann_pct=2 * cost1),
+            blk[span] = {"gross": block(act(s), spy_a, lag),
+                         "net_1x": block(act(s), spy_a, lag, cost_ann_pct=cost1),
+                         "net_2x": block(act(s), spy_a, lag, cost_ann_pct=2 * cost1),
                          "top10_abs_share": round(float(
                              c["pnl"].abs().nlargest(10).sum() / abs(tot)), 3)
                          if tot else None}
@@ -263,13 +302,13 @@ def run(quick: bool = False, verbose: bool = True) -> dict:
 
     for span, lag in (("payday", 5), ("hold20", HOLD_SESSIONS)):
         lmh = series_by[("low", span)] - series_by[("high", span)]
-        out[f"low_minus_high_{span}"] = block(lmh, spy, lag)
+        out[f"low_minus_high_{span}"] = block(act(lmh), spy_a, lag)
         out["variants_tried"].append(f"lmh_{span}")
 
     # within-month rank permutation: reassign buckets among same-month events
     rng = np.random.default_rng(20260812)
     draws = 30 if quick else N_DRAWS
-    real = ann(series_by[("low", "hold20")] - series_by[("high", "hold20")])
+    real = ann(act(series_by[("low", "hold20")] - series_by[("high", "hold20")]))
     vals = []
     for _ in range(draws):
         sh = ev.copy()
@@ -277,13 +316,71 @@ def run(quick: bool = False, verbose: bool = True) -> dict:
                           .transform(lambda b: rng.permutation(b.to_numpy())))
         lo, _ = cohort_series(sh[sh["bucket"] == "low"], ret, "hold20")
         hi, _ = cohort_series(sh[sh["bucket"] == "high"], ret, "hold20")
-        vals.append(ann(lo - hi))
+        vals.append(ann(act(lo - hi)))
     vals = np.array(vals)
     out["null_within_month_rank_permutation"] = {
         "real_ann_pct": round(real, 3), "null_mean": round(float(vals.mean()), 3),
         "null_sd": round(float(vals.std(ddof=1)), 3),
         "pctile_of_real": round(float((vals < real).mean() * 100), 1)}
     out["variants_tried"].append("null_within_month")
+
+    # THE CLEAN PRE-EX PLACEBO: identical books, 20-session window ENDING the
+    # session before each event's ex-date — no reinvestment flow can exist
+    # there, so whatever it earns is factor loading, not mechanism
+    plo, _ = cohort_series(ev[ev["bucket"] == "low"], ret, "placebo_preex")
+    phi, _ = cohort_series(ev[ev["bucket"] == "high"], ret, "placebo_preex")
+    placebo = ann(act(plo - phi))
+    out["placebo_clean_preex"] = {
+        "ann_pct": round(placebo, 3),
+        "share_of_real": round(placebo / real, 3) if real else None,
+        "note": "a no-flow window reproducing the spread means the spread is "
+                "a low-nominal-price factor loading, not flow"}
+    out["variants_tried"].append("placebo_clean_preex")
+
+    # the REGISTERED liquidity-terciles control (missing from the first run —
+    # found by adversarial verification): does the spread live only in the
+    # least-liquid payers?
+    dv = (P.close * P.volume).rolling(60).median()
+    naive_idx = pd.DatetimeIndex(ret.index.tz_localize(None).normalize())
+    liq = [dv[e["symbol"]].iloc[int(e["j_entry"])]
+           if e["symbol"] in dv.columns else np.nan for _, e in ev.iterrows()]
+    ev2 = ev.assign(liq=liq)
+    qs = ev2["liq"].quantile([1 / 3, 2 / 3])
+    liq_cells = {}
+    for nm, sel in (("illiquid", ev2["liq"] <= qs.iloc[0]),
+                    ("mid", (ev2["liq"] > qs.iloc[0]) & (ev2["liq"] <= qs.iloc[1])),
+                    ("liquid", ev2["liq"] > qs.iloc[1])):
+        sub2 = ev2[sel]
+        lo2, _ = cohort_series(sub2[sub2["bucket"] == "low"], ret, "hold20")
+        hi2, _ = cohort_series(sub2[sub2["bucket"] == "high"], ret, "hold20")
+        liq_cells[nm] = {"n": int(sel.sum()),
+                         "lmh_ann_pct": round(ann(act(lo2 - hi2)), 2)}
+    out["lmh_by_liquidity"] = liq_cells
+    out["variants_tried"].append("liquidity_terciles")
+
+    # regime-excision diagnostic (the H22 precedent): cumulative-P&L share of
+    # the best 3-year window, and the spread with it removed
+    lmh_series = act(series_by[("low", "hold20")] - series_by[("high", "hold20")])
+    cum = lmh_series.fillna(0.0)
+    best_share, best_span = 0.0, None
+    n_act = len(cum)
+    w = 756
+    tot = float(cum.sum())
+    if tot > 0:
+        csum = cum.cumsum().to_numpy()
+        for a in range(0, n_act - w, 21):
+            share = (csum[a + w] - (csum[a - 1] if a else 0.0)) / tot
+            if share > best_share:
+                best_share, best_span = share, (str(cum.index[a].date()),
+                                                str(cum.index[a + w].date()))
+        mask = ~((cum.index >= best_span[0]) & (cum.index <= best_span[1]))
+        ex = cum[mask]
+        out["regime_excision"] = {
+            "best_3yr_window": best_span,
+            "share_of_total_pnl": round(best_share, 3),
+            "lmh_ex_window_ann_pct": round(ann(ex), 2),
+            "lmh_ex_window_t": round(nw_t(ex, HOLD_SESSIONS), 2)}
+        out["variants_tried"].append("regime_excision")
 
     # ------------------------------------------------------------- decision
     lmh = out["low_minus_high_hold20"]
@@ -292,15 +389,25 @@ def run(quick: bool = False, verbose: bool = True) -> dict:
         kill.append(f"low-minus-high is not positive ({lmh['ann_pct']}%/yr)")
     if out["null_within_month_rank_permutation"]["pctile_of_real"] <= 95:
         kill.append("within-month permutation explains it")
-    net = out["low_minus_high_hold20"]  # gross == diff; costs hit both legs
     if sum(x > 0 for x in lmh["thirds"]) < 2:
-        kill.append(f"one-era result (thirds {lmh['thirds']})")
+        kill.append(f"one-era result (active-span thirds {lmh['thirds']})")
+    if real and placebo / real > 0.5:
+        kill.append(f"the clean pre-ex placebo reproduces "
+                    f"{100 * placebo / real:.0f}% of the spread — factor "
+                    f"loading, not flow")
+    re_ = out.get("regime_excision", {})
+    if re_ and re_["share_of_total_pnl"] > 2 / 3 and abs(re_["lmh_ex_window_t"]) < 1:
+        kill.append(f"one 3-year window {re_['best_3yr_window']} carries "
+                    f"{100 * re_['share_of_total_pnl']:.0f}% of P&L and the "
+                    f"remainder is noise (t {re_['lmh_ex_window_t']}) — the "
+                    f"H22 pattern")
     if kill:
         verdict, why = "KILL_H44", "; ".join(kill)
     else:
         verdict, why = "SURVIVES_TO_GATES", \
-            "reinvestment-pressure ordering holds and survives its null — " \
-            "to the section-12 gates, not production."
+            "reinvestment-pressure ordering holds and survives its null, its " \
+            "placebo AND its regime excision — to the section-12 gates, not " \
+            "production."
     out["verdict"] = {"call": verdict, "why": why, "production_approved": False}
     RESULTS.write_text(json.dumps(out, indent=1, default=str))
     print(f"\nVERDICT: {verdict}\n  {why}\nwrote {RESULTS}")
