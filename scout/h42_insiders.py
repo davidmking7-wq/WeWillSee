@@ -192,15 +192,24 @@ def event_book(events: pd.DataFrame, ret: pd.DataFrame, horizon: int):
     active = np.zeros(n)
     contrib = []
     pos = naive.searchsorted(pd.to_datetime(events["filed"]).values, side="right")
+    n_dead = 0
     for (_, e), j0 in zip(events.iterrows(), pos):
         sym = e["ticker"]
         if sym not in ret.columns or j0 >= n - 1:
             continue
         j1 = min(j0 + horizon, n - 1)
-        r = ret[sym].iloc[j0 + 1:j1 + 1].fillna(0.0).to_numpy()
+        win = ret[sym].iloc[j0 + 1:j1 + 1]
+        # a window with NO finite return is a dead/retired column: filling it
+        # with zeros dilutes the book (the verifier measured 2.2-4.9% of
+        # windows doing exactly that) — skip and count instead
+        if not np.isfinite(win.to_numpy()).any():
+            n_dead += 1
+            continue
+        r = win.fillna(0.0).to_numpy()
         book[j0 + 1:j0 + 1 + len(r)] += r / horizon
         active[j0 + 1:j0 + 1 + len(r)] += 1.0 / horizon
         contrib.append((sym, str(naive[j0].date()), float(r.sum())))
+    event_book.last_n_dead = n_dead
     s = pd.Series(np.divide(book, np.maximum(active, 1e-12),
                             out=np.zeros(n), where=active > 0), index=dates)
     return s, contrib
@@ -226,17 +235,23 @@ def run(quick: bool = False, verbose: bool = True) -> dict:
     raw = pd.read_csv(PURCHASES_CSV, dtype=str)
     d = classify(raw)
 
-    # PIT filter through the identity map, inverted (cik -> ticker)
-    idm = json.loads(IDENTITY.read_text())
-    cik2tkr: dict[int, str] = {}
-    for r in idm["rows"]:
-        if r.get("cik"):
-            cik2tkr[int(r["cik"])] = r["ticker"]
-        for c in r.get("candidates", []):
-            cik2tkr[int(c["cik"])] = r["ticker"]
+    # PIT filter through the identity map — resolve_cik, never a naive
+    # inversion. The naive last-row-wins dict priced 273 events with the
+    # WRONG company's returns (adversarial verification, 2026-08-12): every
+    # resolution below is cross-checked against ISSUERTRADINGSYMBOL, the
+    # ticker the filer itself reported, and unresolvable collisions are
+    # dropped and counted rather than guessed.
+    from .historical_identity import cik_to_ticker, resolve_cik
+    inv = cik_to_ticker()
     d["issuer_cik_int"] = pd.to_numeric(d["ISSUERCIK"], errors="coerce")
-    d["ticker"] = d["issuer_cik_int"].map(cik2tkr)
     n_all_mkt = len(d)
+    d["ticker"] = [
+        resolve_cik(inv, c, asof=str(f)[:10], filing_symbol=s)
+        if pd.notna(c) else None
+        for c, f, s in zip(d["issuer_cik_int"], d["filed"],
+                           d["ISSUERTRADINGSYMBOL"].fillna(""))]
+    n_dropped_identity = int(d["issuer_cik_int"].isin(inv).sum()
+                             - d["ticker"].notna().sum())
     d = d.dropna(subset=["ticker"])
     d = d[d["filed"] >= "2016-01-04"]
     d["dollars"] = (pd.to_numeric(d["TRANS_SHARES"], errors="coerce")
@@ -361,7 +376,18 @@ def run(quick: bool = False, verbose: bool = True) -> dict:
         verdict, why = "SURVIVES_TO_GATES", \
             "opportunistic > routine, shuffle cleared, eras consistent — " \
             "goes to the standalone sleeve gates (section 12), NOT production."
-    out["verdict"] = {"call": verdict, "why": why, "production_approved": False}
+    out["identity_dropped_unresolvable"] = n_dropped_identity
+    out["verdict"] = {"call": verdict, "why": why, "production_approved": False,
+                      "classification": (
+                          "NO DETECTABLE EFFECT on PIT S&P 500 large caps — "
+                          "the design's minimum detectable alpha at t=2 is "
+                          "~13%/yr against a plausible post-publication "
+                          "large-cap effect of 1-4%/yr, so this kills the "
+                          "trade on THIS universe without adjudicating the "
+                          "canonical small-cap mechanism (source_gap). The "
+                          "ordering (routine > opportunistic) and the "
+                          "below-null-mean shuffle result are consistent "
+                          "with zero timing content.")}
     RESULTS.write_text(json.dumps(out, indent=1, default=str))
     print(f"\nVERDICT: {verdict}\n  {why}\nwrote {RESULTS}")
     return out

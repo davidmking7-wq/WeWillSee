@@ -192,6 +192,64 @@ def resolve(verbose: bool = True) -> dict:
     return report
 
 
+def cik_to_ticker() -> dict[int, list[dict]]:
+    """Inverse map {cik -> [{ticker, from, to}]} with COLLISIONS PRESERVED.
+
+    The naive one-line inversion ({r['cik']: r['ticker']}) is last-row-wins:
+    34-37 CIKs appear under more than one PIT ticker (renames, share classes,
+    re-used identities), and picking one silently prices events with the wrong
+    company's returns — an adversarial verifier measured 273 such events in
+    H42 before this function existed. Callers resolve with `resolve_cik`,
+    which uses date spans where the map has them and returns None (drop and
+    count, never guess) when a collision has no dated resolution."""
+    rep = json.loads(IDENTITY_JSON.read_text())
+    out: dict[int, list[dict]] = {}
+    for r in rep["rows"]:
+        if r.get("cik"):
+            out.setdefault(int(r["cik"]), []).append(
+                {"ticker": r["ticker"], "from": r.get("first_filed"),
+                 "to": r.get("last_filed"), "source": r.get("source")})
+        for c in r.get("candidates", []):
+            out.setdefault(int(c["cik"]), []).append(
+                {"ticker": r["ticker"], "from": c.get("first_filed"),
+                 "to": c.get("last_filed"), "source": r.get("source")})
+    return out
+
+
+def resolve_cik(inv: dict[int, list[dict]], cik: int,
+                asof: str | None = None,
+                filing_symbol: str | None = None) -> str | None:
+    """One CIK -> one PIT ticker, or None when honesty forbids a pick.
+
+    Resolution order: (1) unique mapping wins; (2) a filing-time symbol (e.g.
+    ISSUERTRADINGSYMBOL from the insider data sets) that matches a candidate,
+    dot/dash-normalised, wins; (3) a date span containing `asof` wins;
+    (4) otherwise None — the caller drops the event and counts it."""
+    cands = inv.get(int(cik))
+    if not cands:
+        return None
+    if len({c["ticker"] for c in cands}) == 1:
+        t = cands[0]["ticker"]
+        if filing_symbol:
+            a = filing_symbol.upper().replace("-", ".").strip()
+            if a and a != t.replace("-", ".") and a.split(".")[0] != t.split(".")[0]:
+                return None                      # the filing itself disagrees
+        return t
+    if filing_symbol:
+        a = filing_symbol.upper().replace("-", ".").strip()
+        for c in cands:
+            if a == c["ticker"].replace("-", ".") or \
+                    a.split(".")[0] == c["ticker"].split(".")[0]:
+                return c["ticker"]
+    if asof:
+        hits = [c for c in cands
+                if c.get("from") and c.get("to")
+                and str(c["from"]) <= asof <= str(c["to"])]
+        if len({c["ticker"] for c in hits}) == 1:
+            return hits[0]["ticker"]
+    return None
+
+
 def _selftest() -> int:
     """Known acquisitions must resolve via the instance map with the right CIK."""
     known = {"AET": 1122304, "CELG": 816284, "ATVI": 718877, "MON": 1110783}

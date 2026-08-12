@@ -149,14 +149,20 @@ def event_book(events: pd.DataFrame, ret: pd.DataFrame, horizon: int):
     active = np.zeros(n)
     contrib = []
     pos = naive.searchsorted(pd.to_datetime(events["filed"]).values, side="right")
+    n_dead = 0
     for (_, e), j0 in zip(events.iterrows(), pos):
         sym = e["ticker"]
         if sym not in ret.columns or j0 >= n - 1:
             continue
-        r = ret[sym].iloc[j0 + 1:min(j0 + horizon, n - 1) + 1].fillna(0.0).to_numpy()
+        win = ret[sym].iloc[j0 + 1:min(j0 + horizon, n - 1) + 1]
+        if not np.isfinite(win.to_numpy()).any():
+            n_dead += 1        # dead/retired column: skip, never zero-fill
+            continue
+        r = win.fillna(0.0).to_numpy()
         book[j0 + 1:j0 + 1 + len(r)] += r / horizon
         active[j0 + 1:j0 + 1 + len(r)] += 1.0 / horizon
         contrib.append((sym, str(naive[min(j0, n - 1)].date()), float(r.sum())))
+    event_book.last_n_dead = n_dead
     s = pd.Series(np.divide(book, np.maximum(active, 1e-12),
                             out=np.zeros(n), where=active > 0), index=dates)
     return s, contrib
@@ -187,14 +193,15 @@ def build_events(P, verbose=True) -> tuple[pd.DataFrame, dict]:
     raw["filed"] = pd.to_datetime(raw["filed"])
     raw["cik_int"] = pd.to_numeric(raw["cik"], errors="coerce")
 
-    idm = json.loads(IDENTITY.read_text())
-    cik2tkr: dict[int, str] = {}
-    for r in idm["rows"]:
-        if r.get("cik"):
-            cik2tkr[int(r["cik"])] = r["ticker"]
-        for c in r.get("candidates", []):
-            cik2tkr[int(c["cik"])] = r["ticker"]
-    raw["ticker"] = raw["cik_int"].map(cik2tkr)
+    # resolve_cik with date awareness — never the naive last-row-wins
+    # inversion, which H42's adversarial verification caught pricing events
+    # with the wrong company's returns. No filing symbol in the FTS payload,
+    # so collisions resolve by date span or are dropped and counted.
+    from .historical_identity import cik_to_ticker, resolve_cik
+    inv = cik_to_ticker()
+    raw["ticker"] = [resolve_cik(inv, c, asof=str(f)[:10])
+                     if pd.notna(c) else None
+                     for c, f in zip(raw["cik_int"], raw["filed"])]
     ev = raw.dropna(subset=["ticker"]).sort_values("filed")
 
     # 365-day per-company cooldown
