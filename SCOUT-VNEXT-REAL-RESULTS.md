@@ -46,8 +46,8 @@ results JSON (`variants_tried`).
 |---|---|---|---|---|---|
 | H40a | pure/unexpected news (scalar) | yes — docstring pre-registration | raw/predictable/pure × 5 horizons + 2 nulls | RUNNING | — |
 | H41a | 10-K textual change | yes | cosine/jaccard × EW/VW × eras | RUNNING (fetch) | — |
-| H42 | opportunistic insider purchases | yes — CMP classifier verbatim | 4 buckets × 4 horizons + contrast + buckets + null | **routine α +7.19 vs opportunistic +0.84 (h63); real book at 33.7th pctile of its own timing null** | **KILL_H42** (verification in flight) |
-| H43 | repurchase announcement × valuation | yes | 3 buckets × 4 horizons + V−G + matched null | **V−G = −4.71%/yr (backwards); random-firm null not beaten; thirds flip sign** | **KILL_H43** |
+| H42 | opportunistic insider purchases | yes — CMP classifier verbatim | 4 buckets × 4 horizons + contrast + buckets + null | **routine α +7.73 vs opportunistic −0.74 (h63); real book at 18.7th pctile of its own timing null; 2x costs zero the excess** | **KILL_H42** — 3-lens adversarially verified |
+| H43 | repurchase announcement × valuation | yes | 3 buckets × 4 horizons + V−G + matched null | **V−G = −4.74%/yr (backwards); random-firm null not beaten; thirds flip sign** | **KILL_H43** |
 | H44 | dividend reinvestment flow | yes | 3 price terciles × 2 windows + L−H + permutation null | RUNNING | — |
 
 ## C. H40 result block — RUNNING
