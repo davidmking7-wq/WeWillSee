@@ -47,7 +47,7 @@ results JSON (`variants_tried`).
 | H40a | pure/unexpected news (scalar) | yes — docstring pre-registration | raw/predictable/pure × 5 horizons + 2 nulls | RUNNING | — |
 | H41a | 10-K textual change | yes | cosine/jaccard × EW/VW × eras | RUNNING (fetch) | — |
 | H42 | opportunistic insider purchases | yes — CMP classifier verbatim | 4 buckets × 4 horizons + contrast + buckets + null | **routine α +7.19 vs opportunistic +0.84 (h63); real book at 33.7th pctile of its own timing null** | **KILL_H42** (verification in flight) |
-| H43 | repurchase announcement × valuation | yes | 3 buckets × 4 horizons + V−G + matched null | RUNNING | — |
+| H43 | repurchase announcement × valuation | yes | 3 buckets × 4 horizons + V−G + matched null | **V−G = −4.71%/yr (backwards); random-firm null not beaten; thirds flip sign** | **KILL_H43** |
 | H44 | dividend reinvestment flow | yes | 3 price terciles × 2 windows + L−H + permutation null | RUNNING | — |
 
 ## C. H40 result block — RUNNING
@@ -88,10 +88,30 @@ pairs cached in `scout/cache_h41_similarities.csv` (resumable).
   preregistered hypothesis, not a rescue of this one.
 - production-approved: **NO**
 
-## F. H43 result block — RUNNING
+## F. H43 result block — KILL_H43
 
-Lab `scout/h43_repurchase_value.py`. 24,488 8-K authorization filings
-harvested; PIT match + cooldown + point-in-time B/M in progress.
+- 24,488 8-K filings matching `"repurchase program" "authorized"` (FTS,
+  quarterly chunks) → 6,023 PIT-matched → **2,040 events** after the 365-day
+  per-company cooldown → **1,467 with point-in-time B/M** (filing-date
+  discipline, consolidated rows, split-adjusted shares)
+- h126 gross, long-only vs SPY (Rule 13):
+
+| bucket | n | ann %/yr | t | alpha %/yr | t(alpha) |
+|---|---:|---:|---:|---:|---:|
+| value | 464 | +15.02 | 2.59 | **−1.53** | −0.35 |
+| mid | 473 | +16.11 | 3.43 | +0.15 | 0.06 |
+| glamour | 500 | +19.73 | 4.54 | **+3.29** | 1.32 |
+
+- **the value conditioning is BACKWARDS**: value − glamour = **−4.71%/yr** at
+  h126; the mechanism predicted the opposite sign
+- matched control: value-bucket events are **indistinguishable from random
+  PIT firms on the same sessions** (the calendar, not the announcement,
+  carries the return)
+- V−G thirds `[−15.28, +6.91, −5.77]` — sign flips across eras
+- kill class (handoff §16): **structural kill on this decade** — with the
+  honest macro note that 2016-2026 was historically hostile to value as a
+  style; §J records what could reopen it
+- production-approved: **NO**
 
 ## G. H44 result block — RUNNING
 
@@ -115,5 +135,13 @@ not a synthetic "effective bets ≥ 3".
   the universe is the large-cap cohort; the canonical effect lived down-cap.
   A future data upgrade that could legitimately reopen it: a delisting-
   inclusive small/mid-cap PIT universe with capacity modeling.
+- **H43 repurchase × undervaluation — structural kill.** The conditioning
+  variable worked in reverse (glamour announcers beat value announcers by
+  4.7 pp/yr at h126), the matched-dates random-firm control was not beaten,
+  and the effect flips sign across eras. Caveat recorded rather than argued:
+  2016-2026 was the most value-hostile decade on record, and the mechanism is
+  a value-conditioned one — a future regime where B/M spreads compress could
+  legitimately justify ONE new preregistration; nothing about this run may be
+  retuned into survival.
 
 ## K. ChatGPT review targets — final section, written when all blocks close
