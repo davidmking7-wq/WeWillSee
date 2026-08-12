@@ -1,12 +1,13 @@
 # Where this project stands
 
-Written 2026-08-09 at the end of a long session. Read this first if you are
-picking the work up cold — it is the shortest path to not repeating anything.
+Written 2026-08-09, updated 2026-08-12 after Round 7. Read this first if you
+are picking the work up cold — it is the shortest path to not repeating
+anything.
 
 ## The one-line summary
 
-**Nothing tested beats SPY.** Five rounds, ~800 variants, 16 registered
-hypotheses, zero shipped signals, six retracted or killed headlines. What the
+**Nothing tested beats SPY.** Seven rounds, ~1,000 variants, 22 registered
+hypotheses, zero shipped signals, seven retracted or killed headlines. What the
 project has instead is a data layer whose defects are known, a research process
 that catches itself, and one structural finding that reframes the whole effort.
 
@@ -133,25 +134,52 @@ levels and forgot that a *difference* of two beta-laden sorts is beta-laden.
 - **H34 partnership — REJECTED** (112 variants). At rho 0.511 the combination
   cannot reach a landslide.
 
-## BLOCKED: the Alpaca keys are dead (2026-08-09)
+## Keys: unblocked 2026-08-10 (fresh Alpaca pair in `.env`, verified 200).
+The master bar cache now holds **3,670 symbols x 2,664 dates** including SPY,
+RSP, QQQ, IWM, IEF and BIL with full history. Rotate the keys when work pauses.
 
-Both `data.alpaca.markets` and `paper-api.alpaca.markets` return **401
-unauthorized**. `.env` is intact and the key is being read correctly (26-char
-key, 44-char secret) — the credentials were revoked or rotated at Alpaca's end.
+## Round 7 — COMPLETE (2026-08-12). Stop forecasting: three zero-forecast portfolios
 
-**To unblock:** get free keys at https://alpaca.markets (paper account,
-data-only), put them in `.env` at the repo root (gitignored), and re-run.
+Six rounds asked "which stocks will go up?" and measured IC ~ 0 every time;
+with IC = 0, Grinold's IR = IC*sqrt(BR)*TC zeroes everything downstream. Round
+7 changed the question: three designs whose expected return contains NO return
+forecast anywhere, since with mu flat, g = mu - sigma^2/2 collapses to
+g_p = mu - 0.5*w'Sigma w — all covariance terms, and covariance IS forecastable
+here (29/29 symbols). Full write-up: BACKTEST-REPORT.md "Round 7"; registry
+entries H37-H39.
 
-**What still works with no credentials at all:**
-- `scout/sec_bulk.py` — 23.4M XBRL facts, already built on disk
-- `scout/bars.py` — 1,506 symbols x 2,664 dates, 2016-2026, already cached
-- `scout/deals.py` — SEC filings need no key
-- `python -m scout.growth_selftest` — 51 checks, fully offline
-- every result and document in this repo
+| | verdict | the number that decides it |
+|---|---|---|
+| **H37 min-variance growth** (`zeroforecast_lab.py`) | mechanism CONFIRMED, trade REJECTED | Delta_mu vs its own EW bench = 0 (t -0.82) exactly as the theorem predicts — but vs SPY the residual mu gap is **-5.39%/yr**, and the vol-matched levered book **loses at a ZERO financing spread**. Attribution: it is the low-vol anomaly (loading t 20-32), named as such. |
+| **H38 rebalancing premium** (`rebalance_lab.py`) | arithmetic CONFIRMED (gamma* recovered 1.0004 on synthetic), money REJECTED | Buy-and-hold's Jensen drift collects **~101%** of gamma* — and over the real decade the tradeable premium is **NEGATIVE**: -0.67%/yr at full horizon, all 12 entry phases negative. "Volatility harvesting" compares a portfolio to a non-portfolio. |
+| **H39 forced flow** (`flow_lab.py`) | REJECTED outright | The pre-registered flow calendar (turn-of-month + tax-loss + index-rebalance, 25% of days in SPY, rest in BIL) sits at the **41st percentile of its own matched-time-in-market null** — below the median random calendar. In-window SPY earned 4.40 bps/day vs 5.79 outside. |
 
-Nothing already measured is lost.
+What the round settles: cap-weighted buy-and-hold **already collects every
+mechanical premium these designs harvest** — gamma* via drift, the variance
+saving via its megacap mu — at zero turnover and zero forecast. The
+zero-forecast family is closed. Anything left must be real mu information the
+market has not priced, or uncorrelated sleeves around a SPY core (the H32
+diagnosis, still the only structural opening).
 
-## Round 6 — STOPPED, incomplete, and worth resuming
+Process note: the three labs were written by agents that died at a spend limit
+mid-round; they were run, debugged (two one-line crashes, no numbers touched)
+and verified from the main session. Exploratory scrap for the ledger: SPY
+earns **-36 bps/day on the 42 third-Friday index-rebalance sessions** (Welch
+t -2.91, Sidak threshold 2.77 at 9 calendars) — one cell of nine, crash-day
+contaminated, not tradeable long-only, recorded not believed.
+
+## Round 6 — ran to completion 2026-08-10; full write-up pending
+
+`overlay_lab.py` completed after the keys were restored (results committed in
+`overlay_results.json`, 30+ variants, same-close vs next-close ladders, Rule
+13a/b, matched-exposure nulls including 2020+2022-excised dropout). Headline
+shape, subject to the pending write-up: every trend overlay cuts maxDD roughly
+in half at roughly SPY's Sharpe (best dual_avg 0.848 vs SPY 0.761 same-sample)
+with alpha t ~ 1.2-1.4 — the drawdown claim survives its nulls, the return
+claim does not clear the bar. Write-up deliberately deferred: Round 7 was
+published first by explicit instruction.
+
+## Round 6 as originally planned — STOPPED, superseded by the above
 
 The one genuinely untested idea left, and it came from an outside review of this
 repo's record: *"several old tests were correct about their narrow question but
@@ -191,21 +219,29 @@ return* — and if that is the answer, that IS the result.
 
 ## THE NEXT ACTION
 
-The construction result is confirmed but **not significant on its own**
-(t 1.02-1.51 depending on universe and book). Its credibility rests on
-consistency — every half, every third, both universes, difference beta ~0.05 —
-and on the SPY-vs-RSP external check, not on a p-value.
+**The vNext execution handoff (uploaded 2026-08-12) is the next mission**: an
+externally-reviewed program of five event-driven hypotheses — pure/unexpected
+news, 10-K textual change (Lazy Prices), opportunistic insider purchases,
+repurchase-announcement x undervaluation, dividend-reinvestment forced flow —
+with standalone sleeve gates and a final portfolio architecture around a
+continuous SPY core. Target: +13-20 pp/yr net excess. To avoid registry
+collision the handoff's H36-H40 register here as **H40-H44**. Work per the
+handoff runs on a dedicated branch (`claude/vnext-real-backtests` from
+`agent/backtest-only`), deliverable `SCOUT-VNEXT-REAL-RESULTS.md`.
 
-The cheapest way to act on it: **switch the engine's book from equal weight to
-cap weight.** It requires no new signal, reduces nothing, and is the only
-change five rounds of work support. It will not beat the market; it stops the
-book losing to it by ~2.7 pp/yr.
+Its five mechanisms are exactly the kind Round 7 says are the only ones left:
+event-driven mu information, not price-derived covariance. The repo's priors
+that bear directly: generic news tone/PEAD already failed (the handoff's
+designs are the residual/conditioned versions, which is the right response);
+H22 was killed for regime concentration (the handoff's H39-analog conditions
+on valuation instead of retuning it); and every timestamp/survivorship trap it
+warns about has already been measured here.
 
-If you want to test further, the open question is whether the cap-vs-equal gap
-is a permanent property or a feature of the 2016-2026 mega-cap decade. It is
-almost certainly partly the latter — `gates_lab` already found cap-weight
-beating every equal-weight book in this window, and Fernholz's diversity theorem
-says the reverse should hold when concentration mean-reverts.
+Still true and still the cheapest confirmed improvement: **switch the engine's
+book from equal weight to cap weight** — it stops the book losing ~2.7 pp/yr
+to its own construction. The open question on it stands: the cap-vs-equal gap
+is partly a mega-cap-decade feature (Fernholz's diversity theorem says it
+reverses when concentration mean-reverts).
 
 ## The honest bottom line
 

@@ -74,6 +74,15 @@ Ranked by evidence quality × cost, all free-data, all registry-worthy:
 6. **Declared dead — do not spend time**: index add/delete effects,
    post-split drift, day-of-week effects, overnight-only trading,
    pre-FOMC drift, generic 13F cloning, ML signal mining.
+7. **Declared dead by Round 7 (2026-08-12) — the whole zero-forecast
+   family**: long-only minimum-variance / low-vol construction as a growth
+   edge (H37 — the levered book loses at zero financing spread; it is the
+   low-vol anomaly, named), volatility harvesting / rebalancing premium
+   vs buy-and-hold (H38 — Jensen's drift collects ~101% of gamma*; the
+   tradeable sign was NEGATIVE this decade), and calendar forced-flow
+   timing on SPY (H39 — 41st percentile of its own matched null). Every
+   mechanical premium the covariance matrix offers is already inside
+   cap-weighted buy-and-hold.
 
 Data debt to settle before trusting any new small-cap result: one month
 of a delisting-inclusive dataset to re-run the S&P 1500 headline once —

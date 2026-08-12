@@ -2068,3 +2068,170 @@ the one thing here that is not beta, not survivorship, and not one lucky regime.
 
 It also does not beat the market. It recovers you to roughly SPY from a book
 that was losing to it by 2.7 pp/yr.
+## Round 7 — stop forecasting: three portfolios with no return forecast anywhere
+
+Six rounds asked one question in ~900 variants — *which stocks will go up?* —
+and measured IC ≈ 0 every time. Grinold's law (`IR = IC·√BR·TC`) makes the
+consequence exact: with IC = 0, no breadth, weighting or cost engineering can
+produce anything. Round 7 changed the question. All three hypotheses were
+designed so that **their expected return contains no return forecast anywhere**
+— if a design needed to predict a stock's direction to work, it was
+mis-implemented by definition. The motivating identity: with μ unforecastable
+and equal across stocks, `g = μ − σ²/2` collapses to `g_p = μ − ½·w'Σw`, and
+every surviving term is a covariance term — the one quantity this repo *proved*
+forecastable (29/29 symbols, both halves).
+
+The build agents died mid-round (spend limit) after writing all three labs;
+the labs were run and verified from the main session. One crash was fixed in
+`rebalance_lab.py` (a read-only-array `.sort()`), nothing that touches numbers.
+
+**Result: all three rejected as sources of market-beating return. Two of the
+three rejections come with the mechanism *confirmed* and measured — the
+arithmetic is real, and buy-and-hold already collects it.**
+
+### H38 — the rebalancing premium, isolated. The cleanest experiment this repo has run
+
+Fernholz's excess growth rate `γ* = ½(Σwᵢσᵢᵢ − w'Σw)` says a rebalanced
+portfolio's log growth exceeds the weighted-average log growth of its own
+constituents — return manufactured from volatility and imperfect correlation,
+containing no forecast. For the PIT S&P 500 the analytic value is large:
+**+4.12%/yr** on average (range +2.20 in 2017 to +7.69 in 2020). The popular
+"volatility harvesting" claim is that rebalancing collects this against
+buy-and-hold.
+
+The experiment: at each formation date, ARM A holds a PIT basket equal-weighted
+and rebalanced monthly at the close; ARM B holds **the identical stocks at the
+identical starting weights and never trades again**. A − B differences out
+selection, survivorship and μ entirely. Drift horizons 1/3/12/60 months;
+per-formation-date moving-block bootstrap; delisting policy identical in both
+arms (pro-rata to survivors); guards: 7 splits repaired, 23 stale tickers
+retired, 99 extreme prints masked.
+
+The positive control validates the machinery to four decimals: on synthetic data
+with known σ and ρ, measured γ* / analytic γ* = **1.0004**.
+
+| pre-registered cell | result |
+|---|---|
+| H38a γ* recovery on synthetic | **PASS** — ratio 1.0004 |
+| H38c who collects γ* on real data | **Jensen share ≈ 1.01** of predicted γ* — buy-and-hold's drift captures all of it |
+| H38d premium rises with drift horizon | **FAIL — it goes negative.** 60m drift +0.29%/yr (t 0.79); full-decade drift **−0.67%/yr with all 12 entry phases negative** (sd 0.13); top100dv **−2.05%/yr** |
+| A − B with μ-dispersion injected (synthetic, 10-40% spread) | **−2.5 to −34%/yr, t −25 to −55** — B wins by drifting into winners |
+| H38e sort baskets by predicted γ* | Q5−Q1 **negative** (t −0.88) — predicted γ* does not forecast the premium |
+| Rule 13 on A − B | beta of difference +0.007, alpha −0.25%/yr, t −0.51 |
+
+The resolution of the paradox is one sentence: **γ* is measured against the
+average constituent's log growth, which is not a portfolio anyone can hold —
+and the tradeable alternative, buy-and-hold, collects the same γ* through
+Jensen's inequality by drifting into its winners.** On synthetic equal-μ data
+the two collections tie (A−B ≈ 0); on the real decade, with megacap μ-dispersion,
+the Jensen term (4.16%/yr realised) EXCEEDED realised γ* (3.49%/yr) and
+rebalancing lost outright — the same ×10 verdict H31f reached from the other
+side. Volatility harvesting is real arithmetic and already in everyone's price.
+An independent implementation (different code, dollar-volume tiers, written
+before the lab ran) agreed at monthly re-formation: A−B ≈ +0.2 to +0.4%/yr,
+t ≤ 1.8.
+
+**Verdict: REJECTED as a return source; CONFIRMED as arithmetic — and over
+2016-2026 the sign of the tradeable version is NEGATIVE.** Registered cells
+H38a/c/f/g pass, H38b/d/e/h fail — exactly the pattern "the mechanism is real,
+the money is not."
+
+### H39 — forced flow: trade against people who must trade
+
+Mechanism: payroll/401k contributions settle at the turn of the month, December
+selling is tax-driven, index funds must transact at quarterly-rebalance closes —
+all price-insensitive, all known from the calendar years in advance. Strategy:
+hold SPY inside the pre-registered flow windows (25.2% of days), BIL otherwise,
+close-to-close, real BIL as the cash leg. Nine calendars pre-registered from the
+literature (Ariel; Lakonishok–Smidt; turn-of-month, tax-loss reversal, quarterly
+index rebalance) — written into the docstring before any number was computed.
+
+| | value |
+|---|---|
+| flow calendar (union), gross | CAGR 4.66%, Sharpe 0.34, maxDD −12.3% |
+| SPY same span | CAGR 15.34%, Sharpe 0.78, maxDD −33.8% |
+| in-window vs out-of-window SPY | **4.40 vs 5.79 bps/day** — flow days were *worse* |
+| matched time-in-market null (2,000 random calendars) | real calendar at the **41.3rd percentile** |
+| exhaustive rotation control (all 2,663 circular shifts) | **39.7th percentile** |
+| Rule 13 | beta 0.22, alpha −0.24%/yr |
+
+Below the median of its own null twice over: there is nothing here to lever, so
+the pre-registered levered arm was correctly not promoted (`null_cleared: 0`).
+26 variants reported.
+
+One exploratory scrap for the ledger: the quarterly index-rebalance window
+itself is *negative* — SPY earns −36 bps/day mean excess across the 42
+third-Friday sessions, Welch t −2.91 against a Šidák threshold of 2.77 at the
+9-calendar count. Being out of the market ~4 days a quarter is not a strategy,
+the two worst prints are 2020-03-20 and 2018-12-21 (crash days that happened to
+be rebalance Fridays), and it is one of nine tested cells. Recorded, not
+believed.
+
+**Verdict: REJECTED — the pre-registered calendar is indistinguishable from a
+random calendar of the same shape.** Downgrade tag: `source_gap` (Mira
+taxonomy); refresh condition: rerun on RSP/IWM where payroll-flow depth effects
+should be largest, if ever.
+
+### H37 — the zero-forecast growth portfolio (minimum variance)
+
+If μ really is flat across stocks, `g_p = μ − ½·w'Σw` says the growth-optimal
+long-only book is the minimum-variance portfolio, and every basis point of
+avoided variance is half a basis point of compounded return — a theorem about
+the objective, not a backtest. The lab makes it falsifiable with a point
+prediction: on two books over the same names, the realised log-growth gap
+decomposes exactly as `Δg = Δμ − ½Δσ²`, and the theorem's entire content is
+**Δμ = 0**.
+
+Long-only Ledoit-Wolf min-variance on the PIT S&P 500, monthly at the close,
+weights from returns through day t earning from t+1 (proven by a
+permute-the-future self-test), BIL as cash and risk-free everywhere, delisted
+names earn BIL until the next rebalance. 2 covariance windows × 4 weight caps,
+10 bps round trip on measured turnover.
+
+| pre-registered cell | result |
+|---|---|
+| H37a engine: vol(MV) < vol(IV) < vol(EW) out-of-sample | **PASS** — 13.22% < IV < 18.73% |
+| H37b theorem vs the equal-weight bench: Δμ = 0 | **PASS — Δμ −2.63%/yr at t −0.82, statistically zero.** The variance term does the predicted work |
+| H37c unlevered vs SPY ≈ the pre-measured +0.34%/yr | predicted +0.75%/yr — but realised log-growth gap **−4.64%/yr**, residual Δμ **−5.39%/yr (t −1.77)**: SPY's cap-weighted μ was higher, the one thing the theorem assumes away |
+| H37d **the one that matters**: vol-matched levered MV (L=1.36, inside Reg-T) beats SPY at a plausible financing spread | **FAIL — loses at a ZERO spread** (CAGR 12.81% vs 15.51%, alpha +0.31%/yr t 0.09). Break-even spread does not exist; leverage scales MV's lower arithmetic μ along with its Sharpe |
+| H37e random-weight control reproduces the vol reduction? | **No** — the optimiser is real (PASS) |
+| H37f low-vol attribution | the book **is** the low-vol anomaly plus beta: low-vol loading 0.66–0.91 at t 20–32 against own-bottom-100, SPLV and USMV; residual alpha 0.24–1.29%/yr, t ≤ 0.92 |
+| H37g Rule 9 phase ladder | all offsets −5.2 to −5.4 pp vs SPY — no conclusion depends on the rebalance day |
+
+The theorem is true and the premise is false: μ was not flat. It was tilted
+toward exactly the mega-caps that cap-weighting owns most of and min-variance
+owns least of, and 2016-2026 priced that tilt at ~5.4%/yr — ten times the
+variance saving. 73 variants.
+
+**Verdict: REJECTED as money — the mechanism is CONFIRMED (Δμ = 0 against its
+own equal-weight benchmark; the +0.88%/yr predicted advantage there was
+delivered by the variance term), but against cap-weighted SPY the equal-μ
+premise fails by an order of magnitude more than the theorem pays, and the
+levered version cannot be financed into existence even at zero spread.**
+
+### The ceiling table, computed before any backtest
+
+Analytic ceilings from the PIT covariance structure alone (2016-2026 annual
+means): γ* for equal-weight S&P 500 **+4.12%/yr**; min-variance growth edge
+½(σ²_SPY − σ²_IV) **+0.34%/yr** (range −0.30 in 2020 to +1.54 in 2022). The
+first is large but uncollectable (H38); the second is real but an order of
+magnitude too small to matter (H37). Both were known before the labs ran —
+the labs measured *whether* and *who*, not *how much*.
+
+### What Round 7 settles
+
+The round was designed to be unkillable by the repo's two chronic failure
+modes — no forecast anywhere, so IC ≈ 0 cannot hurt it; identical-names
+arms, so survivorship and selection cannot fake it. All three still lost,
+and all three lost to the same opponent for the same reason: **cap-weighted
+buy-and-hold already collects every mechanical premium these designs try to
+harvest** — γ* through Jensen's drift, the variance saving through its
+megacap μ — **at zero turnover, zero optimisation, and zero forecast.** SPY
+is not the passive default this project keeps trying to beat; it is the
+incumbent implementation of the very ideas being tested against it. The
+zero-forecast family is closed: covariance information alone, however well
+estimated, does not fund a landslide against the index. Whatever remains
+must come from information about μ that the market has not priced — which
+six rounds of IC ≈ 0 say this repo's data does not contain, or from accepting
+SPY as the core and finding genuinely uncorrelated sleeves (the H32 diagnosis,
+still the only structural opening on the board).

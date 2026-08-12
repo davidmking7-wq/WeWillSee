@@ -1141,6 +1141,33 @@ def run(args) -> dict:
               "spliced, so maxDD here is of the SPLICED curve) ===")
     res["episode_dropout"] = erows
 
+    # the leave-both-out sample put through the DECISIVE control, because a
+    # drawdown number without its matched-exposure null means nothing here
+    if not args.quick:
+        krows = []
+        for name in ("sma200", "dual_and", "dual_avg"):
+            real = build_book(sigs[name], spy_r, rf, 1, RT_BPS_HEADLINE)
+            rm = metrics(real[keep], rf[keep])
+            sm = metrics(spy_r[keep], rf[keep])
+            held = sigs[name].shift(1)
+            for kind in ("spell", "rotate"):
+                ds, ss = [], []
+                for sd in SEEDS:
+                    nb = null_books(held[keep], spy_r[keep], rf[keep], kind,
+                                    draws=args.draws, seed=sd)
+                    ds.append(pct_rank(rm["maxDD_pct"] / 100, nb.maxdd.values))
+                    ss.append(pct_rank(rm["sharpe"], nb.sharpe.values))
+                krows.append({"variant": name, "null": kind,
+                              "maxDD": rm["maxDD_pct"], "SPY_maxDD": sm["maxDD_pct"],
+                              "pctile_maxDD": round(float(np.mean(ds)), 1),
+                              "mc_sd_maxDD": round(float(np.std(ds, ddof=1)), 2),
+                              "sharpe": rm["sharpe"], "SPY_sharpe": sm["sharpe"],
+                              "pctile_sharpe": round(float(np.mean(ss)), 1),
+                              "mc_sd_sharpe": round(float(np.std(ss, ddof=1)), 2)})
+        _t(krows, "=== THE SHARPEST TEST IN THIS LAB: 2020 AND 2022 BOTH EXCISED, "
+                  "then run through the matched-exposure nulls again (3 seeds) ===")
+        res["dropout_nulls"] = krows
+
     # ---- ROBUSTNESS 4: start-date sensitivity --------------------------
     # the Sharpe gap is small enough that the sample window matters; sweeping
     # the start explicitly is cheaper than arguing about it. maxDD deltas are
@@ -1396,6 +1423,7 @@ def count_variants(args) -> int:
         n += 1 + 5 + 21            # check-frequency phases
         n += 12                    # leave-one-episode-out cells
         n += 6 * 3                 # start-date sensitivity
+        n += 3 * 2                 # leave-both-out nulls
     n += 4 * 8                     # leverage cells (2 causal x 4 borrow)
     n += 5                         # vol-target cells
     return n
