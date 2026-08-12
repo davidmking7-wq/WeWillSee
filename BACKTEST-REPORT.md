@@ -2068,6 +2068,56 @@ the one thing here that is not beta, not survivorship, and not one lucky regime.
 
 It also does not beat the market. It recovers you to roughly SPY from a book
 that was losing to it by 2.7 pp/yr.
+## Round 6 — the trend overlay, judged on the job a risk rule can actually do
+
+Round 6 came from an outside review of this repo's record: several old tests
+were right about their narrow question but applied to the wrong job — vol
+scaling judged on RETURN (H5g), crash flags marked down for costing return
+(H5a-c). A trend rule had never been applied to the index itself and judged on
+drawdown. Two labs: `overlay_lab.py` (H35 — the overlay alone, 237 variants)
+and `stack_lab`-style composite (`stack_results.json`, H36 — core + overlay +
+realised-variance splice). Honest prior stated in advance: Faber 2007 is among
+the most published rules in finance and 2016-2026 is entirely post-publication;
+expect materially lower drawdown, roughly unchanged Sharpe, lower raw return.
+
+That is what was measured, and both halves of it survived their controls.
+
+**The drawdown claim is real.** SMA200 on SPY (same-close): maxDD **−19.1% vs
+−33.8%**, and against 1,000 matched-time-in-market random books its drawdown
+sits at the **97th-99.3rd percentile** across three null designs. The sharpest
+test in the lab: excise BOTH 2020 and 2022, splice the remainder, re-run the
+matched-exposure nulls — the drawdown percentile is **still 97.5-99.7** (maxDD
+−11.9% vs SPY's −19.3% on the same spliced sample). The overlay's drawdown
+protection is not one lucky crash; it is structural.
+
+**The return/Sharpe claim is not.** Best overlay Sharpe difference vs SPY:
+dual_avg **+0.088, t 0.56**; sma200 +0.051, t 0.19. On the same spliced
+no-crash sample the Sharpe *percentile* vs its own nulls is 36-59 —
+indistinguishable from random exposure. Rule 13 decomposition: sma200's raw
+CAGR gap of −3.43pp = −7.26pp of forgone beta + **+3.66pp of timing alpha
+(t 1.34)**. The alpha is positive everywhere and significant nowhere.
+
+The levered arm (repo protocol: vol-match to SPY, finance at real BIL + spread,
+causal trailing leverage, Reg-T cap) is the honest tease: `dual_and` causal
+**beats SPY's CAGR at every borrow spread tested** — 17.00% vs 15.50% at 0 bps,
+16.26% at 150 bps — at maxDD **−22.6% vs −33.8%**. But the subperiod ladder
+says what it is: middle-third ΔCAGR **negative** for every variant
+(sma200 −2.58pp), `all_subperiods_positive: false` across the board. It wins
+the decade by winning its crashes, at t ≈ 1.2-1.4 and N=237 variants —
+EXPLORATORY, nowhere near the t>3 + deflated-Sharpe bar.
+
+H36's composite lands the same way: `CAP500 + trend + rv` runs Sharpe 0.851 vs
+SPY 0.745 at maxDD **−13.6% vs −33.8%** (alpha +3.88%/yr, t 1.54). One cell
+(`CAP500 + trend150 next-close`) touches t 2.20 — one specification of 22
+books, exploratory, recorded not promoted. The CAP500 core itself shows
+**alpha +0.89%/yr t 2.19 vs SPY** — H31's construction result re-measured a
+third independent way.
+
+**Verdict: as a drawdown tool, CONFIRMED — the first overlay in six rounds
+whose stated job survives its matched null, including with both crashes
+removed. As a return edge, NOT CONFIRMED (t ≈ 0.2-1.6 everywhere it matters).
+Use it if the objective is surviving drawdowns; do not expect it to beat SPY.**
+
 ## Round 7 — stop forecasting: three portfolios with no return forecast anywhere
 
 Six rounds asked one question in ~900 variants — *which stocks will go up?* —

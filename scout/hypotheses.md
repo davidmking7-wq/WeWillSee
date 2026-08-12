@@ -1545,6 +1545,36 @@ record; pre-registered; one specification per cell). 53 variants per universe,
 
 Trial count: N rises by **106** registered cells.
 
+### H35 — a trend rule applied to the INDEX and judged on DRAWDOWN (scout/overlay_lab.py, run 2026-08-10)
+
+Registered before the run. Mechanism: a slow trend filter cannot predict
+crashes but can refuse to hold through prolonged ones; judge it on the job a
+risk rule can do (drawdown), not the job it cannot (return). SPY in/out at the
+close vs real BIL, 5 bps round trip, 237 variants, decisive control =
+matched-time-in-market random books (iid / spell-matched / exhaustive-rotation).
+
+| # | date | cell | expected | status |
+|---|---|---|---|---|
+| H35a | 2026-08-10 | SMA200-family overlays cut maxDD materially below every matched-exposure null. | > 95th pctile | **CONFIRMED — maxDD −19.1% vs SPY −33.8%, 97.0-99.3rd percentile across all three null designs**, and STILL 97.5-99.7 with BOTH 2020 and 2022 excised and the nulls re-run on the spliced sample. Structural, not one lucky crash. |
+| H35b | 2026-08-10 | The overlay's Sharpe advantage over SPY is real. | t > 2 | **NOT CONFIRMED — best dSharpe +0.088 (dual_avg), t_Memmel 0.56, t_boot 0.59 (MC sd 0.005)**; on the crash-excised sample the Sharpe percentile vs its own nulls is 36-59, i.e. random. Rule 13: sma200's timing alpha is +3.66pp/yr at t 1.34 — positive everywhere, significant nowhere. |
+| H35c | 2026-08-10 | Levered (vol-matched, causal trailing L, real BIL + spread, Reg-T) it beats SPY's CAGR at a plausible spread. | survives 150 bps | **True in-sample and EXPLORATORY: dual_and causal 17.00%/16.26% CAGR at 0/150 bps vs SPY 15.50%, maxDD −22.6 vs −33.8 — but the middle third is NEGATIVE for every variant (sma200 −2.58pp), so it wins the decade by winning its crashes.** At N=237 this does not approach the exploratory bar. Recorded, not promoted. |
+
+**Verdict: CONFIRMED as a drawdown tool — the first overlay in six rounds whose
+stated job survives its matched null with the crashes removed. NOT CONFIRMED as
+a return edge.** 237 variants.
+
+### H36 — the assembled stack: core + trend + realised-variance splice (stack_results.json, run 2026-08-10)
+
+The composite of everything that individually survived: cap-weighted PIT core
+(H31), trend overlay (H35), 5-min realised-variance vol targeting (H20, sizing
+only). CAP500+trend+rv: **Sharpe 0.851 vs SPY 0.745, maxDD −13.6% vs −33.8%,
+alpha +3.88%/yr t 1.54** — the whole-stack drawdown is a third of the index's
+with beta 0.37. The CAP500 core alone re-measures H31 a third independent way:
+**alpha +0.89%/yr, t 2.19**. One cell touches t 2.20 (CAP500+trend150
+next-close) — one of 22 books, exploratory. **Verdict: the stack is a
+risk-shaping machine, not a return machine; every return t sits at 1.1-1.6.
+Nothing here beats SPY at the registered bar.**
+
 ### H37 — the zero-forecast growth portfolio (scout/zeroforecast_lab.py, run 2026-08-12)
 
 Registered before the run. Mechanism: if mu is identical across stocks — which

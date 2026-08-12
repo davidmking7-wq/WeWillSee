@@ -168,16 +168,17 @@ earns **-36 bps/day on the 42 third-Friday index-rebalance sessions** (Welch
 t -2.91, Sidak threshold 2.77 at 9 calendars) — one cell of nine, crash-day
 contaminated, not tradeable long-only, recorded not believed.
 
-## Round 6 — ran to completion 2026-08-10; full write-up pending
+## Round 6 — COMPLETE (published 2026-08-12, after Round 7 by instruction)
 
-`overlay_lab.py` completed after the keys were restored (results committed in
-`overlay_results.json`, 30+ variants, same-close vs next-close ladders, Rule
-13a/b, matched-exposure nulls including 2020+2022-excised dropout). Headline
-shape, subject to the pending write-up: every trend overlay cuts maxDD roughly
-in half at roughly SPY's Sharpe (best dual_avg 0.848 vs SPY 0.761 same-sample)
-with alpha t ~ 1.2-1.4 — the drawdown claim survives its nulls, the return
-claim does not clear the bar. Write-up deliberately deferred: Round 7 was
-published first by explicit instruction.
+H35 overlay: **CONFIRMED as a drawdown tool** — maxDD −19.1% vs SPY's −33.8%,
+97-99th percentile of matched-time-in-market nulls, and still 97.5-99.7 with
+BOTH 2020 and 2022 excised. **NOT CONFIRMED as a return edge** — best dSharpe
++0.088 at t 0.56; the levered arm beats SPY's CAGR at every borrow spread
+in-sample but its middle third is negative for every variant (exploratory,
+N=237). H36 stack: CAP500+trend+rv runs Sharpe 0.851 vs 0.745 at a THIRD of
+SPY's drawdown, alpha t 1.54 — a risk-shaping machine, not a return machine.
+The CAP500 core re-measures H31 a third way: +0.89%/yr, t 2.19. Full write-up:
+BACKTEST-REPORT.md "Round 6"; registry H35/H36.
 
 ## Round 6 as originally planned — STOPPED, superseded by the above
 
