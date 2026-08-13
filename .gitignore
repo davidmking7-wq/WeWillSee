@@ -1,0 +1,18 @@
+# secrets
+.env
+
+# python
+.venv/
+__pycache__/
+*.pyc
+
+# generated per-run artifacts (rebuilt by the CLI; calibration is
+# engine-tagged and must be rebuilt after any signals change anyway)
+scout/calibration.json
+scout/last_scan.json
+scout/final_picks.json
+scout/backtest_cache.pkl
+scout/earnings_cache.json
+scout/backtest_cache_pit.pkl
+scout/backtest_cache_1500.pkl
+scout/form4_cache/
