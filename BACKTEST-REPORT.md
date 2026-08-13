@@ -1,5 +1,32 @@
 # Stock Scout — Final Backtest Report (engines v1 / v3 / v4 / v5)
 
+> **RETRACTED PRE-CORRECTION ARTIFACT — DO NOT CITE.** The numbers below were
+> produced before next-open execution, explicit costs, non-reweighted missing
+> companies, continuous SPY, daily drawdown, and clean-code/data provenance
+> were enforced. They remain only so `python -m scout.audit` can detect the old
+> claims. A fresh result may replace this banner only after the strict audit
+> passes from a clean commit.
+
+## Fresh corrected run — 2026-08-10
+
+This is the current result. It uses next-day-open entries, 15 basis points of
+estimated round-trip trading friction, daily drawdown, a continuous one-buy /
+one-sell SPY comparison, and explicit data coverage. Alpaca returned all 504
+requested current-S&P-500 symbols. One name was silently omitted from the large
+batch and then recovered by the new individual-retry check; that recovery is
+recorded in `scout/backtest_results.json`.
+
+The best scanner version, v5, produced **+124.4%** compounded growth on the 53
+non-overlapping windows. Continuous SPY produced **+250.5%** over the same
+span. The scanner's daily maximum drawdown was **-41.3%**. Therefore the
+scanner **did not beat the market and is not eligible for paper promotion**.
+
+The lie detector also found two training labels crossing the test boundary,
+insufficient lift over randomized picks, and a small current-membership bias.
+Full machine-readable evidence is saved in
+`experiments/results/backtest_audit_sp500.json`; the plain-language handoff is
+`experiments/results/FINAL_TEST_HANDOFF.md`.
+
 Run 2026-08-08 on 10 years of dividend-adjusted Alpaca SIP daily bars,
 via `python -m scout.backtest` (machine-readable results:
 `scout/backtest_results.json` for the current-S&P-500 universe,
@@ -89,7 +116,7 @@ bull regimes (63.2% hit, +2.9% avg end vs the market's +2.53%).
 ## The S&P 500 comparison — read this before anything else
 
 Compounding the non-overlapping windows sequentially (equal-weight 5 picks,
-hold to day 42, roll; no costs):
+hold to day 42, roll; this archived calculation omitted trading friction):
 
 | | total growth 2017→2026 |
 |---|---|
@@ -540,7 +567,9 @@ years — 69% hit, +6.9% avg, zero tail — cannot move a backtest.)
    trust cross-engine/cross-universe comparisons instead.
 2. **Overlap**: monthly entries overlap 2-month windows (~2× effective
    sample); the non-overlapping subset is the honest one.
-3. **No costs, slippage, or taxes** in any number above.
+3. **Archived calculations omitted trading friction and taxes.** Do not cite
+   those old tables; the fresh corrected run at the top charges 15 basis points
+   of estimated round-trip trading friction.
 4. **Within-window delistings** drop out of picks and benchmarks alike.
 5. **Single macro era** (2017-2026, mostly bull); bear stats rest on ~3
    episodes. The v4 ship decision conditions on its holdout — the protocol

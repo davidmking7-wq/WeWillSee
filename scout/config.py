@@ -12,8 +12,38 @@ from dotenv import load_dotenv
 ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(ROOT / ".env")
 
-ALPACA_API_KEY = os.environ["ALPACA_API_KEY"]
-ALPACA_SECRET_KEY = os.environ["ALPACA_SECRET_KEY"]
+# Offline audit/test commands must import the package without market-data
+# credentials. The fetcher validates these only when a network pull is asked for.
+def _alpaca_credentials() -> tuple[str | None, str | None]:
+    """Load data-only credentials without copying secrets into this repo."""
+    key = os.environ.get("ALPACA_API_KEY")
+    secret = os.environ.get("ALPACA_SECRET_KEY")
+    credential_file = os.environ.get("ALPACA_CREDENTIAL_FILE")
+    if credential_file and (not key or not secret):
+        path = Path(credential_file).expanduser()
+        try:
+            lines = [line.strip() for line in path.read_text(encoding="utf-8").splitlines()
+                     if line.strip()]
+        except OSError as exc:
+            raise RuntimeError(f"cannot read ALPACA_CREDENTIAL_FILE: {path}") from exc
+        if len(lines) != 2:
+            raise RuntimeError("ALPACA_CREDENTIAL_FILE must contain exactly two non-empty lines")
+        key = key or lines[0]
+        secret = secret or lines[1]
+    return key, secret
+
+
+ALPACA_API_KEY, ALPACA_SECRET_KEY = _alpaca_credentials()
+
+# Honest backtest defaults. Spread is the full quoted spread; half is paid on
+# each side. Slippage and commission are per side.
+BACKTEST_SPREAD_BPS = 5.0
+BACKTEST_SLIPPAGE_BPS = 5.0
+BACKTEST_COMMISSION_BPS = 0.0
+BACKTEST_MISSING_LEG_POLICY = "total_loss"
+# A provider may lack one mapped ticker in a 500-name request. Keep the gap
+# tiny, persist the exact missing name, and fail closed above 0.20%.
+BACKTEST_MAX_MISSING_SYMBOL_FRACTION = 0.002
 
 SCOUT_DIR = ROOT / "scout"
 UNIVERSE_CSV = SCOUT_DIR / "universe.csv"
@@ -31,8 +61,9 @@ EXCEL_PATH = ROOT / "picks.xlsx"
 ENGINE = "v5"
 
 # Label definition (state verbatim in every report):
-# HIT = max CLOSE over the next 42 trading days >= entry close * 1.05
-# (first-passage; entry = close on the scan date, window starts the next day)
+# HIT = max net liquidation value over the next 42 trading days >= 1.05
+# times starting capital. Signals use the completed scan-date close; the
+# default simulated entry is the next trading day's open, with declared costs.
 HORIZON_TDAYS = 42
 TARGET_GAIN = 0.05
 DROP_GAIN = -0.05           # companion stat: touched -5% before +5%
@@ -79,19 +110,20 @@ GAIN_MIN_P5 = 0.62
 
 # Sell guidance (exit-rule lab, scout/exitlab.py — full record in
 # BACKTEST-REPORT.md; corroborated by Kaminski-Lo 2014, Lei-Li 2009).
+# Historical research configuration only; it is not an order instruction.
 # Tested 2017-2026 train/holdout: ordinary stops/time/trend exits before
 # the deadline reduce returns (whipsaw + gap-through — daily single-stock
 # returns lean toward reversal, so stops sell dips right before the
-# expected bounce). What ships is PER-STOCK, guidance-only (HIT/MISS
-# labels never altered):
+# expected bounce). The rolling lab evaluates this PER-STOCK variant without
+# changing the frozen HIT/MISS labels:
 #  1. DISASTER stop at SELL_DISASTER_SIGMA x the stock's own expected
 #     42-day move (sigma42 = annualized 63d vol * sqrt(42/252)) below
 #     entry. Beat the fixed -15% stop on BOTH train and holdout
 #     (vstop200 vs stop15). Tail-capping, not return enhancement.
 #  2. No other stop before the deadline; the deadline is the exit.
-#  3. After a +5% touch: breakeven floor — never let a winner become a
-#     loss (be_hit; the peak-trailing variant sold ongoing runners and
-#     lost to this on holdout).
+#  3. The old breakeven-after-touch rule is a rejected historical variant,
+#     not current guidance. Any dynamic close-triggered exit evaluated by the
+#     rolling lab fills no earlier than the following session's open.
 SELL_DISASTER_SIGMA = 2.0
 SELL_DISASTER_FALLBACK = 0.15   # rows recorded before per-stock levels
 

@@ -1,0 +1,79 @@
+{
+  "title": "Three candidate paths beyond the rejected stock picker",
+  "registered_at": "2026-08-10T00:32:09+03:00",
+  "status": "LOCKED_BEFORE_DATA_DOWNLOAD",
+  "purpose": "Try the three strongest practical routes to large, repeatable market outperformance without changing a rule after seeing its result.",
+  "important_limits": [
+    "These public factor series are hypothetical research portfolios, not broker fills.",
+    "A historical pass only earns a paper test; it does not authorize live trading or a merge to main.",
+    "All three candidates count in the trial total even if they fail. No parameters may be tuned after the first run."
+  ],
+  "data": {
+    "trend": "AQR Time Series Momentum Factors, monthly, current extension plus the frozen original-paper workbook",
+    "equity_styles": "Kenneth French monthly five-factor and momentum files for North America, Europe, Japan, and Asia Pacific ex Japan",
+    "benchmark": "Kenneth French Developed Markets Mkt-RF plus RF",
+    "common_start": "1991-01",
+    "development_end": "2009-12",
+    "untouched_validation_start": "2010-01",
+    "older_trend_stress_period": "1985-01 through 1990-12",
+    "latest_allowed_month": "the last fully published month available when the data are downloaded"
+  },
+  "shared_rules": {
+    "frequency": "monthly",
+    "volatility_estimate": "36 trailing completed months, shifted one month so the current return is never used",
+    "sleeve_volatility_target": 0.10,
+    "whole_portfolio_volatility_target": 0.15,
+    "maximum_scaling_leverage": 1.50,
+    "minimum_scaling_leverage": 0.00,
+    "missing_month_rule": "Do not silently drop a selected series. Stop the run and report the missing month or series.",
+    "compounding": "geometric from a monthly wealth curve",
+    "drawdown": "measured from every monthly portfolio mark, never only at trade exits",
+    "rolling_consistency_window_months": 60,
+    "base_costs": {
+      "trend_annual_drag": 0.01,
+      "equity_style_annual_drag": 0.02,
+      "financing_spread_above_cash": 0.015
+    },
+    "stress_costs": {
+      "trend_annual_drag": 0.02,
+      "equity_style_annual_drag": 0.03,
+      "financing_spread_above_cash": 0.03
+    }
+  },
+  "candidates": [
+    {
+      "id": "P1",
+      "name": "Diversified multi-asset trend",
+      "rule": "Use AQR's fixed 12-month time-series-momentum rule with a one-month hold across the full futures universe. Use the published all-assets factor; if it is absent, equal-weight the four published asset-class factors exactly once. Apply only the shared causal volatility scaling and registered costs.",
+      "implementation_note": "Practical versions require liquid managed-futures instruments or futures access; the free ETF approximation already failed and is not substituted here.",
+      "standalone_pass": "After base costs: Sharpe at least 0.50; positive return in both 1991-2009 and 2010-latest; positive return in at least 70% of rolling five-year windows; max drawdown no worse than -40%; and positive return after stress costs.",
+      "breadth_check": "At least three of the four asset-class factors must have positive full-period average returns."
+    },
+    {
+      "id": "P2",
+      "name": "Global market-neutral value, quality, investment, and momentum",
+      "rule": "Within each of North America, Europe, Japan, and Asia Pacific ex Japan, equal-weight HML, RMW, CMA, and Mom. Then equal-weight the four regional sleeves. Exclude SMB. Apply only the shared causal volatility scaling and registered costs.",
+      "implementation_note": "Practical versions require many liquid long and short positions, borrow availability, and strict turnover control; factor index returns are an upper bound before the registered drag.",
+      "standalone_pass": "After base costs: Sharpe at least 0.50; positive return in both 1991-2009 and 2010-latest; positive return in at least 70% of rolling five-year windows; max drawdown no worse than -40%; and positive return after stress costs.",
+      "breadth_check": "At least three of the four non-overlapping regions must have positive full-period average sleeve returns after base costs."
+    },
+    {
+      "id": "P3",
+      "name": "Developed-market core plus two independent overlays",
+      "rule": "Start with one unit of the Developed Markets total return. Add 0.50 notional of P1 and 0.50 notional of P2. Use each sleeve after its own registered costs, charge the registered financing spread on funded exposure above one, and causally scale the whole portfolio to 15% volatility with a 1.50 cap. Apply the identical whole-portfolio volatility rule to the benchmark.",
+      "implementation_note": "This is the only route registered as a direct attempt at a large win: keep the broad market return and add two different, market-neutral return engines.",
+      "pass": "Net CAGR at least five percentage points per year above the identically scaled benchmark; Sharpe at least 0.25 above it; maximum drawdown no worse; positive excess CAGR in both 1991-2009 and 2010-latest; positive excess return in at least 70% of rolling five-year windows; and at least two percentage points of CAGR advantage under stress costs.",
+      "landslide_label": "Net CAGR at least eight percentage points per year above the benchmark with no worse maximum drawdown."
+    }
+  ],
+  "required_reports": [
+    "full period and the two locked time splits",
+    "each decade",
+    "each trend asset class and each equity region",
+    "base-cost and stress-cost results",
+    "CAGR, annualized volatility, Sharpe, maximum drawdown, worst month, and rolling five-year win rate",
+    "correlations between sleeves and the benchmark",
+    "results for all three candidates, including failures"
+  ],
+  "promotion_gate": "No candidate may reach main or live money before a frozen 6-12 month paper-forward record passes its registered gate."
+}
