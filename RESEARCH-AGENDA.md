@@ -74,6 +74,15 @@ Ranked by evidence quality × cost, all free-data, all registry-worthy:
 6. **Declared dead — do not spend time**: index add/delete effects,
    post-split drift, day-of-week effects, overnight-only trading,
    pre-FOMC drift, generic 13F cloning, ML signal mining.
+7. **Declared dead by Round 7 (2026-08-12) — the whole zero-forecast
+   family**: long-only minimum-variance / low-vol construction as a growth
+   edge (H37 — the levered book loses at zero financing spread; it is the
+   low-vol anomaly, named), volatility harvesting / rebalancing premium
+   vs buy-and-hold (H38 — Jensen's drift collects ~101% of gamma*; the
+   tradeable sign was NEGATIVE this decade), and calendar forced-flow
+   timing on SPY (H39 — 41st percentile of its own matched null). Every
+   mechanical premium the covariance matrix offers is already inside
+   cap-weighted buy-and-hold.
 
 Data debt to settle before trusting any new small-cap result: one month
 of a delisting-inclusive dataset to re-run the S&P 1500 headline once —
@@ -151,3 +160,121 @@ cannot be harvested early. Bigger is available only in increments — a
 disciplined year of the ranked program above might add 2–6 points a year
 on top of the current engine, each increment fought for with the method
 in section 1. Anyone offering more than that is selling something.
+
+## Correction to the significance bar (2026-08-09, at the user's challenge)
+
+Section 1 rule 3 of this document says **"t > 3 (not 2) for anything standalone
+(Harvey-Liu)"**. That rule has been applied bluntly across Round 3 — including
+to results it was never meant for — and the user was right to push back on it.
+This section corrects it.
+
+**What the rule is actually for.** Harvey-Liu's argument is about MULTIPLE
+TESTING. The finance literature has tested thousands of factors, so a t of 2
+inside that search space is close to meaningless: at a 5% false-positive rate,
+800 tests throw off roughly 40 spurious "discoveries" by chance alone. Round 3
+ran ~800 variants. In that context t = 2 genuinely is noise.
+
+**What it is not for.** The multiple-testing penalty applies to the SEARCH that
+produced a number, not to every number. A hypothesis with a strong external
+prior, registered before anyone looked, is a CONFIRMATORY test and does not
+inherit the search cost of the exploratory sweep running alongside it.
+
+### The corrected rule
+
+**The bar scales with how much search produced the number.**
+
+| regime | what it looks like | bar |
+|---|---|---|
+| **Confirmatory** | strong external evidence base, pre-registered, one or a few specifications | t ~ 2 with consistent halves, consistent entry phases, and Rule 13 satisfied is meaningful evidence |
+| **Exploratory** | found by sweeping, or the Nth variant of a family | t > 3 AND a deflated Sharpe computed at the true running N |
+
+Report, for every claim: the t-statistic, the number of variants YOU ran, and
+which regime the claim is in. Do not reject a confirmatory result solely for
+failing t > 3, and do not accept an exploratory one solely for passing t = 2.
+
+### Worked example, and why this matters here
+
+**Cross-sectional momentum** (Jegadeesh-Titman 1993; replicated across 40+
+countries and 200+ years; and independently in this repo's own v3/v4
+train/holdout protocol) measured **+132.8 bps per 42 sessions gated, t = 2.04,
+positive in both halves**, market-adjusted, in H25. Under a blanket t > 3 that
+is "rejected". Under the corrected rule it is a confirmatory test clearing its
+bar, and it is the strongest live result in this repo.
+
+**Headline news tone**, the 800th variant of a within-sample sweep, at t = 2
+would be noise. Same number, different evidentiary weight, because a different
+amount of searching produced it.
+
+The blanket rule caused momentum to be under-reported for a full round while
+fourteen exploratory hypotheses were being correctly rejected. That is the cost
+of a bar that does not distinguish between the two.
+
+### What does NOT change
+
+Rules 13-17 all stand and none of them are significance thresholds — they are
+about whether the number means what it appears to mean:
+risk-adjust before believing a sort (13); quote the permutation SE against the
+Newey-West SE (14); controls can leak too (15); a bootstrap t inside its own
+Monte-Carlo noise has not cleared anything (16); give every arm of a comparison
+the same machinery (17). A confirmatory result still has to survive all five,
+plus the equal-thirds era check that killed H22 and the entry-phase pooling of
+Rule 9.
+
+Momentum at t = 2.04 is promoted to "the live candidate", not to "shipped".
+
+## Adopted from Mira (2026-08-09): the downgrade taxonomy and refresh conditions
+
+`byteseek/Mira` (https://github.com/byteseek/Mira) is an agent-native investment
+research workspace. Two of its skills are now installed at
+`.claude/skills/data-analysis-quality-gate/` and
+`.claude/skills/macro-economic-analysis/`.
+
+**An honest assessment of what it adds, because overselling it would be the
+exact failure this repo keeps documenting.** Mira's quality gate exists to stop
+an LLM from asserting a number it never computed — it forces a data-requirement
+brief, a calculation ledger, and an explicit downgrade when the arithmetic was
+skipped. That is a real and common failure mode, and it is **not the one that
+has been killing us.** Our labs always computed everything; all seven
+retractions were subtler — beta in disguise (four times), a Newey-West lag wrong
+by 41x, a missing risk-free rate, and eighteen lucky deals. Across Mira's ten
+skills and fourteen loops, exactly one file mentions backtesting at all, and
+nothing addresses survivorship, point-in-time membership, or multiple testing.
+Rules 9 and 13-17 remain the load-bearing discipline here.
+
+Two things from it are genuinely worth adopting.
+
+### 1. A downgrade vocabulary
+
+This repo has verdicts (CONFIRMED / REJECTED / INCONCLUSIVE) but no vocabulary
+for *why* something is not yet trusted, which has let "inconclusive" cover very
+different situations. Adopt Mira's taxonomy:
+
+| tag | meaning | example from our record |
+|---|---|---|
+| `calculation_gap` | the arithmetic was not done or was done wrong | H29 — market-adjusted the levels, never the deltas |
+| `source_gap` | the data cannot answer the question | H33 — 120 large caps cannot test a neglect premium |
+| `watch_only` | direction is right, evidence is not sufficient to act | H31 — consistent everywhere, t only 1.02-1.51 |
+| `needs_refresh` | true in-sample, conditional on a regime that may end | H31 again — the cap-vs-equal gap is partly a mega-cap decade |
+
+### 2. `refresh_condition` — what would change the answer
+
+Mira requires every durable conclusion to record what would overturn it. This
+repo has never done that, and it is exactly what a five-round research record
+needs, because several results are **conditional rather than wrong**.
+
+Conditions now on the record:
+
+- **H31 (cap-weighting, +0.150 Sharpe):** reverses if market concentration
+  mean-reverts. Fernholz's diversity theorem says equal-weight should win when
+  it does; `gates_lab` already measured cap-weight beating every equal-weight
+  book across 2017-2026, the most concentration-driven decade on record.
+  **Refresh when the top-10 share of S&P 500 market cap falls for two
+  consecutive years.**
+- **H20 (5-min realised variance, 13-16% better):** a measurement result, not a
+  market one. Refreshes only if the data source changes.
+- **H32 (merger arb, beta 0.271):** the beta collapse is structural and should
+  persist. The absent return was 18 bidding wars; **refresh if a period with a
+  materially higher topping-bid rate occurs**, and note the sample contains no
+  2008-style credit crisis, which is merger arb's canonical failure.
+- **The fourteen rejected signals:** no refresh condition. They were rejected on
+  mechanism, sign, or controls, not on regime.

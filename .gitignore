@@ -16,3 +16,15 @@ scout/earnings_cache.json
 scout/backtest_cache_pit.pkl
 scout/backtest_cache_1500.pkl
 scout/form4_cache/
+scout/sleeve_bars.pkl
+# any lab's downloaded-data cache. The general glob matters: research agents
+# invent new cache prefixes (cache_fundlab_*, cache_news_sent_*, ...) and a
+# 200 MB pickle lands in a commit before anyone notices.
+scout/cache_*
+scout/cache_secbulk/
+scout/cache_bars_master.pkl
+scout/cache_deals_*.pkl
+
+# agent scratch: verification scripts written next to a lab, not deliverables
+_verify_*.py
+_scratch_*.py

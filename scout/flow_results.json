@@ -1,0 +1,1015 @@
+{
+  "hypothesis": "H39 forced flow",
+  "span": {
+    "from": "2016-01-05",
+    "to": "2026-08-07",
+    "n_return_days": 2663,
+    "years": 10.567460317460318,
+    "n_closes": 2664
+  },
+  "audit": {
+    "SPY": {
+      "max_abs_1d_move_pct": 10.784472957609225,
+      "n_moves_over_45pct": 0,
+      "max_identical_close_run": 2,
+      "stale_run_flagged": 0,
+      "stale_run_from": "2016-04-21",
+      "stale_run_to": "2016-04-22",
+      "median_volume_in_run": 95702442.0
+    },
+    "BIL": {
+      "max_abs_1d_move_pct": 0.07702182284978765,
+      "n_moves_over_45pct": 0,
+      "max_identical_close_run": 53,
+      "stale_run_flagged": 1,
+      "stale_run_from": "2020-12-07",
+      "stale_run_to": "2021-02-23",
+      "median_volume_in_run": 1237170.0
+    },
+    "frozen_quote_override": "BIL trips the >=10-identical-close screen with a 53-session run (2020-12-07..2021-02-23) on a median 1.24M shares/day. That is a T-bill ETF at a zero policy rate, not a delisted stale quote. The guard is deliberately overridden for BIL and only for BIL; SPY does not trip it (max run 2).",
+    "split_guard": "Neither SPY nor BIL has ever split and no |1-day| move approaches the 45% screen, so the repo's split-repair and extreme-print masks are no-ops here. Verified, not assumed.",
+    "unscheduled_closures_in_span": [
+      "2018-12-05",
+      "2025-01-09"
+    ],
+    "calendar_lookahead_note": "The mask is built from the REALISED trading calendar. Scheduled holidays are published years ahead; the only two unscheduled closures in the span are listed above (2 sessions in 2,663), each announced 2-5 days before the fact. Disclosed, not fixed."
+  },
+  "spy": {
+    "cagr_pct": 15.342636474818505,
+    "vol_pct": 17.548252336385552,
+    "sharpe": 0.7811175445026868,
+    "maxdd_pct": -33.79381911340269,
+    "skew": -0.34459204014981815,
+    "kurt": 15.697669622937182,
+    "alpha_ann_pct": 1.0127286347622776e-15,
+    "beta": 1.0000000000000002,
+    "alpha_t_ols": null,
+    "alpha_t_nw": -6.084165173948297e-09,
+    "beta_se_ols": 4.315384779251184e-18,
+    "corr": 1.0
+  },
+  "bil": {
+    "cagr_pct": 2.1306292725815412,
+    "vol_pct": 0.2651067308450836
+  },
+  "calendars": {
+    "TOM-A": {
+      "days_in_market": 511,
+      "pct_in_market": 19.188884716485166,
+      "round_trips": 129,
+      "round_trips_per_year": 12.207285016898235,
+      "mean_block_len": 3.9612403100775193,
+      "cagr_pct": 5.165048200808364,
+      "vol_pct": 7.432051483002226,
+      "sharpe": 0.4318459760278999,
+      "maxdd_pct": -9.034515585164193,
+      "skew": -0.5838293776505646,
+      "kurt": 31.385625160343196,
+      "alpha_ann_pct": 0.7603821322789762,
+      "beta": 0.17824007060487096,
+      "alpha_t_ols": 0.36736462799006453,
+      "alpha_t_nw": 0.36871405076652064,
+      "beta_se_ols": 0.007430102708797999,
+      "corr": 0.42167211330697274
+    },
+    "TOM-B": {
+      "days_in_market": 893,
+      "pct_in_market": 33.53360871197897,
+      "round_trips": 128,
+      "round_trips_per_year": 12.11265490048817,
+      "mean_block_len": 6.9765625,
+      "cagr_pct": 8.98136413336388,
+      "vol_pct": 9.767302478973296,
+      "sharpe": 0.7139188160672961,
+      "maxdd_pct": -13.712509605697276,
+      "skew": 0.008416922437961851,
+      "kurt": 19.765751871140484,
+      "alpha_ann_pct": 2.737109527356801,
+      "beta": 0.3087071800091776,
+      "alpha_t_ols": 1.0956084600334697,
+      "alpha_t_nw": 1.1449464232449011,
+      "beta_se_ols": 0.008968029969149372,
+      "corr": 0.5550702681387648
+    },
+    "TAX-A": {
+      "days_in_market": 159,
+      "pct_in_market": 5.970709725873076,
+      "round_trips": 11,
+      "round_trips_per_year": 1.040931280510702,
+      "mean_block_len": 14.454545454545455,
+      "cagr_pct": 3.260689113888149,
+      "vol_pct": 3.599786565849513,
+      "sharpe": 0.3242485785920612,
+      "maxdd_pct": -7.394988873115449,
+      "skew": 3.5283356399362917,
+      "kurt": 147.08379400403587,
+      "alpha_ann_pct": 0.5931824378208128,
+      "beta": 0.04167224398282517,
+      "alpha_t_ols": 0.5483645319873218,
+      "alpha_t_nw": 0.578050077826576,
+      "beta_se_ols": 0.003883105402691678,
+      "corr": 0.20367830001823373
+    },
+    "TAX-B": {
+      "days_in_market": 104,
+      "pct_in_market": 3.905369883589936,
+      "round_trips": 11,
+      "round_trips_per_year": 1.040931280510702,
+      "mean_block_len": 9.454545454545455,
+      "cagr_pct": 3.0060652531341825,
+      "vol_pct": 3.1503317641795197,
+      "sharpe": 0.2872240494888363,
+      "maxdd_pct": -5.393336064343113,
+      "skew": 6.048616432753293,
+      "kurt": 228.0519945723862,
+      "alpha_ann_pct": 0.4652361267636809,
+      "beta": 0.0318864799304408,
+      "alpha_t_ols": 0.4891529417231148,
+      "alpha_t_nw": 0.5522642055731573,
+      "beta_se_ols": 0.003414200435614295,
+      "corr": 0.17815233333912725
+    },
+    "REB-A": {
+      "days_in_market": 42,
+      "pct_in_market": 1.5771686068343973,
+      "round_trips": 42,
+      "round_trips_per_year": 3.974464889222681,
+      "mean_block_len": 1.0,
+      "cagr_pct": 0.6427169912760933,
+      "vol_pct": 1.9954092078218806,
+      "sharpe": -0.7317404597944303,
+      "maxdd_pct": -9.607575118804535,
+      "skew": -17.023182826652352,
+      "kurt": 504.28576785338686,
+      "alpha_ann_pct": -1.625913373674834,
+      "beta": 0.012986182197792167,
+      "alpha_t_ols": -2.6891893522628414,
+      "alpha_t_nw": -2.7410750326305644,
+      "beta_se_ols": 0.0021703824646614783,
+      "corr": 0.1152181243159994
+    },
+    "REB-B": {
+      "days_in_market": 84,
+      "pct_in_market": 3.1543372136687946,
+      "round_trips": 42,
+      "round_trips_per_year": 3.974464889222681,
+      "mean_block_len": 2.0,
+      "cagr_pct": 0.9408562977712309,
+      "vol_pct": 2.8443229198015176,
+      "sharpe": -0.3997645309192894,
+      "maxdd_pct": -15.612880408398722,
+      "skew": -7.275339702120793,
+      "kurt": 191.61148433504843,
+      "alpha_ann_pct": -1.4908040192969418,
+      "beta": 0.026208132775601627,
+      "alpha_t_ols": -1.7354043750273938,
+      "alpha_t_nw": -1.4686206451739923,
+      "beta_se_ols": 0.00308375678918454,
+      "corr": 0.16256159336909157
+    },
+    "UNION": {
+      "days_in_market": 670,
+      "pct_in_market": 25.15959444235824,
+      "round_trips": 170,
+      "round_trips_per_year": 16.08711978971085,
+      "mean_block_len": 3.9411764705882355,
+      "cagr_pct": 4.662222261815252,
+      "vol_pct": 8.276698115601906,
+      "sharpe": 0.33763578797397464,
+      "maxdd_pct": -12.334200898254766,
+      "skew": -0.40685638370417504,
+      "kurt": 26.286214716543462,
+      "alpha_ann_pct": -0.2445979632007993,
+      "beta": 0.22140685220681267,
+      "alpha_t_ols": -0.10896589957708241,
+      "alpha_t_nw": -0.10825878948656507,
+      "beta_se_ols": 0.008057911243373194,
+      "corr": 0.4701221672601847
+    },
+    "UNION-B": {
+      "days_in_market": 1008,
+      "pct_in_market": 37.852046564025535,
+      "round_trips": 164,
+      "round_trips_per_year": 15.519339091250469,
+      "mean_block_len": 6.146341463414634,
+      "cagr_pct": 8.443368312414634,
+      "vol_pct": 10.285883563441612,
+      "sharpe": 0.6348318594558897,
+      "maxdd_pct": -10.557577495265836,
+      "skew": -0.14028597056833472,
+      "kurt": 17.370433022394092,
+      "alpha_ann_pct": 1.8315161408419673,
+      "beta": 0.3424617272122994,
+      "alpha_t_ols": 0.7137483180385762,
+      "alpha_t_nw": 0.7692235916279165,
+      "beta_se_ols": 0.0092114055676332,
+      "corr": 0.5846867995575356
+    },
+    "TOM+TAX": {
+      "days_in_market": 628,
+      "pct_in_market": 23.582425835523846,
+      "round_trips": 129,
+      "round_trips_per_year": 12.207285016898235,
+      "mean_block_len": 4.868217054263566,
+      "cagr_pct": 6.209559322534441,
+      "vol_pct": 8.033904665537175,
+      "sharpe": 0.5283026358197686,
+      "maxdd_pct": -9.36193599204006,
+      "skew": -0.21781046564296278,
+      "kurt": 27.732974099913733,
+      "alpha_ann_pct": 1.3813154104740397,
+      "beta": 0.20842067000902015,
+      "alpha_t_ols": 0.6287501686661513,
+      "alpha_t_nw": 0.620720686530086,
+      "beta_se_ols": 0.007886330873641547,
+      "corr": 0.455965612699504
+    }
+  },
+  "headline": {
+    "calendar": "UNION",
+    "gross": {
+      "days_in_market": 670,
+      "pct_in_market": 25.15959444235824,
+      "round_trips": 170,
+      "round_trips_per_year": 16.08711978971085,
+      "mean_block_len": 3.9411764705882355,
+      "cagr_pct": 4.662222261815252,
+      "vol_pct": 8.276698115601906,
+      "sharpe": 0.33763578797397464,
+      "maxdd_pct": -12.334200898254766,
+      "skew": -0.40685638370417504,
+      "kurt": 26.286214716543462,
+      "alpha_ann_pct": -0.2445979632007993,
+      "beta": 0.22140685220681267,
+      "alpha_t_ols": -0.10896589957708241,
+      "alpha_t_nw": -0.10825878948656507,
+      "beta_se_ols": 0.008057911243373194,
+      "corr": 0.4701221672601847
+    },
+    "vs_spy": {
+      "cagr_diff_pp": -10.680414213003253,
+      "sharpe_diff": -0.44348175652871213,
+      "diff_mean_bps_day": -4.333775757184218,
+      "diff_t_ols": -2.2913154474209794,
+      "diff_t_nw": {
+        "0": -2.291745781812495,
+        "1": -2.4642128810087174,
+        "5": -2.3796804648163024,
+        "10": -2.3352781320244236,
+        "21": -2.3063139687495755
+      }
+    },
+    "rule13_on_difference": {
+      "alpha_ann_pct": -0.24459796320080157,
+      "beta": -0.7785931477931872,
+      "alpha_t_ols": -0.10896589957708316,
+      "alpha_t_nw": -0.10825878948656581,
+      "beta_se_ols": 0.008057911243373194,
+      "corr": -0.8821568173698593
+    }
+  },
+  "control3_direct": {
+    "in_window_bps_day": 4.402782671984523,
+    "out_window_bps_day": 5.790689835113684,
+    "difference_bps_day": -1.3879071631291613,
+    "welch_t": -0.29278564370242177,
+    "in_window_t_vs_zero_nw5": 1.2146969364161253,
+    "n_in": 670,
+    "n_out": 1993
+  },
+  "control3_by_window": {
+    "TOM-A": {
+      "n": 511,
+      "in_bps_day": 6.626919447071289,
+      "out_bps_day": 5.160015517731309,
+      "diff_bps_day": 1.4669039293399806,
+      "welch_t": 0.2770714265593863,
+      "matched_null_percentile_of_in_window_mean": 61.24000000000001,
+      "matched_null_mc_se_pctpts": 0.9744049260959224,
+      "matched_null_mean_bps_day": 5.446605315678332,
+      "matched_null_p05_bps_day": -1.7003287180221525,
+      "matched_null_p95_bps_day": 12.416947891811185
+    },
+    "TOM-B": {
+      "n": 893,
+      "in_bps_day": 8.248393745478392,
+      "out_bps_day": 4.025363625366666,
+      "diff_bps_day": 4.223030120111726,
+      "welch_t": 0.9495033837885074,
+      "matched_null_percentile_of_in_window_mean": 84.52,
+      "matched_null_mc_se_pctpts": 0.7234278402162859,
+      "matched_null_mean_bps_day": 5.424538712470724,
+      "matched_null_p05_bps_day": 0.9291382660796089,
+      "matched_null_p95_bps_day": 9.95724443082519
+    },
+    "TAX-A": {
+      "n": 159,
+      "in_bps_day": 7.740273948757606,
+      "out_bps_day": 5.295529422427613,
+      "diff_bps_day": 2.444744526329993,
+      "welch_t": 0.31863830013468697,
+      "matched_null_percentile_of_in_window_mean": 60.519999999999996,
+      "matched_null_mc_se_pctpts": 0.9776153844943317,
+      "matched_null_mean_bps_day": 5.638446740602021,
+      "matched_null_p05_bps_day": -7.812864981772724,
+      "matched_null_p95_bps_day": 17.35453132561043
+    },
+    "TAX-B": {
+      "n": 104,
+      "in_bps_day": 9.170135960327281,
+      "out_bps_day": 5.289962911972319,
+      "diff_bps_day": 3.880173048354962,
+      "welch_t": 0.3853510043005115,
+      "matched_null_percentile_of_in_window_mean": 63.92,
+      "matched_null_mc_se_pctpts": 0.9604652206092629,
+      "matched_null_mean_bps_day": 5.56151203242484,
+      "matched_null_p05_bps_day": -11.162831516737134,
+      "matched_null_p95_bps_day": 20.2184781466575
+    },
+    "REB-A": {
+      "n": 42,
+      "in_bps_day": -36.42853607944646,
+      "out_bps_day": 6.112440956485293,
+      "diff_bps_day": -42.54097703593175,
+      "welch_t": -2.9149865792314595,
+      "matched_null_percentile_of_in_window_mean": 0.88,
+      "matched_null_mc_se_pctpts": 0.1867892930550357,
+      "matched_null_mean_bps_day": 5.836521809784142,
+      "matched_null_p05_bps_day": -22.91681968661992,
+      "matched_null_p95_bps_day": 34.03154591559498
+    },
+    "REB-B": {
+      "n": 84,
+      "in_bps_day": -14.233652380337798,
+      "out_bps_day": 6.082332699325156,
+      "diff_bps_day": -20.31598507966295,
+      "welch_t": -1.8261447695461022,
+      "matched_null_percentile_of_in_window_mean": 4.72,
+      "matched_null_mc_se_pctpts": 0.4241328093887574,
+      "matched_null_mean_bps_day": 5.401818864488111,
+      "matched_null_p05_bps_day": -13.854970681294015,
+      "matched_null_p95_bps_day": 23.7577633028327
+    },
+    "UNION": {
+      "n": 670,
+      "in_bps_day": 4.402782671984523,
+      "out_bps_day": 5.790689835113684,
+      "diff_bps_day": -1.3879071631291613,
+      "welch_t": -0.29278564370242177,
+      "matched_null_percentile_of_in_window_mean": 37.28,
+      "matched_null_mc_se_pctpts": 0.967099084892546,
+      "matched_null_mean_bps_day": 5.443336643742792,
+      "matched_null_p05_bps_day": -0.29671334179293607,
+      "matched_null_p95_bps_day": 11.193910950466224
+    },
+    "UNION-B": {
+      "n": 1008,
+      "in_bps_day": 6.843215005855498,
+      "out_bps_day": 4.587763447558224,
+      "diff_bps_day": 2.255451558297274,
+      "welch_t": 0.5202354153498404,
+      "matched_null_percentile_of_in_window_mean": 71.24000000000001,
+      "matched_null_mc_se_pctpts": 0.9052872251390716,
+      "matched_null_mean_bps_day": 5.4898446791331965,
+      "matched_null_p05_bps_day": 1.454675222916492,
+      "matched_null_p95_bps_day": 9.698080118551925
+    },
+    "TOM+TAX": {
+      "n": 628,
+      "in_bps_day": 7.133539658545194,
+      "out_bps_day": 4.919334803953229,
+      "diff_bps_day": 2.2142048545919644,
+      "welch_t": 0.45734570482871606,
+      "matched_null_percentile_of_in_window_mean": 66.52,
+      "matched_null_mc_se_pctpts": 0.9438410035593918,
+      "matched_null_mean_bps_day": 5.514398021472339,
+      "matched_null_p05_bps_day": -0.5333204463177451,
+      "matched_null_p95_bps_day": 11.187025734433579
+    }
+  },
+  "control3_multiple_testing": {
+    "n_windows_tested": 9,
+    "sidak_two_sided_t_threshold_at_5pct": 2.7655295843397525,
+    "most_positive": {
+      "window": "TOM-B",
+      "welch_t": 0.9495033837885074
+    },
+    "most_negative": {
+      "window": "REB-A",
+      "welch_t": -2.9149865792314595
+    },
+    "note": "the pre-registered set contains 9 calendars, so a |t| of ~2 on any one of them is expected under the null; the Sidak threshold is quoted so no single window can be read alone"
+  },
+  "reb_forensics": {
+    "n": 42,
+    "mean_bps_day": -36.42853607944646,
+    "median_bps_day": -20.430920437005117,
+    "pct_negative": 73.80952380952381,
+    "worst_5": [
+      {
+        "date": "2020-03-20",
+        "excess_bps": -409.8973714942633
+      },
+      {
+        "date": "2018-12-21",
+        "excess_bps": -207.4671199039735
+      },
+      {
+        "date": "2026-03-20",
+        "excess_bps": -146.25237319824015
+      },
+      {
+        "date": "2021-06-18",
+        "excess_bps": -136.13384022443387
+      },
+      {
+        "date": "2023-09-15",
+        "excess_bps": -123.03088764696656
+      }
+    ],
+    "best_5": [
+      {
+        "date": "2024-12-20",
+        "excess_bps": 115.31648592628008
+      },
+      {
+        "date": "2022-03-18",
+        "excess_bps": 110.94310998670865
+      },
+      {
+        "date": "2026-06-18",
+        "excess_bps": 99.51969743383415
+      },
+      {
+        "date": "2025-12-19",
+        "excess_bps": 87.272656868973
+      },
+      {
+        "date": "2017-12-15",
+        "excess_bps": 81.87372157840933
+      }
+    ],
+    "drop_worst_sensitivity": {
+      "drop_worst_0": {
+        "n": 42,
+        "mean_bps_day": -36.42853607944646,
+        "welch_t": -2.9149865792314595
+      },
+      "drop_worst_1": {
+        "n": 41,
+        "mean_bps_day": -27.319540093719215,
+        "welch_t": -2.8638835962276517
+      },
+      "drop_worst_2": {
+        "n": 40,
+        "mean_bps_day": -22.81585059846286,
+        "welch_t": -2.622277943438151
+      },
+      "drop_worst_3": {
+        "n": 39,
+        "mean_bps_day": -19.65081155744293,
+        "welch_t": -2.3786274592735377
+      },
+      "drop_worst_5": {
+        "n": 37,
+        "mean_bps_day": -13.708565482942538,
+        "welch_t": -1.8829641206367027
+      }
+    },
+    "by_third": [
+      {
+        "n": 14,
+        "mean_bps_day": -18.125960606305874,
+        "pct_negative": 71.42857142857143
+      },
+      {
+        "n": 14,
+        "mean_bps_day": -74.6117733229103,
+        "pct_negative": 78.57142857142857
+      },
+      {
+        "n": 14,
+        "mean_bps_day": -16.547874309123205,
+        "pct_negative": 71.42857142857143
+      }
+    ],
+    "by_month": {
+      "3": {
+        "n": 11,
+        "mean_bps_day": -56.76447737038722
+      },
+      "6": {
+        "n": 11,
+        "mean_bps_day": -23.929412237141705
+      },
+      "9": {
+        "n": 10,
+        "mean_bps_day": -46.67059733964518
+      },
+      "12": {
+        "n": 10,
+        "mean_bps_day": -17.56597562574813
+      }
+    },
+    "matched_null_percentile": 0.88,
+    "regime": "EXPLORATORY-IF-TRADED",
+    "reading": "This is a pre-registered window whose |t| clears the Sidak bar across the 9 calendars tested, and whose matched-placement null percentile is ~1. It is also the OPPOSITE sign to the hypothesis: being long into the quarterly rebalance close LOSES. Turning that into a short is a POST-HOC SIGN FLIP and would be EXPLORATORY, needing t>3 and a deflated Sharpe at N>700; see the drop-worst sensitivity and the median before believing any of it."
+  },
+  "control1_null": {
+    "design": "same block count, same multiset of block lengths, same days in market, same round-trip count, >=1 out-day between blocks; only the placement is randomised",
+    "n_blocks": 170,
+    "days_in_market": 670,
+    "block_length_counts": {
+      "1": 42,
+      "4": 117,
+      "9": 1,
+      "15": 9,
+      "16": 1
+    },
+    "per_seed": [
+      {
+        "seed": 20260810,
+        "draws": 2500,
+        "sharpe_pct": 40.68,
+        "cagr_pct": 38.32,
+        "alpha_pct": 44.84
+      },
+      {
+        "seed": 11,
+        "draws": 2500,
+        "sharpe_pct": 40.12,
+        "cagr_pct": 37.76,
+        "alpha_pct": 43.96
+      },
+      {
+        "seed": 977,
+        "draws": 2500,
+        "sharpe_pct": 42.199999999999996,
+        "cagr_pct": 39.96,
+        "alpha_pct": 45.92
+      },
+      {
+        "seed": 4242,
+        "draws": 2500,
+        "sharpe_pct": 42.16,
+        "cagr_pct": 40.12,
+        "alpha_pct": 47.24
+      }
+    ],
+    "sharpe": {
+      "percentile": 41.29,
+      "mc_se_pctpts": 0.4923551462105377,
+      "null_mean": 0.39982606283083044,
+      "null_sd": 0.26331926004092887,
+      "null_p50": 0.39177860239368634,
+      "null_p95": 0.8514563434971667,
+      "null_p99": 1.0492003987109586,
+      "n_draws": 10000
+    },
+    "cagr": {
+      "percentile": 39.04,
+      "mc_se_pctpts": 0.4878399737618885,
+      "null_mean": 0.053278179845665616,
+      "null_sd": 0.02360112069048098,
+      "null_p50": 0.05292702184685194,
+      "null_p95": 0.09310010870431791,
+      "null_p99": 0.1108473146824748,
+      "n_draws": 10000
+    },
+    "alpha": {
+      "percentile": 45.49,
+      "mc_se_pctpts": 0.4979618358870486,
+      "null_mean": -0.0001393168663985566,
+      "null_sd": 0.024305626777335568,
+      "null_p50": 0.0001341875900866611,
+      "null_p95": 0.03989374621853957,
+      "null_p99": 0.05596037703177788,
+      "n_draws": 10000
+    },
+    "seed_sd_of_sharpe_percentile": 1.0529324131522708
+  },
+  "control2_rotation": {
+    "design": "all 2,663 circular rotations of the real mask: block lengths AND their exact sequence and spacing preserved, only the calendar alignment destroyed; exhaustive, so no Monte-Carlo error",
+    "sharpe": {
+      "percentile": 39.72962823882839,
+      "mc_se_pctpts": 0.9482516401624205,
+      "null_mean": 0.3919916538302107,
+      "null_sd": 0.2438338867988104,
+      "null_p50": 0.4024680882079326,
+      "null_p95": 0.7767596518325296,
+      "null_p99": 0.9328513618776616,
+      "n_draws": 2663
+    },
+    "cagr": {
+      "percentile": 37.73939166353736,
+      "mc_se_pctpts": 0.9393307600829971,
+      "null_mean": 0.05329171443138214,
+      "null_sd": 0.022578817739261882,
+      "null_p50": 0.05368319150340817,
+      "null_p95": 0.09006949248422563,
+      "null_p99": 0.10513416886773772,
+      "n_draws": 2663
+    },
+    "alpha": {
+      "percentile": 44.38603079233946,
+      "mc_se_pctpts": 0.962785448791082,
+      "null_mean": -8.546591064519605e-19,
+      "null_sd": 0.021490268042256316,
+      "null_p50": 0.0007298838643183768,
+      "null_p95": 0.033930629213203604,
+      "null_p99": 0.04759804591885441,
+      "n_draws": 2663
+    }
+  },
+  "halves": [
+    {
+      "from": "2016-01-05",
+      "to": "2021-04-20",
+      "n_days": 1332,
+      "days_in_mkt": 337,
+      "strat_cagr_pct": 4.805786937557999,
+      "spy_cagr_pct": 16.52257442236682,
+      "cagr_diff_pp": -11.71678748480882,
+      "strat_sharpe": 0.4794213417496254,
+      "spy_sharpe": 0.882040848313986,
+      "sharpe_diff": -0.4026195065643606,
+      "alpha_ann_pct": 0.5268258502454264,
+      "alpha_t_nw": 0.14756799928622563,
+      "diff_mean_bps_day": -4.717719058272175,
+      "diff_t_nw": -1.6599690853353086
+    },
+    {
+      "from": "2021-04-21",
+      "to": "2026-08-07",
+      "n_days": 1331,
+      "days_in_mkt": 333,
+      "strat_cagr_pct": 4.518746602655499,
+      "spy_cagr_pct": 14.173773819934055,
+      "cagr_diff_pp": -9.655027217278557,
+      "strat_sharpe": 0.18242050745178529,
+      "spy_sharpe": 0.6733643346252888,
+      "sharpe_diff": -0.4909438271735035,
+      "alpha_ann_pct": -1.0283857426302458,
+      "alpha_t_nw": -0.37103123912620434,
+      "diff_mean_bps_day": -3.9495439938114463,
+      "diff_t_nw": -1.654579106321291
+    }
+  ],
+  "thirds": [
+    {
+      "from": "2016-01-05",
+      "to": "2019-07-16",
+      "n_days": 888,
+      "days_in_mkt": 224,
+      "strat_cagr_pct": 4.21285774497191,
+      "spy_cagr_pct": 13.89845079942138,
+      "cagr_diff_pp": -9.68559305444947,
+      "strat_sharpe": 0.4538480987251695,
+      "spy_sharpe": 0.9991208654227851,
+      "sharpe_diff": -0.5452727666976156,
+      "alpha_ann_pct": -0.8868098807029755,
+      "alpha_t_nw": -0.29471237793309024,
+      "diff_mean_bps_day": -3.7448138987705755,
+      "diff_t_nw": -1.848165673715025
+    },
+    {
+      "from": "2019-07-17",
+      "to": "2023-01-23",
+      "n_days": 887,
+      "days_in_mkt": 226,
+      "strat_cagr_pct": 2.3584338298602736,
+      "spy_cagr_pct": 10.372159185257956,
+      "cagr_diff_pp": -8.013725355397682,
+      "strat_sharpe": 0.2075789928963064,
+      "spy_sharpe": 0.5106078587815214,
+      "sharpe_diff": -0.30302886588521494,
+      "alpha_ann_pct": -0.13945302816510666,
+      "alpha_t_nw": -0.027362234792319282,
+      "diff_mean_bps_day": -3.8564402416663843,
+      "diff_t_nw": -0.839948076627035
+    },
+    {
+      "from": "2023-01-24",
+      "to": "2026-08-07",
+      "n_days": 888,
+      "days_in_mkt": 220,
+      "strat_cagr_pct": 7.476627970024374,
+      "spy_cagr_pct": 22.059257491890882,
+      "cagr_diff_pp": -14.582629521866508,
+      "strat_sharpe": 0.41549439050311765,
+      "spy_sharpe": 1.097096335506472,
+      "sharpe_diff": -0.6816019450033544,
+      "alpha_ann_pct": -0.6988100256756831,
+      "alpha_t_nw": -0.2294335615019618,
+      "diff_mean_bps_day": -5.399535591120742,
+      "diff_t_nw": -2.238112649258938
+    }
+  ],
+  "costs": [
+    {
+      "cost_bps_round_trip": 0.0,
+      "cagr_pct": 4.662222261815252,
+      "vol_pct": 8.276698115601906,
+      "sharpe": 0.33763578797397464,
+      "maxdd_pct": -12.334200898254766,
+      "skew": -0.40685638370417504,
+      "kurt": 26.286214716543462,
+      "alpha_ann_pct": -0.2445979632007993,
+      "beta": 0.22140685220681267,
+      "alpha_t_ols": -0.10896589957708241,
+      "alpha_t_nw": -0.10825878948656507,
+      "beta_se_ols": 0.008057911243373194,
+      "corr": 0.4701221672601847
+    },
+    {
+      "cost_bps_round_trip": 5.0,
+      "cagr_pct": 3.8230867946216884,
+      "vol_pct": 8.2849687451224,
+      "sharpe": 0.24010228619286972,
+      "maxdd_pct": -12.446493060829155,
+      "skew": -0.46219135957603635,
+      "kurt": 26.35349469612312,
+      "alpha_ann_pct": -1.053098802036969,
+      "beta": 0.22170911850954853,
+      "alpha_t_ols": -0.46871452345595327,
+      "alpha_t_nw": -0.46607884089936663,
+      "beta_se_ols": 0.008065308051128239,
+      "corr": 0.4702857844588474
+    },
+    {
+      "cost_bps_round_trip": 10.0,
+      "cagr_pct": 2.990420102407265,
+      "vol_pct": 8.295945911235519,
+      "sharpe": 0.14272005920618774,
+      "maxdd_pct": -12.558682024049295,
+      "skew": -0.5172309323466415,
+      "kurt": 26.399494397880183,
+      "alpha_ann_pct": -1.861599640873141,
+      "beta": 0.22201138481228466,
+      "alpha_t_ols": -0.8274564465296017,
+      "alpha_t_nw": -0.823674844977741,
+      "beta_se_ols": 0.008076094542620219,
+      "corr": 0.4702952774501941
+    },
+    {
+      "cost_bps_round_trip": 20.0,
+      "cagr_pct": 1.3443018302509824,
+      "vol_pct": 8.325974393550354,
+      "sharpe": -0.05121295340227671,
+      "maxdd_pct": -13.76648223843333,
+      "skew": -0.6262167196462104,
+      "kurt": 26.42813775711563,
+      "alpha_ann_pct": -3.4786013185454863,
+      "beta": 0.22261591741775685,
+      "alpha_t_ols": -1.5401501018782848,
+      "alpha_t_nw": -1.5372036566001264,
+      "beta_se_ols": 0.008107778210430341,
+      "corr": 0.4698572304862656
+    }
+  ],
+  "break_even": {
+    "round_trips_total": 170,
+    "round_trips_per_year": 16.08711978971085,
+    "break_even_bps_per_round_trip_on_CAGR": -60.401683838569056,
+    "break_even_bps_per_round_trip_on_SHARPE": -22.773165603120596,
+    "note": "negative means the strategy loses to SPY on that metric BEFORE any cost, so no cost level makes it work; the SPY leg only is charged, BIL's ~1bp spread would add ~10% more"
+  },
+  "levered": {
+    "null_cleared": 0,
+    "target_vol_pct": 17.548252336385552,
+    "rows": [
+      {
+        "leverage": 2.121694694308733,
+        "spread_bps": 0.0,
+        "cagr_pct": 6.699645925107278,
+        "vol_pct": 17.548252336385552,
+        "sharpe": 0.3376357879739747,
+        "maxdd_pct": -24.83737393450284,
+        "skew": -0.4068563837041751,
+        "kurt": 26.286214716543462,
+        "alpha_ann_pct": -0.5189622007618436,
+        "beta": 0.4697577436107915,
+        "alpha_t_ols": -0.10896589957708033,
+        "alpha_t_nw": -0.10825878948656305,
+        "beta_se_ols": 0.01709642753227559,
+        "corr": 0.4701221672601837
+      },
+      {
+        "leverage": 2.1217623464267126,
+        "spread_bps": 50.0,
+        "cagr_pct": 6.549356836516007,
+        "vol_pct": 17.54825233638555,
+        "sharpe": 0.32960181216212553,
+        "maxdd_pct": -24.850297268649747,
+        "skew": -0.4114189375865597,
+        "kurt": 26.292018366863214,
+        "alpha_ann_pct": -0.6601594219208035,
+        "beta": 0.46977748030233957,
+        "alpha_t_ols": -0.13861453651955025,
+        "alpha_t_nw": -0.1377375224854323,
+        "beta_se_ols": 0.017096227977465177,
+        "corr": 0.4701418282688246
+      },
+      {
+        "leverage": 2.1218283874284642,
+        "spread_bps": 100.0,
+        "cagr_pct": 6.399256139084897,
+        "vol_pct": 17.548252336385552,
+        "sharpe": 0.32156663578017,
+        "maxdd_pct": -24.863203115531384,
+        "skew": -0.41598146917508555,
+        "kurt": 26.297770517551783,
+        "alpha_ann_pct": -0.8013728723345026,
+        "beta": 0.4697968608419515,
+        "alpha_t_ols": -0.1682672371891772,
+        "alpha_t_nw": -0.16722968317937703,
+        "beta_se_ols": 0.01709603209477939,
+        "corr": 0.47016113273317595
+      },
+      {
+        "leverage": 2.1218928164632853,
+        "spread_bps": 150.0,
+        "cagr_pct": 6.249344276883062,
+        "vol_pct": 17.548252336385552,
+        "sharpe": 0.3135302933797025,
+        "maxdd_pct": -24.87609142052364,
+        "skew": -0.42054394230659425,
+        "kurt": 26.303471089892984,
+        "alpha_ann_pct": -0.9426019431670984,
+        "beta": 0.46981588502076504,
+        "alpha_t_ols": -0.19792385474529686,
+        "alpha_t_nw": -0.19673500322207016,
+        "beta_se_ols": 0.017095839886939912,
+        "corr": 0.4701800804447654
+      }
+    ],
+    "break_even_financing_spread_bps": null,
+    "identity_check": {
+      "predicted_cagr_gap_pp_at_matched_vol": -7.7823297701493415,
+      "note": "at matched vol the arithmetic-mean gap is (S_strat - S_spy) * sigma_SPY; this is the g = S^2/2 lever and it is NEGATIVE here because the Sharpe gap is"
+    },
+    "verdict": "VOID \u2014 the assignment's precondition (real calendar beyond the 95th percentile of the matched-time-in-market null) was NOT met, so levering this is levering noise. The rows are reported only to show that leverage cannot rescue it."
+  },
+  "variants_tried": [
+    {
+      "variant": "calendar:TOM-A",
+      "computed": 1,
+      "sharpe": 0.4318459760278999,
+      "cagr_pct": 5.165048200808364
+    },
+    {
+      "variant": "calendar:TOM-B",
+      "computed": 1,
+      "sharpe": 0.7139188160672961,
+      "cagr_pct": 8.98136413336388
+    },
+    {
+      "variant": "calendar:TAX-A",
+      "computed": 1,
+      "sharpe": 0.3242485785920612,
+      "cagr_pct": 3.260689113888149
+    },
+    {
+      "variant": "calendar:TAX-B",
+      "computed": 1,
+      "sharpe": 0.2872240494888363,
+      "cagr_pct": 3.0060652531341825
+    },
+    {
+      "variant": "calendar:REB-A",
+      "computed": 1,
+      "sharpe": -0.7317404597944303,
+      "cagr_pct": 0.6427169912760933
+    },
+    {
+      "variant": "calendar:REB-B",
+      "computed": 1,
+      "sharpe": -0.3997645309192894,
+      "cagr_pct": 0.9408562977712309
+    },
+    {
+      "variant": "calendar:UNION",
+      "computed": 1,
+      "sharpe": 0.33763578797397464,
+      "cagr_pct": 4.662222261815252
+    },
+    {
+      "variant": "calendar:UNION-B",
+      "computed": 1,
+      "sharpe": 0.6348318594558897,
+      "cagr_pct": 8.443368312414634
+    },
+    {
+      "variant": "calendar:TOM+TAX",
+      "computed": 1,
+      "sharpe": 0.5283026358197686,
+      "cagr_pct": 6.209559322534441
+    },
+    {
+      "variant": "cost:5.0bps_rt",
+      "computed": 1,
+      "sharpe": 0.24010228619286972
+    },
+    {
+      "variant": "cost:10.0bps_rt",
+      "computed": 1,
+      "sharpe": 0.14272005920618774
+    },
+    {
+      "variant": "cost:20.0bps_rt",
+      "computed": 1,
+      "sharpe": -0.05121295340227671
+    },
+    {
+      "variant": "levered:spread0bps",
+      "computed": 1,
+      "sharpe": 0.3376357879739747
+    },
+    {
+      "variant": "levered:spread50bps",
+      "computed": 1,
+      "sharpe": 0.32960181216212553
+    },
+    {
+      "variant": "levered:spread100bps",
+      "computed": 1,
+      "sharpe": 0.32156663578017
+    },
+    {
+      "variant": "levered:spread150bps",
+      "computed": 1,
+      "sharpe": 0.3135302933797025
+    },
+    {
+      "variant": "rejected-on-sight:day-of-week / weekend effect",
+      "computed": 0,
+      "why": "DECLARED DEAD in RESEARCH-AGENDA.md"
+    },
+    {
+      "variant": "rejected-on-sight:overnight-only trading",
+      "computed": 0,
+      "why": "DECLARED DEAD in RESEARCH-AGENDA.md"
+    },
+    {
+      "variant": "rejected-on-sight:index add/delete effect",
+      "computed": 0,
+      "why": "DECLARED DEAD in RESEARCH-AGENDA.md"
+    },
+    {
+      "variant": "rejected-on-sight:post-split drift",
+      "computed": 0,
+      "why": "DECLARED DEAD in RESEARCH-AGENDA.md"
+    },
+    {
+      "variant": "rejected-on-sight:pre-FOMC drift",
+      "computed": 0,
+      "why": "DECLARED DEAD in RESEARCH-AGENDA.md"
+    },
+    {
+      "variant": "rejected-on-sight:Halloween / sell-in-May",
+      "computed": 0,
+      "why": "no forced-flow mechanism; label on a pattern"
+    },
+    {
+      "variant": "rejected-on-sight:pre-holiday sessions",
+      "computed": 0,
+      "why": "mechanism is attention, not a forced flow"
+    },
+    {
+      "variant": "rejected-on-sight:Heston-Sadka month-of-year tilt",
+      "computed": 0,
+      "why": "cross-sectional, and a 12-cell sweep"
+    },
+    {
+      "variant": "rejected-on-sight:quarter-end window dressing",
+      "computed": 0,
+      "why": "real flow, not identifiable at index level"
+    },
+    {
+      "variant": "rejected-on-sight:FOMC even-week cycle",
+      "computed": 0,
+      "why": "no forced flow; fitted on this same decade"
+    }
+  ],
+  "deflated_sharpe": {
+    "sr_daily": 0.021269055445106416,
+    "sr_annual": 0.33763578797397464,
+    "n_obs": 2663,
+    "at_my_own_N": {
+      "26": 0.1811503722064169
+    },
+    "at_repo_running_N": {
+      "700": 0.020528789694599703,
+      "800": 0.01869123049304333
+    },
+    "note": "DSR here is close to meaningless in the usual direction: the raw Sharpe is BELOW the benchmark's, so no deflation is needed to reject it."
+  },
+  "regime": "CONFIRMATORY",
+  "regime_note": "Pre-registered windows from the published literature, one declared headline (UNION), 3 primary + 3 sensitivity calendars, 3 combination calendars, 26 variants counted in total including 10 rejected on sight. A confirmatory test at t~2 would have been meaningful here and the bar was NOT raised to t>3; the measured direct-test t is -0.29 and the headline sits at the 41.3th percentile of its own matched null, BELOW the median, so the confirmatory-vs-exploratory distinction never becomes load-bearing.",
+  "verdict": {
+    "call": "REJECTED",
+    "downgrade_tag": "source_gap",
+    "one_line": "A pre-registered forced-flow calendar (turn of month + tax-loss reversal + quarterly rebalance) holding SPY 25.2% of days and BIL otherwise earns 4.66%/yr at Sharpe 0.338 against SPY's 15.34% and 0.781, and sits at the 41.3th percentile of a matched-time-in-market null \u2014 below the median random calendar of the same shape \u2014 so it is nothing.",
+    "refresh_condition": "Refresh if a same-shape close-to-close test on a SMALL-CAP or equal-weight vehicle (RSP/IWM) is run: the payroll-flow mechanism predicts the largest impact where depth is thinnest, and SPY is the deepest instrument in the world. Also refresh on a materially longer sample: 10 December-Januaries cannot resolve TAX-A."
+  }
+}

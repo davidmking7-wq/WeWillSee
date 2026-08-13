@@ -69,6 +69,43 @@ python -m scout.backtest        # regenerate the engine-vs-SPY validation
 python -m scout.labtest --variant ...   # research harness for future engine ideas
 ```
 
+## Beyond stock picking: `ALPHA-STACK.md`
+
+The backtests in this repo say the selection layer adds no return at any
+horizon tested — the composite's best-ranked decile is its worst, and the
+gates are a defensiveness overlay. **ALPHA-STACK.md** takes that seriously
+and asks where an edge can legitimately come from instead, working from
+
+```
+g = mu - sigma^2/2      L* = mu/sigma^2      g(L*) = S^2/2
+```
+
+Growth is quadratic in Sharpe, and Sharpe is bought with weakly-correlated
+sleeves rather than with better forecasts.
+
+**It was built, tested on 2016-2026, and it lost.** Projected stacked Sharpe
+0.73; measured **0.40 against SPY's 0.76**. The sleeves turned out correlated
+(0.67 between trend and cross-sectional momentum; effective bets 1.02 of 4),
+which was the pre-registered failure condition. Volatility targeting improved
+drawdown but not return consistently; fractional Kelly worked mechanically
+and still lost, because leverage scales an edge and cannot create one. See
+BACKTEST-REPORT.md "The alpha stack" and `scout/hypotheses.md` H9-H14.
+
+What survives is the diagnosis and the toolkit, not the trade.
+
+```
+python -m scout.growth_selftest          # 51 checks, no API keys needed
+python -m scout.agenda_rank              # which project is worth building
+python -m scout.sleeve_lab --synthetic-null   # the lab's own control
+python -m scout.sleeve_lab               # the real experiment (needs keys)
+```
+
+`scout/growth.py` holds the formulas (Kelly and the drawdown-constrained
+fraction, Fernholz's excess growth rate, Ledoit-Wolf shrinkage, HRP, Meucci
+effective bets, EWMAC trend, Kalman beta, deflated Sharpe, Wald's SPRT).
+Hypotheses H9-H14 in `scout/hypotheses.md` were registered before the lab
+ran, including the one already showing evidence against it.
+
 (Use `.venv/bin/python` / `.venv\Scripts\python` if you set up a venv.)
 
 Key files: `scout/` (engine), `picks.xlsx` (the scorecard you open),
