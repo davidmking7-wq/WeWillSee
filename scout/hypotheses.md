@@ -1544,3 +1544,151 @@ record; pre-registered; one specification per cell). 53 variants per universe,
 | H31j | 2026-08-09 | SENSITIVITY: guards 2 (extreme prints) and 3 (frozen quotes) are not what produces the result. | unchanged | **PASSES.** `--no-guard`, PIT-500: construction cost **+0.214 / +0.138** against **+0.211 / +0.134** guarded; best book 0.749 against 0.754. Guard 1 (split repair) is NOT optional here and was never switched off — without it AAPL prints a $1.9T cap in 2016 against a true ~$0.5T and cap-weighting hands it four times its real weight for four years. |
 
 Trial count: N rises by **106** registered cells.
+
+### H35 — a trend rule applied to the INDEX and judged on DRAWDOWN (scout/overlay_lab.py, run 2026-08-10)
+
+Registered before the run. Mechanism: a slow trend filter cannot predict
+crashes but can refuse to hold through prolonged ones; judge it on the job a
+risk rule can do (drawdown), not the job it cannot (return). SPY in/out at the
+close vs real BIL, 5 bps round trip, 237 variants, decisive control =
+matched-time-in-market random books (iid / spell-matched / exhaustive-rotation).
+
+| # | date | cell | expected | status |
+|---|---|---|---|---|
+| H35a | 2026-08-10 | SMA200-family overlays cut maxDD materially below every matched-exposure null. | > 95th pctile | **CONFIRMED — maxDD −19.1% vs SPY −33.8%, 97.0-99.3rd percentile across all three null designs**, and STILL 97.5-99.7 with BOTH 2020 and 2022 excised and the nulls re-run on the spliced sample. Structural, not one lucky crash. |
+| H35b | 2026-08-10 | The overlay's Sharpe advantage over SPY is real. | t > 2 | **NOT CONFIRMED — best dSharpe +0.088 (dual_avg), t_Memmel 0.56, t_boot 0.59 (MC sd 0.005)**; on the crash-excised sample the Sharpe percentile vs its own nulls is 36-59, i.e. random. Rule 13: sma200's timing alpha is +3.66pp/yr at t 1.34 — positive everywhere, significant nowhere. |
+| H35c | 2026-08-10 | Levered (vol-matched, causal trailing L, real BIL + spread, Reg-T) it beats SPY's CAGR at a plausible spread. | survives 150 bps | **True in-sample and EXPLORATORY: dual_and causal 17.00%/16.26% CAGR at 0/150 bps vs SPY 15.50%, maxDD −22.6 vs −33.8 — but the middle third is NEGATIVE for every variant (sma200 −2.58pp), so it wins the decade by winning its crashes.** At N=237 this does not approach the exploratory bar. Recorded, not promoted. |
+
+**Verdict: CONFIRMED as a drawdown tool — the first overlay in six rounds whose
+stated job survives its matched null with the crashes removed. NOT CONFIRMED as
+a return edge.** 237 variants.
+
+### H36 — the assembled stack: core + trend + realised-variance splice (stack_results.json, run 2026-08-10)
+
+The composite of everything that individually survived: cap-weighted PIT core
+(H31), trend overlay (H35), 5-min realised-variance vol targeting (H20, sizing
+only). CAP500+trend+rv: **Sharpe 0.851 vs SPY 0.745, maxDD −13.6% vs −33.8%,
+alpha +3.88%/yr t 1.54** — the whole-stack drawdown is a third of the index's
+with beta 0.37. The CAP500 core alone re-measures H31 a third independent way:
+**alpha +0.89%/yr, t 2.19**. One cell touches t 2.20 (CAP500+trend150
+next-close) — one of 22 books, exploratory. **Verdict: the stack is a
+risk-shaping machine, not a return machine; every return t sits at 1.1-1.6.
+Nothing here beats SPY at the registered bar.**
+
+### H37 — the zero-forecast growth portfolio (scout/zeroforecast_lab.py, run 2026-08-12)
+
+Registered before the run. Mechanism: if mu is identical across stocks — which
+is what six rounds of measured IC ~ 0 instruct us to assume — the growth rate
+of a rebalanced long-only book collapses to g_p = mu - 0.5*w'Sigma w, so growth
+is maximised by MINIMISING VARIANCE, half a basis point of compounded return
+per basis point of avoided variance, no forecast anywhere. Falsifiable point
+prediction: on two books over the same names, Delta_g = Delta_mu - 0.5*Delta_var
+exactly, and the theorem's entire content is Delta_mu = 0. Ceiling measured
+BEFORE the lab was written: 0.5*(var_SPY - var_IV) = +0.34%/yr decade mean.
+Long-only Ledoit-Wolf min-variance, PIT S&P 500, monthly at the close, weights
+from returns through day t earn from t+1 (proven by a permute-the-future
+self-test), BIL as cash and rf everywhere, 10 bps round trip on measured
+turnover, 2 covariance windows x 4 caps.
+
+| # | date | cell | expected | status |
+|---|---|---|---|---|
+| H37a | 2026-08-12 | ENGINE: out-of-sample vol ranks MV < IV < EW on same names/dates/guards. | ordering holds | **PASS — 13.22% < IV < 18.73%.** The optimiser buys real variance reduction out of sample. |
+| H37b | 2026-08-12 | THEOREM vs the equal-weight bench: the realised log-growth gap equals the variance term, i.e. Delta_mu = 0. | \|t(Delta_mu)\| < 2 | **PASS — Delta_mu -2.63%/yr at t -0.82, statistically zero.** Predicted advantage +0.88%/yr from the variance term; the mechanism does the predicted work against its own benchmark. |
+| H37c | 2026-08-12 | UNLEVERED vs SPY lands near the pre-measured +0.34%/yr and does not beat SPY's CAGR. | predicted in [0,1] %/yr | **PASS on the prediction (+0.75%/yr) — and the realised gap is -4.64%/yr because residual Delta_mu = -5.39%/yr (t -1.77, NW lag 21).** SPY's cap-weighted mu was higher: the equal-mu premise fails against SPY by 10x more than the theorem pays. Thirds [+4.83, -9.54, -3.18]. |
+| H37d | 2026-08-12 | **THE ONE THAT MATTERS**: vol-matched levered MV (L = 1.36, inside Reg-T), financed at real BIL + spread, beats SPY at a plausible spread. | break-even spread > 100 bps | **FAIL — LOSES AT ZERO SPREAD.** CAGR 12.81% vs SPY 15.51% at 0 bps; alpha +0.31%/yr (t 0.09); maxDD -39.9% vs -33.8%. No break-even spread exists. Leverage scales the book's LOWER arithmetic mu along with its Sharpe — ALPHA-STACK.md's lesson, re-measured. |
+| H37e | 2026-08-12 | CONTROL: random long-only weights, matched name count and turnover, do NOT reproduce the vol reduction. | vol(RAND) - vol(MV) > 2 pp | **PASS.** The variance saving comes from the optimiser, not from the universe or the constraints. |
+| H37f | 2026-08-12 | ATTRIBUTION: does MV's alpha survive a long-only low-vol proxy? | reported either way | **It is the LOW-VOL ANOMALY plus beta, in those words.** Low-vol loading 0.66-0.91 at t 20-32 against own bottom-100-vol book, SPLV and USMV; residual alpha 0.24-1.29%/yr, t <= 0.92. Nothing new is here. |
+| H37g | 2026-08-12 | RULE 9: no conclusion depends on the rebalance day. | phase sd small | **PASS — every monthly offset lands -5.2 to -5.4 pp vs SPY.** |
+
+**Verdict: the theorem is CONFIRMED (Delta_mu = 0 against its own equal-weight
+benchmark) and the trade is REJECTED — against cap-weighted SPY the equal-mu
+premise fails by an order of magnitude more than the variance term pays, and
+the levered version cannot be financed into existence even at zero spread.**
+73 variants.
+
+### H38 — the rebalancing premium, isolated (scout/rebalance_lab.py, run 2026-08-12)
+
+Registered before the run. Mechanism: Fernholz's excess growth rate
+gamma* = 0.5*(sum w_i sigma_ii - w'Sigma w) says a rebalanced portfolio's log
+growth exceeds the weighted-average log growth of its own constituents —
+return manufactured from volatility and imperfect correlation, containing no
+forecast of any kind. Analytic value for the PIT S&P 500: **+4.12%/yr**
+(range +2.20 in 2017 to +7.69 in 2020). The experiment: ARM A equal weight
+rebalanced monthly at the close; ARM B the IDENTICAL names at the identical
+starting weights, never traded again. A - B differences out selection,
+survivorship and mu entirely. Drift horizons 1/3/12/60 months plus the full
+decade; block bootstrap over formation dates; identical delisting policy in
+both arms; guards: 7 splits repaired, 23 stale retired, 99 extreme prints
+masked.
+
+| # | date | cell | expected | status |
+|---|---|---|---|---|
+| H38a | 2026-08-12 | POSITIVE CONTROL: measured premium vs the log-average recovers analytic gamma* on synthetic iid lognormal data. | ratio within 5% | **PASS — 1.0004.** The machinery is exact to four decimals across five sigma/rho/n cells. |
+| H38b | 2026-08-12 | DECOMPOSITION: realised A-W tracks covariance-predicted gamma* one-for-one on real baskets. | OLS slope 0.7-1.3 | **FAIL — slopes 0.04/-0.06/0.24.** Predicted gamma* levels are right on average (H38c) but cross-sectional variation in realisations is noise-dominated. |
+| H38c | 2026-08-12 | THE GAP: realised A-B is ~10x smaller than gamma* because buy-and-hold's Jensen term collects the same quantity. | B-W > 70% of gamma* at D=12m | **PASS — Jensen share 0.96-1.18 of predicted gamma* across all eight basket types (pit_all 1.01).** Buy-and-hold collects ALL of it. |
+| H38d | 2026-08-12 | SCALING: A-B rises with drift horizon D toward gamma*. | monotone in D | **FAIL, and the failure is the finding — it goes NEGATIVE.** pit_all: 0.00/+0.02/-0.23/+0.29/**-0.67**%/yr at D=1/3/12/60/108 months. The full-decade arm is negative in ALL 12 entry phases (sd 0.13, range -0.87..-0.41); top100dv **-2.05%/yr**. Realised Jensen 4.16%/yr EXCEEDED realised gamma* 3.49%/yr: this decade's megacap mu-dispersion made drifting into winners worth more than harvesting volatility. Synthetic confirmation: injecting 10-40% mu-dispersion turns A-B to -2.5..-34%/yr at t -25..-55. |
+| H38e | 2026-08-12 | FALSIFIABLE PREDICTION: high predicted-gamma* baskets deliver high realised A-B — gamma* is forecastable AND monetisable. | Q5-Q1 > 0, t > 2 | **FAIL — Q5-Q1 NEGATIVE (-0.07 to -0.10%/yr, t -0.9 to -1.2, MC sd 0.01-0.02).** gamma* is forecastable (levels match) but the premium it predicts is collected by both arms, so the sort has nothing to pay. |
+| H38f | 2026-08-12 | COSTS: the D=60m premium survives 5 bps round trip. | break-even > 5 bps | **PASS — break-even 92.5 bps** on +0.29%/yr at 0.35 turnover/yr. Trivially cheap, and irrelevant given H38d. |
+| H38g | 2026-08-12 | RULE 13: A-B is not beta. | \|beta of diff\| < 0.15 | **PASS — beta of the difference +0.007, alpha -0.25%/yr (t -0.51).** The comparison is clean; there is simply nothing in it. |
+| H38h | 2026-08-12 | A rebalanced equal-weight PIT book beats SPY on Sharpe. | Sharpe(A) > Sharpe(SPY) | **FAIL — 0.592 vs 0.761.** H31 from the other side: equal weight is the construction handicap regardless of how faithfully it harvests gamma*. |
+
+**Verdict: the theorem is CONFIRMED as arithmetic and REJECTED as money — and
+the tradeable sign over 2016-2026 is NEGATIVE.** "Volatility harvesting" against
+buy-and-hold rests on comparing a portfolio to a non-portfolio (the average
+constituent's log growth). Both arms collect gamma*; what separates them is
+Jensen's drift term, which is a bet ON mu-dispersion — a forecast after all,
+just an implicit one. 100 variants; registry N 829.
+
+### H39 — forced flow: trade against people who must trade (scout/flow_lab.py, run 2026-08-10)
+
+Registered before the run, windows fixed from the literature BEFORE any number:
+turn-of-month (Ariel; Lakonishok-Smidt — payroll/401k settlement), tax-loss
+reversal (December selling is tax-driven and price-insensitive), quarterly
+index-rebalance third Fridays (index funds must transact at the close). Nine
+calendars total including sensitivity variants. Strategy: hold SPY inside flow
+windows (25.2% of days), real BIL otherwise, close-to-close, no signal, no
+shift needed — the calendar is deterministic years ahead.
+
+| # | date | cell | expected | status |
+|---|---|---|---|---|
+| H39a | 2026-08-10 | The union flow calendar beats a matched-time-in-market random-window null on Sharpe. | > 95th percentile of 2,000 draws | **REJECTED — 41.3rd percentile.** Below the MEDIAN random calendar. In-window SPY earns **4.40 bps/day against 5.79 out-of-window** (Welch t -0.29): the flow days were WORSE than ordinary days. |
+| H39b | 2026-08-10 | Robust to alignment: the real calendar beats its own circular rotations (exhaustive, all 2,663 shifts — block lengths and spacing preserved exactly). | > 95th percentile | **REJECTED — 39.7th percentile.** No Monte-Carlo error; the null is exhaustive. |
+| H39c | 2026-08-10 | Rule 13: whatever the calendar earns is not beta. | reported | Beta 0.22 (time-in-market), **alpha -0.24%/yr**. CAGR 4.66% vs SPY 15.34%; Sharpe 0.34 vs 0.78. Nothing to adjust — there is no return to explain. |
+| H39d | 2026-08-10 | The levered arm (in-window exposure scaled to SPY's full-period vol, financed at real BIL + spread) beats SPY's CAGR. | break-even spread > 100 bps | **NOT PROMOTED (null_cleared = 0)** — pre-registered gate: with H39a/b failed there is no Sharpe advantage to lever, and levering 2.12x turns 6.70% CAGR at beta 0.46 into a strictly worse SPY. |
+| H39e | 2026-08-10 | Multiple testing across the 9 pre-registered calendars, Sidak at 5%. | \|t\| > 2.77 to claim | One cell crosses: **REB-A (third-Friday rebalance days) at Welch t -2.91, mean -36 bps/day across 42 sessions, 74% negative.** NEGATIVE sign — SPY does badly ON rebalance days. Exploratory, one of nine, worst two prints are crash days that happened to be rebalance Fridays (2020-03-20, 2018-12-21), and avoiding ~16 days/yr is not a strategy. Recorded, not believed. |
+
+**Verdict: REJECTED — the pre-registered forced-flow calendar is
+indistinguishable from a random calendar of the same shape, twice over.**
+Downgrade tag `source_gap`; refresh condition: same-shape test on RSP/IWM where
+payroll-flow depth effects should be largest. 26 variants; registry N rises
+accordingly.
+
+### H40–H44 — the vNext real-backtest program (five labs, run 2026-08-12/13)
+
+The externally-authored execution handoff of 2026-08-12 preregistered five
+event-driven mechanisms against a +13–20 pp/yr-over-SPY objective. Full
+evidence, controls, and kill classes live in `SCOUT-VNEXT-REAL-RESULTS.md`
+(the program's canonical results file, written for independent review) and in
+each lab's `scout/h4X_results.json`. Designs were frozen in module docstrings
+before any return was computed; three verdicts were adversarially verified by
+independent agents before acceptance, which caught and fixed a CIK-inversion
+bug (273 events priced with the wrong company's returns — flattering the
+dying hypothesis), an unimplemented registered control, a dividend feed empty
+before mid-2019, and one false survival (revoked).
+
+| # | date | mechanism | result | status |
+|---|---|---|---|---|
+| H40 | 2026-08-12 | Pure news: residual of tone after removing the firm-state-predictable part (walk-forward ridge, OOS R² +0.055 — representation genuinely tested) | pure L/S gross −0.78%/yr at beta 0.00; **2.4th/8.0th pctile of its own two nulls** | **KILL_H40_SCALAR** — fifth confirmation news forecasts size, never sign |
+| H41 | 2026-08-13 | Lazy Prices: 10-K year-over-year similarity, 6,603 pairs/684 firms, filing-date entry +1mo, 9mo hold, expanding quintiles | Q5−Q1 **−2.36%/yr** (t −0.73); 2020+ era **−3.67%/yr**; Jaccard agrees | **KILL_H41** — wrong sign, worst post-publication |
+| H42 | 2026-08-12 | Opportunistic vs routine insider purchases (CMP classifier verbatim, 404k purchase rows, filing-date entry) | routine α +7.73 vs opportunistic **−0.74**; real book at **18.7th pctile** of its timing null; 2x costs zero it | **KILL_H42** — no detectable effect on PIT large caps (MDE ~13%/yr; source_gap for small-cap version) |
+| H43 | 2026-08-12 | Repurchase authorization (8-K FTS) × PIT B/M undervaluation — the EVENT, not H22's accounting flow | value − glamour **−4.74%/yr** at h126 (backwards); random firms on the same dates match it; thirds flip sign | **KILL_H43** — structural this decade |
+| H44 | 2026-08-13 | Dividend-reinvestment forced flow, low vs high price payers, payment-window entries proven public per event | active-span L−H +7.87%/yr t 1.61 — but flow window holds NONE of it, dose-response reversed, **one 3-yr window = 96% of P&L** (remainder t 0.13) | **KILL_H44** — initial survival REVOKED by 3-lens verification |
+
+**Program verdict: `INSUFFICIENT_FINAL_SLEEVES` — zero of the required three
+independent sleeves survived. The +13–20 pp/yr objective is not met and not
+approachable from these five mechanisms on this data.** ~60 registered
+variants across the five labs (per-lab `variants_tried` lists); registry N
+rises accordingly. The only still-alive findings in the repo remain H31
+(construction: cap-weighting, +0.15 Sharpe) and H35 (trend overlay as a
+drawdown tool, not a return edge); §K of the results file names the next
+falsification worth running (H35 on 2000-2015 data from a second vendor).

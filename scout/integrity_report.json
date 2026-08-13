@@ -1,0 +1,43 @@
+{
+ "span": [
+  "2016-01-04",
+  "2026-08-07"
+ ],
+ "dates": 2664,
+ "pit_union": 742,
+ "pit_covered": 740,
+ "coverage_pct": 99.73,
+ "fail_closed_floor_pct": 90.0,
+ "splits_repaired": 7,
+ "split_examples": [
+  {
+   "symbol": "CNX",
+   "ex_date": "2017-11-29"
+  },
+  {
+   "symbol": "ARNC",
+   "ex_date": "2020-04-01"
+  },
+  {
+   "symbol": "WRK",
+   "ex_date": "2016-05-16"
+  },
+  {
+   "symbol": "TGNA",
+   "ex_date": "2017-06-01"
+  },
+  {
+   "symbol": "AAPL",
+   "ex_date": "2020-08-31"
+  }
+ ],
+ "frozen_retired": 23,
+ "frozen_run_threshold": 10,
+ "frozen_etf_exemptions": [
+  "BIL"
+ ],
+ "extreme_prints_masked": 99,
+ "extreme_threshold_pct": 45.0,
+ "return_fill_policy": "pct_change(fill_method=None); no forward fill",
+ "density_pct": 86.0
+}

@@ -1,0 +1,266 @@
+{
+ "hypothesis": "H41 (handoff H37a) lazy prices",
+ "pairs_total": 6698,
+ "pairs_2016plus": 6603,
+ "identity_skipped": [
+  "AABA",
+  "ARNC",
+  "BHGE",
+  "BRCM",
+  "CTL",
+  "DISCK",
+  "FRC",
+  "HFC",
+  "NBL",
+  "NLSN",
+  "PX",
+  "SBNY",
+  "SNI",
+  "VAR"
+ ],
+ "similarity_distribution": {
+  "cosine": {
+   "count": 6603.0,
+   "mean": 0.9945,
+   "std": 0.0239,
+   "min": 0.1463,
+   "25%": 0.9965,
+   "50%": 0.9981,
+   "75%": 0.9988,
+   "max": 0.9999
+  },
+  "jaccard_corr_with_cosine": 0.312
+ },
+ "lag_sessions": 21,
+ "hold_sessions": 189,
+ "books": {
+  "cosine_ew": {
+   "long_short_gross": {
+    "label": "Q5-Q1 gross",
+    "ann_pct": -2.356,
+    "t_nw": -0.73,
+    "vol_pct": 10.63,
+    "beta": 0.015,
+    "alpha_ann_pct": -2.587,
+    "t_alpha": -0.8,
+    "halves": [
+     {
+      "ann_pct": -5.42,
+      "t": -1.3
+     },
+     {
+      "ann_pct": 0.7,
+      "t": 0.14
+     }
+    ]
+   },
+   "long_short_net1x": {
+    "label": "net 1x",
+    "ann_pct": -2.622,
+    "t_nw": -0.82,
+    "vol_pct": 10.63,
+    "beta": 0.015,
+    "alpha_ann_pct": -2.854,
+    "t_alpha": -0.88,
+    "halves": [
+     {
+      "ann_pct": -5.69,
+      "t": -1.37
+     },
+     {
+      "ann_pct": 0.44,
+      "t": 0.09
+     }
+    ]
+   },
+   "long_short_net2x_borrow100": {
+    "label": "net 2x + 100bp borrow",
+    "ann_pct": -3.889,
+    "t_nw": -1.21,
+    "vol_pct": 10.63,
+    "beta": 0.015,
+    "alpha_ann_pct": -4.121,
+    "t_alpha": -1.28,
+    "halves": [
+     {
+      "ann_pct": -6.95,
+      "t": -1.67
+     },
+     {
+      "ann_pct": -0.83,
+      "t": -0.16
+     }
+    ]
+   },
+   "long_minus_spy": {
+    "label": "long leg - SPY",
+    "ann_pct": -2.472,
+    "t_nw": -1.17,
+    "vol_pct": 11.52,
+    "beta": -0.054,
+    "alpha_ann_pct": -1.626,
+    "t_alpha": -0.78,
+    "halves": [
+     {
+      "ann_pct": -3.16,
+      "t": -0.84
+     },
+     {
+      "ann_pct": -1.78,
+      "t": -0.75
+     }
+    ]
+   },
+   "short_leg_alone": {
+    "label": "short leg (raw)",
+    "ann_pct": 15.7,
+    "t_nw": 3.39,
+    "vol_pct": 18.66,
+    "beta": 0.932,
+    "alpha_ann_pct": 0.956,
+    "t_alpha": 0.36,
+    "halves": [
+     {
+      "ann_pct": 19.37,
+      "t": 3.02
+     },
+     {
+      "ann_pct": 12.05,
+      "t": 1.85
+     }
+    ]
+   },
+   "era_2016_2019": {
+    "ann_pct": -0.19,
+    "t": -0.07
+   },
+   "era_2020_plus": {
+    "ann_pct": -3.67,
+    "t": -0.75
+   },
+   "top10_event_share_of_pnl": 0.15,
+   "n_events_traded": 2698
+  },
+  "jaccard_ew": {
+   "long_short_gross": {
+    "label": "Q5-Q1 gross",
+    "ann_pct": -1.746,
+    "t_nw": -0.54,
+    "vol_pct": 9.21,
+    "beta": -0.021,
+    "alpha_ann_pct": -1.412,
+    "t_alpha": -0.44,
+    "halves": [
+     {
+      "ann_pct": -2.18,
+      "t": -0.41
+     },
+     {
+      "ann_pct": -1.31,
+      "t": -0.35
+     }
+    ]
+   },
+   "long_short_net1x": {
+    "label": "net 1x",
+    "ann_pct": -2.013,
+    "t_nw": -0.62,
+    "vol_pct": 9.21,
+    "beta": -0.021,
+    "alpha_ann_pct": -1.679,
+    "t_alpha": -0.52,
+    "halves": [
+     {
+      "ann_pct": -2.45,
+      "t": -0.46
+     },
+     {
+      "ann_pct": -1.58,
+      "t": -0.42
+     }
+    ]
+   },
+   "long_short_net2x_borrow100": {
+    "label": "net 2x + 100bp borrow",
+    "ann_pct": -3.28,
+    "t_nw": -1.01,
+    "vol_pct": 9.21,
+    "beta": -0.021,
+    "alpha_ann_pct": -2.945,
+    "t_alpha": -0.91,
+    "halves": [
+     {
+      "ann_pct": -3.72,
+      "t": -0.7
+     },
+     {
+      "ann_pct": -2.85,
+      "t": -0.76
+     }
+    ]
+   },
+   "long_minus_spy": {
+    "label": "long leg - SPY",
+    "ann_pct": 0.032,
+    "t_nw": 0.01,
+    "vol_pct": 9.3,
+    "beta": -0.042,
+    "alpha_ann_pct": 0.69,
+    "t_alpha": 0.25,
+    "halves": [
+     {
+      "ann_pct": 2.39,
+      "t": 0.5
+     },
+     {
+      "ann_pct": -2.33,
+      "t": -1.04
+     }
+    ]
+   },
+   "short_leg_alone": {
+    "label": "short leg (raw)",
+    "ann_pct": 17.593,
+    "t_nw": 3.91,
+    "vol_pct": 19.41,
+    "beta": 0.98,
+    "alpha_ann_pct": 2.096,
+    "t_alpha": 0.88,
+    "halves": [
+     {
+      "ann_pct": 21.69,
+      "t": 3.53
+     },
+     {
+      "ann_pct": 13.52,
+      "t": 2.19
+     }
+    ]
+   },
+   "era_2016_2019": {
+    "ann_pct": -5.83,
+    "t": -0.96
+   },
+   "era_2020_plus": {
+    "ann_pct": 0.73,
+    "t": 0.2
+   },
+   "top10_event_share_of_pnl": 0.162,
+   "n_events_traded": 2432
+  }
+ },
+ "variants_tried": [
+  "cosine_ew",
+  "jaccard_ew"
+ ],
+ "verdict": {
+  "call": "KILL_H41",
+  "why": "L/S net-stressed -3.889%/yr (t -1.21), 2020+ era -3.67%/yr \u2014 the post-publication sample does not pay.",
+  "production_approved": false
+ },
+ "limitations": [
+  "no PIT sector map in the repo (GICS licensed) \u2014 sector concentration unreported",
+  "short borrow modeled as a flat 100 bps/yr fee, not name-level",
+  "14 identity-unresolved PIT members excluded and counted"
+ ]
+}

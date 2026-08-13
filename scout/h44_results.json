@@ -1,0 +1,473 @@
+{
+ "hypothesis": "H44 (handoff H40) dividend reinvestment flow",
+ "events": {
+  "rows_raw": 357528,
+  "after_filters": 210434,
+  "dropped_not_pit_or_uncovered": 200807,
+  "dropped_publicness_check": 2,
+  "events": 9620,
+  "events_by_year": {
+   "2019": 55,
+   "2020": 1138,
+   "2021": 1463,
+   "2022": 1497,
+   "2023": 1515,
+   "2024": 1524,
+   "2025": 1541,
+   "2026": 887
+  },
+  "first_active_session": "2019-07-12",
+  "active_span_note": "all statistics computed on the ACTIVE span only; the feed is empty before mid-2019"
+ },
+ "declaration_gate": "anticipatory legs FAIL CLOSED (no declaration dates in feed); payment-window entries proven public per event via ex_date <= entry session; 2 events dropped by that check",
+ "by_bucket": {
+  "high": 3244,
+  "low": 3242,
+  "mid": 3134
+ },
+ "integrity": {
+  "span": [
+   "2016-01-04",
+   "2026-08-07"
+  ],
+  "dates": 2664,
+  "pit_union": 742,
+  "pit_covered": 740,
+  "coverage_pct": 99.73,
+  "fail_closed_floor_pct": 90.0,
+  "splits_repaired": 7,
+  "split_examples": [
+   {
+    "symbol": "CNX",
+    "ex_date": "2017-11-29"
+   },
+   {
+    "symbol": "ARNC",
+    "ex_date": "2020-04-01"
+   },
+   {
+    "symbol": "WRK",
+    "ex_date": "2016-05-16"
+   },
+   {
+    "symbol": "TGNA",
+    "ex_date": "2017-06-01"
+   },
+   {
+    "symbol": "AAPL",
+    "ex_date": "2020-08-31"
+   }
+  ],
+  "frozen_retired": 23,
+  "frozen_run_threshold": 10,
+  "frozen_etf_exemptions": [
+   "BIL"
+  ],
+  "extreme_prints_masked": 99,
+  "extreme_threshold_pct": 45.0,
+  "return_fill_policy": "pct_change(fill_method=None); no forward fill",
+  "density_pct": 86.0
+ },
+ "books": {
+  "low": {
+   "n_events": 3242,
+   "payday": {
+    "gross": {
+     "ann_pct": -0.646,
+     "t_nw": -0.08,
+     "beta": 0.51,
+     "alpha_ann_pct": -9.222,
+     "t_alpha": -1.16,
+     "halves": [
+      3.33,
+      -4.63
+     ],
+     "thirds": [
+      0.44,
+      -2.94,
+      0.57
+     ]
+    },
+    "net_1x": {
+     "ann_pct": -25.846,
+     "t_nw": -3.12,
+     "beta": 0.51,
+     "alpha_ann_pct": -34.422,
+     "t_alpha": -4.32,
+     "halves": [
+      -21.87,
+      -29.83
+     ],
+     "thirds": [
+      -24.76,
+      -28.14,
+      -24.63
+     ]
+    },
+    "net_2x": {
+     "ann_pct": -51.046,
+     "t_nw": -6.16,
+     "beta": 0.51,
+     "alpha_ann_pct": -59.622,
+     "t_alpha": -7.49,
+     "halves": [
+      -47.07,
+      -55.03
+     ],
+     "thirds": [
+      -49.96,
+      -53.34,
+      -49.83
+     ]
+    },
+    "top10_abs_share": 3.106
+   },
+   "hold20": {
+    "gross": {
+     "ann_pct": 18.346,
+     "t_nw": 2.48,
+     "beta": 0.915,
+     "alpha_ann_pct": 2.968,
+     "t_alpha": 0.61,
+     "halves": [
+      22.69,
+      14.0
+     ],
+     "thirds": [
+      31.58,
+      6.6,
+      16.88
+     ]
+    },
+    "net_1x": {
+     "ann_pct": 17.086,
+     "t_nw": 2.31,
+     "beta": 0.915,
+     "alpha_ann_pct": 1.708,
+     "t_alpha": 0.35,
+     "halves": [
+      21.43,
+      12.74
+     ],
+     "thirds": [
+      30.32,
+      5.34,
+      15.62
+     ]
+    },
+    "net_2x": {
+     "ann_pct": 15.826,
+     "t_nw": 2.14,
+     "beta": 0.915,
+     "alpha_ann_pct": 0.448,
+     "t_alpha": 0.09,
+     "halves": [
+      20.17,
+      11.48
+     ],
+     "thirds": [
+      29.06,
+      4.08,
+      14.36
+     ]
+    },
+    "top10_abs_share": 0.081
+   }
+  },
+  "mid": {
+   "n_events": 3134,
+   "payday": {
+    "gross": {
+     "ann_pct": 4.534,
+     "t_nw": 0.65,
+     "beta": 0.515,
+     "alpha_ann_pct": -4.117,
+     "t_alpha": -0.63,
+     "halves": [
+      0.07,
+      8.99
+     ],
+     "thirds": [
+      10.93,
+      -4.5,
+      7.18
+     ]
+    },
+    "net_1x": {
+     "ann_pct": -20.666,
+     "t_nw": -2.96,
+     "beta": 0.515,
+     "alpha_ann_pct": -29.317,
+     "t_alpha": -4.47,
+     "halves": [
+      -25.13,
+      -16.21
+     ],
+     "thirds": [
+      -14.27,
+      -29.7,
+      -18.02
+     ]
+    },
+    "net_2x": {
+     "ann_pct": -45.866,
+     "t_nw": -6.56,
+     "beta": 0.515,
+     "alpha_ann_pct": -54.517,
+     "t_alpha": -8.31,
+     "halves": [
+      -50.33,
+      -41.41
+     ],
+     "thirds": [
+      -39.47,
+      -54.9,
+      -43.22
+     ]
+    },
+    "top10_abs_share": 1.063
+   },
+   "hold20": {
+    "gross": {
+     "ann_pct": 11.094,
+     "t_nw": 1.23,
+     "beta": 0.957,
+     "alpha_ann_pct": -4.984,
+     "t_alpha": -0.93,
+     "halves": [
+      6.05,
+      16.14
+     ],
+     "thirds": [
+      7.79,
+      6.76,
+      18.73
+     ]
+    },
+    "net_1x": {
+     "ann_pct": 9.834,
+     "t_nw": 1.09,
+     "beta": 0.957,
+     "alpha_ann_pct": -6.244,
+     "t_alpha": -1.17,
+     "halves": [
+      4.79,
+      14.88
+     ],
+     "thirds": [
+      6.53,
+      5.5,
+      17.47
+     ]
+    },
+    "net_2x": {
+     "ann_pct": 8.574,
+     "t_nw": 0.95,
+     "beta": 0.957,
+     "alpha_ann_pct": -7.504,
+     "t_alpha": -1.4,
+     "halves": [
+      3.53,
+      13.62
+     ],
+     "thirds": [
+      5.27,
+      4.24,
+      16.21
+     ]
+    },
+    "top10_abs_share": 0.103
+   }
+  },
+  "high": {
+   "n_events": 3244,
+   "payday": {
+    "gross": {
+     "ann_pct": 5.116,
+     "t_nw": 0.6,
+     "beta": 0.573,
+     "alpha_ann_pct": -4.518,
+     "t_alpha": -0.59,
+     "halves": [
+      -2.17,
+      12.4
+     ],
+     "thirds": [
+      0.7,
+      -0.0,
+      14.64
+     ]
+    },
+    "net_1x": {
+     "ann_pct": -20.084,
+     "t_nw": -2.35,
+     "beta": 0.573,
+     "alpha_ann_pct": -29.718,
+     "t_alpha": -3.88,
+     "halves": [
+      -27.37,
+      -12.8
+     ],
+     "thirds": [
+      -24.5,
+      -25.2,
+      -10.56
+     ]
+    },
+    "net_2x": {
+     "ann_pct": -45.284,
+     "t_nw": -5.29,
+     "beta": 0.573,
+     "alpha_ann_pct": -54.918,
+     "t_alpha": -7.17,
+     "halves": [
+      -52.57,
+      -38.0
+     ],
+     "thirds": [
+      -49.7,
+      -50.4,
+      -35.76
+     ]
+    },
+    "top10_abs_share": 15.942
+   },
+   "hold20": {
+    "gross": {
+     "ann_pct": 10.477,
+     "t_nw": 1.43,
+     "beta": 0.929,
+     "alpha_ann_pct": -5.143,
+     "t_alpha": -1.48,
+     "halves": [
+      6.62,
+      14.34
+     ],
+     "thirds": [
+      14.53,
+      4.24,
+      12.67
+     ]
+    },
+    "net_1x": {
+     "ann_pct": 9.217,
+     "t_nw": 1.26,
+     "beta": 0.929,
+     "alpha_ann_pct": -6.403,
+     "t_alpha": -1.84,
+     "halves": [
+      5.36,
+      13.08
+     ],
+     "thirds": [
+      13.27,
+      2.98,
+      11.41
+     ]
+    },
+    "net_2x": {
+     "ann_pct": 7.957,
+     "t_nw": 1.09,
+     "beta": 0.929,
+     "alpha_ann_pct": -7.663,
+     "t_alpha": -2.2,
+     "halves": [
+      4.1,
+      11.82
+     ],
+     "thirds": [
+      12.01,
+      1.72,
+      10.15
+     ]
+    },
+    "top10_abs_share": 0.126
+   }
+  }
+ },
+ "variants_tried": [
+  "low_payday",
+  "low_hold20",
+  "mid_payday",
+  "mid_hold20",
+  "high_payday",
+  "high_hold20",
+  "lmh_payday",
+  "lmh_hold20",
+  "null_within_month",
+  "placebo_clean_preex",
+  "liquidity_terciles",
+  "regime_excision"
+ ],
+ "low_minus_high_payday": {
+  "ann_pct": -5.761,
+  "t_nw": -0.57,
+  "beta": -0.063,
+  "alpha_ann_pct": -4.704,
+  "t_alpha": -0.46,
+  "halves": [
+   5.5,
+   -17.03
+  ],
+  "thirds": [
+   -0.26,
+   -2.94,
+   -14.07
+  ]
+ },
+ "low_minus_high_hold20": {
+  "ann_pct": 7.869,
+  "t_nw": 1.61,
+  "beta": -0.014,
+  "alpha_ann_pct": 8.111,
+  "t_alpha": 1.66,
+  "halves": [
+   16.07,
+   -0.33
+  ],
+  "thirds": [
+   17.05,
+   2.36,
+   4.21
+  ]
+ },
+ "null_within_month_rank_permutation": {
+  "real_ann_pct": 7.869,
+  "null_mean": 0.005,
+  "null_sd": 3.477,
+  "pctile_of_real": 99.2
+ },
+ "placebo_clean_preex": {
+  "ann_pct": -9.496,
+  "share_of_real": -1.207,
+  "note": "a no-flow window reproducing the spread means the spread is a low-nominal-price factor loading, not flow"
+ },
+ "lmh_by_liquidity": {
+  "illiquid": {
+   "n": 3205,
+   "lmh_ann_pct": 8.21
+  },
+  "mid": {
+   "n": 3204,
+   "lmh_ann_pct": 12.34
+  },
+  "liquid": {
+   "n": 3205,
+   "lmh_ann_pct": 7.33
+  }
+ },
+ "regime_excision": {
+  "best_3yr_window": [
+   "2019-07-12",
+   "2022-07-13"
+  ],
+  "share_of_total_pnl": 0.959,
+  "lmh_ex_window_ann_pct": 0.57,
+  "lmh_ex_window_t": 0.13
+ },
+ "verdict": {
+  "call": "KILL_H44",
+  "why": "one 3-year window ('2019-07-12', '2022-07-13') carries 96% of P&L and the remainder is noise (t 0.13) \u2014 the H22 pattern",
+  "production_approved": false
+ }
+}
